@@ -39,3 +39,7 @@
 
 # debug information files
 *.dwo
+bf.cpp.orig
+msvc/bf/.vs/
+msvc/bf/bf/x64/
+*.vcxproj.user
