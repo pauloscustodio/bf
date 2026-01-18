@@ -8,24 +8,30 @@ endif
 
 CXX			?= g++
 CXXFLAGS	+= -std=gnu++17 -MMD -Wall -Wextra -Werror -pedantic-errors
-SRCS		= $(wildcard *.cpp)
-OBJS		= $(SRCS:.cpp=.o)
-DEPENDS		= $(SRCS:.cpp=.d)
 ASTYLE		= astyle --style=attach --pad-oper --align-pointer=type \
 		      --break-closing-braces --add-braces --attach-return-type \
 		      --max-code-length=120 --lineend=linux --formatted \
 		      --recursive "*.cpp" "*.h"
 
-all: bf$(_EXE)
+BF_SRCS		= $(wildcard bf/*.cpp)
+BF_OBJS		= $(BF_SRCS:.cpp=.o)
+BFPP_SRCS	= $(wildcard bfpp/*.cpp)
+BFPP_OBJS	= $(BFPP_SRCS:.cpp=.o)
+DEPENDS		= $(BF_SRCS:.cpp=.d) $(BFPP_SRCS:.cpp=.d)
 
-bf$(_EXE): $(OBJS)
-	$(CXX) $(CXXFLAGS) -o $@ $(OBJS)
+all: bf$(_EXE) bfpp$(_EXE)
+
+bf$(_EXE): $(BF_OBJS)
+	$(CXX) $(CXXFLAGS) -o $@ $(BF_OBJS)
+
+bfpp$(_EXE): $(BFPP_OBJS)
+	$(CXX) $(CXXFLAGS) -o $@ $(BFPP_OBJS)
 
 astyle:
 	$(ASTYLE)
 
 clean:
-	$(RM) bf$(_EXE) $(OBJS) $(DEPENDS) $(wildcard *.orig)
+	$(RM) bf$(_EXE) $(BF_OBJS) $(DEPENDS) $(forach dir,bf bfpp,$(wildcard $(dir)/*.orig))
 
 test: bf$(_EXE)
 	perl -S prove $(wildcard t/*.t)

@@ -19,13 +19,27 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\bf\bf.cpp" />
+    <ClCompile Include="..\..\..\bfpp\bfpp.cpp" />
+    <ClCompile Include="..\..\..\bfpp\errors.cpp" />
+    <ClCompile Include="..\..\..\bfpp\expr.cpp" />
+    <ClCompile Include="..\..\..\bfpp\files.cpp" />
+    <ClCompile Include="..\..\..\bfpp\lexer.cpp" />
+    <ClCompile Include="..\..\..\bfpp\macros.cpp" />
+    <ClCompile Include="..\..\..\bfpp\parser.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\bfpp\errors.h" />
+    <ClInclude Include="..\..\..\bfpp\expr.h" />
+    <ClInclude Include="..\..\..\bfpp\files.h" />
+    <ClInclude Include="..\..\..\bfpp\lexer.h" />
+    <ClInclude Include="..\..\..\bfpp\macros.h" />
+    <ClInclude Include="..\..\..\bfpp\parser.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{3e7bbc35-204a-4385-a504-78c12e0c431c}</ProjectGuid>
-    <RootNamespace>bf</RootNamespace>
+    <ProjectGuid>{bb46f52d-444b-47c3-808f-777d2863ac57}</ProjectGuid>
+    <RootNamespace>bfpp</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
