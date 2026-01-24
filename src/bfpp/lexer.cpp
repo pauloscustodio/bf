@@ -146,6 +146,15 @@ void Lexer::scan_append(const Line& line) {
             tokens_.emplace_back(TokenType::String, str, loc);
         }
 
+        if (p[0]=='\'' && p[2]=='\'') {
+            // Char literal
+            int value = static_cast<int>(static_cast<unsigned char>(p[1]));
+            Token t = Token::make_int(value, loc);
+            tokens_.push_back(t);
+            p += 3;
+            continue;
+        }
+
         if (*p == '(') {
             // LParen
             expr_depth_++;
