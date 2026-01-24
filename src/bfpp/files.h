@@ -7,51 +7,54 @@
 #pragma once
 
 #include <fstream>
-#include <iostream>
-#include <memory>
 #include <string>
 #include <vector>
 
 struct SourceLocation {
     std::string filename;
-    int line = 1;
+    int line_num = 0;
     int column = 0;
 
     SourceLocation() = default;
     SourceLocation(const std::string& file, int lin, int col)
-        : filename(file), line(lin), column(col) {
+        : filename(file), line_num(lin), column(col) {
     }
 };
 
 class InputFile {
 public:
-    explicit InputFile(const std::string& filename);
+    InputFile(const std::string& filename, std::istream* stream, bool owns_stream);
+    virtual ~InputFile();
 
-    int get_char();      // returns next char or EOF
-    void unget_char();   // optional, but useful for lexing
-    const SourceLocation& location() const;
-    bool is_open() const;
+    bool getline(std::string& line);
     bool is_eof() const;
+    const std::string& filename() const;
+    int line_num() const;
 
 private:
-    std::ifstream stream_;
-    SourceLocation loc_;
+    std::string filename_;
+    std::istream* stream_ = nullptr;
+    bool owns_stream_ = false;
+    int line_num_ = 1;
 };
 
 class FileStack {
 public:
+    FileStack() = default;
+    virtual ~FileStack();
+
     bool push_file(const std::string& filename);
+    bool push_file(const std::string& filename, const SourceLocation& loc);
+    void push_stream(std::istream& s, const std::string& virtual_name);
     void pop_file();
 
-    int get_char();      // unified input
-    void unget_char();   // unified unget
+    bool getline(std::string& line);
     bool is_eof() const;
-    const SourceLocation& location() const;
-
-    bool empty() const;
+    const std::string& filename() const;
+    int line_num() const;
 
 private:
-    std::vector<std::unique_ptr<InputFile>> stack_;
+    std::vector<InputFile> stack_;
 };
 
 extern FileStack g_file_stack;

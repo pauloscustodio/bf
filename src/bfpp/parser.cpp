@@ -9,26 +9,204 @@
 #include "macros.h"
 #include "parser.h"
 
-static std::string lowercase(std::string s) {
-    for (char& c : s) c = std::tolower(c);
-    return s;
+Parser::Parser(Lexer& lexer)
+    : lexer_(lexer), macro_expander_(g_macro_table) {
 }
+
+bool Parser::run(std::string& output_) {
+    advance();  // get first token
+    if (parse()) {
+        output_ = to_string();
+        return true;
+    }
+    else {
+        output_.clear();
+        return false;
+    }
+}
+
+bool Parser::parse() {
+    while (true) {
+        if (current_.type == TokenType::EndOfInput) {
+            break;
+        }
+
+        if (current_.type == TokenType::EndOfLine) {
+            advance();
+            continue;
+        }
+
+        if (current_.type == TokenType::Error) {
+            return false;
+        }
+
+        if (current_.type == TokenType::Directive) {
+            parse_directive();
+        }
+        else {
+            parse_statements();
+        }
+    }
+
+    // After finishing, check for unmatched loops
+    output_.check_loops();
+
+    return !g_error_reporter.has_errors();
+}
+
+std::string Parser::to_string() const {
+    return output_.to_string();
+}
+
+Token Parser::peek(size_t offset) {
+    size_t remaining = offset;
+    
+    // Walk from top to bottom, skipping exhausted frames
+    for (auto it = expansion_stack_.rbegin(); it != expansion_stack_.rend(); ++it) {
+        size_t available = (it->index < it->tokens.size()) 
+                           ? (it->tokens.size() - it->index) 
+                           : 0;
+        if (remaining < available) {
+            return it->tokens[it->index + remaining];
+        }
+        remaining -= available;
+    }
+
+    // Not found in expansion stack, peek from lexer
+    return lexer_.peek(remaining);
+}
+
+void Parser::advance() {
+    // Pop exhausted frames AND remove from expanding set
+    while (!expansion_stack_.empty() &&
+        expansion_stack_.back().index >= expansion_stack_.back().tokens.size()) {
+        // Clean up the recursion guard
+        macro_expander_.remove_expanding(expansion_stack_.back().macro_name);
+        expansion_stack_.pop_back();
+    }
+    
+    // Try to consume from the top frame (if any)
+    if (!expansion_stack_.empty()) {
+        auto& frame = expansion_stack_.back();
+        current_ = frame.tokens[frame.index++];
+        return;
+    }
+    
+    // No expansion frames, get from lexer
+    current_ = lexer_.get();
+}
+
+void Parser::parse_directive() {
+    Token directive = current_;
+    advance(); // consume directive keyword
+
+    // Parse directive arguments until EndOfLine
+    while (current_.type != TokenType::EndOfLine &&
+        current_.type != TokenType::EndOfInput) {
+        // ... parse directive content ...
+        advance();  // consume each token
+    }
+
+    if (current_.type == TokenType::EndOfLine) {
+        advance(); // consume EndOfLine
+    }
+}
+
+void Parser::parse_statements() {
+    while (current_.type != TokenType::EndOfLine &&
+        current_.type != TokenType::EndOfInput &&
+        current_.type != TokenType::Error) {
+        parse_statement();
+    }
+}
+
+void Parser::parse_statement() {
+    // Try macro expansion first
+    while (macro_expander_.try_expand(*this, current_)) {
+        advance(); // load first token from expansion
+    }
+
+    if (current_.type == TokenType::BFInstr) {
+        parse_bfinstr();
+        return;
+    }
+
+    g_error_reporter.report_error(
+        current_.loc,
+        "unexpected token in statement: '" + current_.text + "'"
+    );
+    advance(); // consume unexpected token
+}
+
+void Parser::parse_bfinstr() {
+    Token op_tok = current_;
+    char op = op_tok.text[0];
+    advance(); // consume BFInstr
+
+    // instruction without arguments
+    if (op == '[' || op == ']' || op == ',' || op == '.') {
+        output_.put(Token::make_bf(op, op_tok.loc));
+        return;
+    }
+
+    // instruction with optional repeat count
+    int count = parse_repeat_count();
+    if (count < 0) {
+        // invert operation
+        count = -count;
+        if (op == '<') op = '>';
+        else if (op == '>') op = '<';
+        else if (op == '+') op = '-';
+        else if (op == '-') op = '+';
+    }
+
+    // output possibly zero tokens
+    for (int i = 0; i < count; i++) {
+        output_.put(Token::make_bf(op, op_tok.loc));
+    }
+}
+
+int Parser::parse_repeat_count() {
+    if (current_.type == TokenType::Integer) {
+        int count = current_.int_value;
+        advance();      // consume integer
+        return count;   // default repeat count
+    }
+
+    if (current_.type == TokenType::Identifier) {
+        // evaluate expression result of macro expansion
+        std::vector<Token> expr_tokens{ current_ };
+        ArrayTokenSource source(expr_tokens);
+        ExpressionParser expr(source);
+        int value = expr.parse_expression();
+        advance(); // consume identifier
+        return value;
+    }
+
+    if (current_.type == TokenType::LParen) {
+        // Parse expression until matching RParen
+        ParserTokenSource source(*this);
+        ExpressionParser expr(source);
+        int value = expr.parse_expression();
+        return value;
+    }
+
+    // no arguments, return defualt 1
+    return 1;
+}
+
+#if 0
 
 Parser::Parser(Lexer& lexer)
     : lexer_(lexer), macro_expander_(g_macro_table) {
     advance(); // load first token
 }
 
-void Parser::parse() {
+std::string Parser::run() {
     while (current_.type != TokenType::EndOfFile &&
-        current_.type != TokenType::Error) {
+            current_.type != TokenType::Error) {
 
-        if (current_.type == TokenType::Directive) {
-            parse_directive();
-            continue;
-        }
-
-        parse_statement();
+        parse_statements();
     }
 
     // After finishing the file, check for unclosed #if blocks
@@ -39,10 +217,13 @@ void Parser::parse() {
             "unterminated #if (missing #endif)"
         );
     }
+
+    return to_string();
 }
 
-Token Parser::current() const { 
-    return current_; 
+
+Token Parser::current() const {
+    return current_;
 }
 
 void Parser::advance() {
@@ -101,8 +282,9 @@ void Parser::parse_macro_invocation(const Macro& m, SourceLocation call_loc) {
             args.push_back(std::move(expr));
 
             t = lexer_.peek();
-            if (t.type == TokenType::RParen)
+            if (t.type == TokenType::RParen) {
                 break;
+            }
 
             if (t.type != TokenType::Comma) {
                 g_error_reporter.report_error(
@@ -110,8 +292,11 @@ void Parser::parse_macro_invocation(const Macro& m, SourceLocation call_loc) {
                     "expected ',' or ')' in macro call"
                 );
                 // Try to resync: consume until ')'
-                do { t = lexer_.get(); } while (t.type != TokenType::RParen &&
-                    t.type != TokenType::EndOfFile);
+                do {
+                    t = lexer_.get();
+                }
+                while (t.type != TokenType::RParen &&
+                        t.type != TokenType::EndOfFile);
                 break;
             }
 
@@ -144,8 +329,9 @@ std::vector<Token> Parser::parse_macro_argument_expression() {
     while (true) {
         Token t = lexer_.get();
 
-        if (t.type == TokenType::EndOfFile)
+        if (t.type == TokenType::EndOfFile) {
             break;
+        }
 
         if (t.type == TokenType::LParen) {
             paren_depth++;
@@ -177,23 +363,26 @@ std::vector<Token> Parser::parse_macro_argument_expression() {
 }
 
 void Parser::substitute_object_like_macro(const Macro& m) {
-    for (const Token& t : m.body)
+    for (const Token& t : m.body) {
         expanded_.push_back(t);
+    }
 }
 
-void Parser::substitute_function_like_macro(const Macro& m,const std::vector<std::vector<Token>>& args) {
+void Parser::substitute_function_like_macro(const Macro& m, const std::vector<std::vector<Token>>& args) {
     std::unordered_map<std::string, const std::vector<Token>*> param_map;
 
-    for (size_t i = 0; i < m.params.size(); ++i)
+    for (size_t i = 0; i < m.params.size(); ++i) {
         param_map[m.params[i]] = &args[i];
+    }
 
     for (const Token& t : m.body) {
         if (t.type == TokenType::Identifier) {
             auto it = param_map.find(t.text);
             if (it != param_map.end()) {
                 // Insert argument tokens
-                for (const Token& a : *it->second)
+                for (const Token& a : *it->second) {
                     expanded_.push_back(a);
+                }
                 continue;
             }
         }
@@ -273,6 +462,7 @@ void Parser::parse_directive() {
         directive.loc,
         "unknown directive '" + directive.text + "'"
     );
+    advance(); // consume unknown directive to avoid infinite loop
 }
 
 void Parser::parse_include() {
@@ -287,7 +477,7 @@ void Parser::parse_include() {
     std::string filename = current_.text;
     advance();
 
-    if (!g_file_stack.push_file(filename)) {
+    if (!g_file_stack.push_file(filename, current_.loc)) {
         // error already reported
         return;
     }
@@ -341,8 +531,9 @@ void Parser::parse_define() {
                 params.push_back(current_.text);
                 advance(); // consume parameter
 
-                if (current_.type == TokenType::RParen)
+                if (current_.type == TokenType::RParen) {
                     break;
+                }
 
                 if (current_.type != TokenType::Comma) {
                     g_error_reporter.report_error(
@@ -372,12 +563,14 @@ void Parser::parse_define() {
             }
 
             if (current_.type == TokenType::Directive &&
-                current_.text == "#end") {
+                    current_.text == "#end") {
                 break;
             }
 
             body.push_back(current_);
         }
+        // consume the '#end'
+        advance();
     }
     else {
         // --- 4. Object-like macro ---
@@ -390,7 +583,7 @@ void Parser::parse_define() {
         if (single_line) {
             // Collect tokens until end of line
             while (current_.type != TokenType::EndOfFile &&
-                current_.loc.line == name_loc.line) {
+                    current_.loc.line == name_loc.line) {
                 body.push_back(current_);
                 advance();
             }
@@ -409,12 +602,14 @@ void Parser::parse_define() {
                 }
 
                 if (current_.type == TokenType::Directive &&
-                    current_.text == "#end") {
+                        current_.text == "#end") {
                     break;
                 }
 
                 body.push_back(current_);
             }
+            // consume the '#end'
+            advance();
         }
     }
 
@@ -433,8 +628,9 @@ void Parser::parse_define() {
     }
 
     // --- 5. Hygiene checks ---
-    if (!check_macro_body_token_boundaries(name, name_loc, body))
+    if (!check_macro_body_token_boundaries(name, name_loc, body)) {
         return;
+    }
 
     if (contains_directive_token(body)) {
         g_error_reporter.report_error(
@@ -463,8 +659,8 @@ void Parser::parse_define() {
 
 void Parser::skip_to_end_of_line(int line) {
     while (current_.type != TokenType::EndOfFile &&
-        current_.type != TokenType::EndOfExpression &&
-        current_.loc.line == line) {
+            current_.type != TokenType::EndOfExpression &&
+            current_.loc.line == line) {
         advance();
     }
 }
@@ -493,34 +689,41 @@ void Parser::parse_undef() {
 }
 
 bool Parser::check_macro_body_token_boundaries(const std::string& name,
-    const SourceLocation& name_loc,
-    const std::vector<Token>& body) {
-    if (body.empty())
-        return true; // empty macro is always safe
+        const SourceLocation& name_loc,
+        const std::vector<Token>& body) {
+    if (body.empty()) {
+        return true;    // empty macro is always safe
+    }
 
     const Token& first = body.front();
     const Token& last = body.back();
 
-    auto is_glue_sensitive = [](const Token& t) -> bool {
-        if (t.type == TokenType::Identifier) return true;
-        if (t.type == TokenType::Integer)    return true;
+    auto is_glue_sensitive = [](const Token & t) -> bool {
+        if (t.type == TokenType::Identifier) {
+            return true;
+        }
+        if (t.type == TokenType::Integer) {
+            return true;
+        }
 
         if (t.type == TokenType::Operator) {
             const std::string& op = t.text;
             if (op == "<" || op == ">" || op == "=" || op == "!" ||
-                op == "&" || op == "|" || op == "+" || op == "-" ||
-                op == "/" || op == "%" || op == "^")
+                    op == "&" || op == "|" || op == "+" || op == "-" ||
+                    op == "/" || op == "%" || op == "^") {
                 return true;
+            }
         }
 
         if (t.type == TokenType::Directive) {
             // body starting with '#' is not allowed (Rule 5 will also cover this)
-            if (!t.text.empty() && t.text[0] == '#')
+            if (!t.text.empty() && t.text[0] == '#') {
                 return true;
+            }
         }
 
         return false;
-        };
+    };
 
     if (is_glue_sensitive(first) || is_glue_sensitive(last)) {
         g_error_reporter.report_error(
@@ -656,12 +859,14 @@ void Parser::skip_until_else_or_endif() {
     while (true) {
         advance();  // consume current token
 
-        if (current_.type == TokenType::EndOfFile)
+        if (current_.type == TokenType::EndOfFile) {
             return;
+        }
 
         // Only directives matter during skipping
-        if (current_.type != TokenType::Directive)
+        if (current_.type != TokenType::Directive) {
             continue;
+        }
 
         std::string kw = current_.text;
 
@@ -681,8 +886,9 @@ void Parser::skip_until_else_or_endif() {
 
         if (depth == 0) {
             // Only consider #else and #elsif at depth 0
-            if (kw == "#else" || kw == "#elsif")
+            if (kw == "#else" || kw == "#elsif") {
                 return;
+            }
         }
 
         // Otherwise ignore directive and continue
@@ -695,11 +901,13 @@ void Parser::skip_until_endif() {
     while (true) {
         advance();
 
-        if (current_.type == TokenType::EndOfFile)
+        if (current_.type == TokenType::EndOfFile) {
             return;
+        }
 
-        if (current_.type != TokenType::Directive)
+        if (current_.type != TokenType::Directive) {
             continue;
+        }
 
         std::string kw = current_.text;
 
@@ -722,7 +930,7 @@ void Parser::skip_until_endif() {
     }
 }
 
-void Parser::parse_statement() {
+void Parser::parse_statements() {
     // Expand macros until no more expansions occur
     while (try_expand_macro()) {
         // keep expanding
@@ -745,209 +953,17 @@ void Parser::parse_statement() {
     default:
         g_error_reporter.report_error(
             current_.loc,
-            "unexpected token in statement"
+            "unexpected token in statement: '" + current_.text + "'"
         );
         advance();
         return;
     }
 }
 
-bool Parser::try_expand_macro() {
-    if (current_.type != TokenType::Identifier) {
-        return false;
-    }
 
-    const Macro* macro = g_macro_table.lookup(current_.text);
-    if (!macro) {
-        return false;
-    }
 
-    // Recursion guard
-    if (expanding_macros_.count(macro->name)) {
-        g_error_reporter.report_error(
-            current_.loc,
-            "macro '" + macro->name + "' expands to itself"
-        );
-        advance();
-        return true;
-    }
 
-    expanding_macros_.insert(macro->name);
 
-    // Collect arguments (if any)
-    std::vector<std::vector<Token>> actuals = collect_macro_args(*macro);
-
-    // Argument count validation
-    if (actuals.size() != macro->params.size()) {
-        g_error_reporter.report_error(
-            current_.loc,
-            "macro '" + macro->name + "' expects " +
-            std::to_string(macro->params.size()) +
-            " argument(s), but got " +
-            std::to_string(actuals.size())
-        );
-        expanding_macros_.erase(macro->name);
-        advance(); // skip the macro name
-        return true;
-    }
-
-    // Substitute
-    std::vector<Token> expanded = substitute_macro_body(*macro, actuals);
-
-    // Push expansion frame
-    MacroExpansionFrame frame;
-    frame.tokens = std::move(expanded);
-    frame.index = 0;
-    expansion_stack_.push_back(std::move(frame));
-
-    expanding_macros_.erase(macro->name);
-
-    // Load first token from expansion
-    advance();
-    return true;
-}
-
-std::vector<std::vector<Token>> Parser::collect_macro_args(const Macro& macro) {
-    std::vector<std::vector<Token>> actuals;
-
-    // Object-like macro: no arguments expected
-    if (macro.params.empty()) {
-        advance(); // consume macro name
-        return actuals;
-    }
-
-    // Function-like macro: expect '('
-    advance(); // consume macro name
-    if (current_.type != TokenType::LParen) {
-        g_error_reporter.report_error(
-            current_.loc,
-            "expected '(' after macro name '" + macro.name + "'"
-        );
-        return {};
-    }
-    advance(); // consume '('
-
-    // Special case: empty argument list "FOO()"
-    if (current_.type == TokenType::RParen) {
-        advance(); // consume ')'
-        return actuals; // but macro.args is non-empty --> mismatch handled later
-    }
-
-    // Parse each argument
-    for (std::size_t i = 0; i < macro.params.size(); ++i) {
-        std::vector<Token> arg_tokens;
-        int paren_depth = 0;
-
-        while (true) {
-            if (current_.type == TokenType::EndOfFile) {
-                g_error_reporter.report_error(
-                    current_.loc,
-                    "unterminated macro argument list for '" + macro.name + "'"
-                );
-                return {};
-            }
-
-            // End of this argument?
-            if (current_.type == TokenType::Comma && paren_depth == 0) {
-                break;
-            }
-
-            // End of argument list?
-            if (current_.type == TokenType::RParen && paren_depth == 0) {
-                break;
-            }
-
-            // Track nested parentheses
-            if (current_.type == TokenType::LParen) {
-                paren_depth++;
-            }
-            else if (current_.type == TokenType::RParen) {
-                paren_depth--;
-                if (paren_depth < 0) {
-                    g_error_reporter.report_error(
-                        current_.loc,
-                        "unexpected ')' in macro argument list"
-                    );
-                    return {};
-                }
-            }
-
-            arg_tokens.push_back(current_);
-            advance();
-        }
-
-        actuals.push_back(std::move(arg_tokens));
-
-        // If this was the last expected argument, break
-        if (i + 1 == macro.params.size()) {
-            break;
-        }
-
-        // Expect comma between arguments
-        if (current_.type != TokenType::Comma) {
-            g_error_reporter.report_error(
-                current_.loc,
-                "expected ',' in macro argument list"
-            );
-            return {};
-        }
-
-        advance(); // consume comma
-    }
-
-    // After parsing expected args, expect ')'
-    if (current_.type != TokenType::RParen) {
-        g_error_reporter.report_error(
-            current_.loc,
-            "expected ')' at end of macro call"
-        );
-        return {};
-    }
-
-    advance(); // consume ')'
-    return actuals;
-}
-
-std::vector<Token> Parser::substitute_macro_body(
-    const Macro& macro,
-    const std::vector<std::vector<Token>>& actuals
-) {
-    std::vector<Token> result;
-    result.reserve(macro.body.size() + 8); // small optimization
-
-    for (const Token& tok : macro.body) {
-
-        // Only identifiers can be parameters
-        if (tok.type == TokenType::Identifier) {
-
-            // Check if this identifier matches a formal parameter
-            for (std::size_t i = 0; i < macro.params.size(); ++i) {
-                if (tok.text == macro.params[i]) {
-
-                    // Splice in the actual argument tokens
-                    for (const Token& arg_tok : actuals[i]) {
-                        Token copy = arg_tok;
-
-                        // Update source location to macro *use* site
-                        copy.loc = tok.loc;
-
-                        result.push_back(std::move(copy));
-                    }
-
-                    goto get;
-                }
-            }
-        }
-
-        // Not a parameter --> copy token as-is
-        result.push_back(tok);
-
-    get:
-        continue;
-    }
-
-    return result;
-}
 
 void Parser::emit_bf_instruction(const Token& t) {
     // All BF instructions must go through the macro expander
@@ -955,11 +971,12 @@ void Parser::emit_bf_instruction(const Token& t) {
 }
 
 
-ExpansionContext Parser::expansion_context() const { 
-    return context_; 
+ExpansionContext Parser::expansion_context() const {
+    return context_;
 }
 
-void Parser::set_expansion_context(ExpansionContext c) { 
+void Parser::set_expansion_context(ExpansionContext c) {
     context_ = c;
 }
 
+#endif

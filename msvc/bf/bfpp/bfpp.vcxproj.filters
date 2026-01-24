@@ -13,48 +13,74 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Resource Files\t">
+      <UniqueIdentifier>{6c1467d1-19c7-4adf-aa94-a46478357f24}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\bfpp\bfpp.cpp">
+    <ClCompile Include="..\..\..\src\bfpp\bfpp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\bfpp\files.cpp">
+    <ClCompile Include="..\..\..\src\bfpp\errors.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\bfpp\errors.cpp">
+    <ClCompile Include="..\..\..\src\bfpp\expr.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\bfpp\lexer.cpp">
+    <ClCompile Include="..\..\..\src\bfpp\files.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\bfpp\parser.cpp">
+    <ClCompile Include="..\..\..\src\bfpp\lexer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\bfpp\macros.cpp">
+    <ClCompile Include="..\..\..\src\bfpp\macros.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\bfpp\expr.cpp">
+    <ClCompile Include="..\..\..\src\bfpp\parser.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\bfpp\preprocessor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\bfpp\utils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\bfpp\output.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\bfpp\files.h">
+    <ClInclude Include="..\..\..\src\bfpp\errors.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\bfpp\errors.h">
+    <ClInclude Include="..\..\..\src\bfpp\expr.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\bfpp\lexer.h">
+    <ClInclude Include="..\..\..\src\bfpp\files.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\bfpp\parser.h">
+    <ClInclude Include="..\..\..\src\bfpp\lexer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\bfpp\macros.h">
+    <ClInclude Include="..\..\..\src\bfpp\macros.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\bfpp\expr.h">
+    <ClInclude Include="..\..\..\src\bfpp\parser.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\bfpp\preprocessor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\bfpp\utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\bfpp\output.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\t\bfpp.t">
+      <Filter>Resource Files\t</Filter>
+    </None>
   </ItemGroup>
 </Project>

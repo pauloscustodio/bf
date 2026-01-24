@@ -19,21 +19,30 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\bfpp\bfpp.cpp" />
-    <ClCompile Include="..\..\..\bfpp\errors.cpp" />
-    <ClCompile Include="..\..\..\bfpp\expr.cpp" />
-    <ClCompile Include="..\..\..\bfpp\files.cpp" />
-    <ClCompile Include="..\..\..\bfpp\lexer.cpp" />
-    <ClCompile Include="..\..\..\bfpp\macros.cpp" />
-    <ClCompile Include="..\..\..\bfpp\parser.cpp" />
+    <ClCompile Include="..\..\..\src\bfpp\bfpp.cpp" />
+    <ClCompile Include="..\..\..\src\bfpp\errors.cpp" />
+    <ClCompile Include="..\..\..\src\bfpp\expr.cpp" />
+    <ClCompile Include="..\..\..\src\bfpp\files.cpp" />
+    <ClCompile Include="..\..\..\src\bfpp\lexer.cpp" />
+    <ClCompile Include="..\..\..\src\bfpp\macros.cpp" />
+    <ClCompile Include="..\..\..\src\bfpp\output.cpp" />
+    <ClCompile Include="..\..\..\src\bfpp\parser.cpp" />
+    <ClCompile Include="..\..\..\src\bfpp\preprocessor.cpp" />
+    <ClCompile Include="..\..\..\src\bfpp\utils.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\bfpp\errors.h" />
-    <ClInclude Include="..\..\..\bfpp\expr.h" />
-    <ClInclude Include="..\..\..\bfpp\files.h" />
-    <ClInclude Include="..\..\..\bfpp\lexer.h" />
-    <ClInclude Include="..\..\..\bfpp\macros.h" />
-    <ClInclude Include="..\..\..\bfpp\parser.h" />
+    <ClInclude Include="..\..\..\src\bfpp\errors.h" />
+    <ClInclude Include="..\..\..\src\bfpp\expr.h" />
+    <ClInclude Include="..\..\..\src\bfpp\files.h" />
+    <ClInclude Include="..\..\..\src\bfpp\lexer.h" />
+    <ClInclude Include="..\..\..\src\bfpp\macros.h" />
+    <ClInclude Include="..\..\..\src\bfpp\output.h" />
+    <ClInclude Include="..\..\..\src\bfpp\parser.h" />
+    <ClInclude Include="..\..\..\src\bfpp\preprocessor.h" />
+    <ClInclude Include="..\..\..\src\bfpp\utils.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\t\bfpp.t" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
@@ -93,6 +102,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -107,6 +117,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -119,6 +130,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -133,6 +145,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

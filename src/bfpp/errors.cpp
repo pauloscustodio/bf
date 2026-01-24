@@ -23,12 +23,12 @@ void ErrorReporter::report_note(const SourceLocation& loc, const std::string& me
 void ErrorReporter::report(const SourceLocation& loc, const std::string& message,
                            const char* kind, bool increment_error) {
     std::cerr
-        << loc.filename << ":"
-        << loc.line << ":"
-        << loc.column << ": "
-        << kind << ": "
-        << message
-        << std::endl;
+            << loc.filename << ":"
+            << loc.line_num << ":"
+            << loc.column << ": "
+            << kind << ": "
+            << message
+            << std::endl;
 
     if (increment_error) {
         error_count_++;
@@ -43,6 +43,6 @@ bool ErrorReporter::has_errors() const {
     return error_count_ > 0;
 }
 
-void ErrorReporter::reset() { 
-    error_count_ = 0; 
+void ErrorReporter::reset() {
+    error_count_ = 0;
 }

@@ -13,9 +13,9 @@ ASTYLE		= astyle --style=attach --pad-oper --align-pointer=type \
 		      --max-code-length=120 --lineend=linux --formatted \
 		      --recursive "*.cpp" "*.h"
 
-BF_SRCS		= $(wildcard bf/*.cpp)
+BF_SRCS		= $(wildcard src/bf/*.cpp)
 BF_OBJS		= $(BF_SRCS:.cpp=.o)
-BFPP_SRCS	= $(wildcard bfpp/*.cpp)
+BFPP_SRCS	= $(wildcard src/bfpp/*.cpp)
 BFPP_OBJS	= $(BFPP_SRCS:.cpp=.o)
 DEPENDS		= $(BF_SRCS:.cpp=.d) $(BFPP_SRCS:.cpp=.d)
 
@@ -31,9 +31,10 @@ astyle:
 	$(ASTYLE)
 
 clean:
-	$(RM) bf$(_EXE) $(BF_OBJS) $(DEPENDS) $(forach dir,bf bfpp,$(wildcard $(dir)/*.orig))
+	$(RM) bf$(_EXE) $(BF_OBJS) $(BFPP_OBJS) $(DEPENDS) \
+		$(foreach dir,src/bf src/bfpp,$(wildcard $(dir)/*.orig))
 
-test: bf$(_EXE)
+test: bf$(_EXE) bfpp$(_EXE)
 	perl -S prove $(wildcard t/*.t)
 
 -include $(DEPENDS)
