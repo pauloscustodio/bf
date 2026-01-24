@@ -44,3 +44,4 @@ msvc/bf/.vs/
 msvc/bf/bf/x64/
 *.vcxproj.user
 msvc/bf/bfpp/x64/
+*.orig

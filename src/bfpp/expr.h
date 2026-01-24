@@ -20,10 +20,18 @@ public:
 class ParserTokenSource : public TokenSource {
 public:
     ParserTokenSource(Parser& parser) : parser_(parser) {}
-    Token current() const override { return parser_.current(); }
-    Token peek(size_t offset = 0) const override { return parser_.peek(offset); }
-    void advance() override { parser_.advance(); }
-    bool at_end() const override { return parser_.current().type == TokenType::EndOfInput; }
+    Token current() const override {
+        return parser_.current();
+    }
+    Token peek(size_t offset = 0) const override {
+        return parser_.peek(offset);
+    }
+    void advance() override {
+        parser_.advance();
+    }
+    bool at_end() const override {
+        return parser_.current().type == TokenType::EndOfInput;
+    }
 private:
     Parser& parser_;
 };
@@ -41,8 +49,14 @@ public:
         static Token eof(TokenType::EndOfInput, "", SourceLocation());
         return (pos_ + offset) < tokens_.size() ? tokens_[pos_ + offset] : eof;
     }
-    void advance() override { if (pos_ < tokens_.size()) ++pos_; }
-    bool at_end() const override { return pos_ >= tokens_.size(); }
+    void advance() override {
+        if (pos_ < tokens_.size()) {
+            ++pos_;
+        }
+    }
+    bool at_end() const override {
+        return pos_ >= tokens_.size();
+    }
 private:
     const std::vector<Token>& tokens_;
     size_t pos_;
@@ -72,5 +86,5 @@ private:
 
     int value_of_identifier(const Token& tok);
     int eval_macro_recursive(const Token& tok,
-        std::unordered_set<std::string>& expanding);
+                             std::unordered_set<std::string>& expanding);
 };

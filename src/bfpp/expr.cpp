@@ -337,7 +337,7 @@ int ExpressionParser::value_of_identifier(const Token& tok) {
 }
 
 int ExpressionParser::eval_macro_recursive(const Token& tok,
-    std::unordered_set<std::string>& expanding) {
+        std::unordered_set<std::string>& expanding) {
     std::string name = tok.text;
     const Macro* macro = g_macro_table.lookup(name);
     if (!macro) {

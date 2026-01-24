@@ -137,8 +137,8 @@ void Lexer::scan_append(const Line& line) {
             if (*p != '"') {
                 // Unterminated string
                 g_error_reporter.report_error(loc,
-                    "unterminated string literal"
-                );
+                                              "unterminated string literal"
+                                             );
                 tokens_.emplace_back(TokenType::Error, "", loc);
                 break;
             }
@@ -146,7 +146,7 @@ void Lexer::scan_append(const Line& line) {
             tokens_.emplace_back(TokenType::String, str, loc);
         }
 
-        if (p[0]=='\'' && p[2]=='\'') {
+        if (p[0] == '\'' && p[2] == '\'') {
             // Char literal
             int value = static_cast<int>(static_cast<unsigned char>(p[1]));
             Token t = Token::make_int(value, loc);
@@ -166,8 +166,9 @@ void Lexer::scan_append(const Line& line) {
 
         if (*p == ')') {
             // RParen
-            if (expr_depth_ > 0)
+            if (expr_depth_ > 0) {
                 expr_depth_--;
+            }
             std::string op(1, *p);
             p++;
             tokens_.emplace_back(TokenType::RParen, op, loc);
@@ -175,8 +176,8 @@ void Lexer::scan_append(const Line& line) {
         }
 
         if (expr_depth_ == 0 &&
-            (*p == '+' || *p == '-' || *p == '<' || *p == '>' ||
-                *p == '[' || *p == ']' || *p == '.' || *p == ',')) {
+                (*p == '+' || *p == '-' || *p == '<' || *p == '>' ||
+                 *p == '[' || *p == ']' || *p == '.' || *p == ',')) {
             // BFInstr
             std::string op(1, *p);
             p++;
@@ -185,15 +186,15 @@ void Lexer::scan_append(const Line& line) {
         }
 
         if ((in_directive_ || expr_depth_ > 0) &&
-            ((p[0] == '=' && p[1] == '=') ||  // ==
-                (p[0] == '!' && p[1] == '=') ||  // !=
-                (p[0] == '<' && p[1] == '=') ||  // <=
-                (p[0] == '>' && p[1] == '=') ||  // >=
-                (p[0] == '&' && p[1] == '&') ||  // &&
-                (p[0] == '|' && p[1] == '|') ||  // ||
-                (p[0] == '<' && p[1] == '<') ||  // <<
-                (p[0] == '>' && p[1] == '>'))    // >>
-            ) {
+                ((p[0] == '=' && p[1] == '=') ||  // ==
+                 (p[0] == '!' && p[1] == '=') ||  // !=
+                 (p[0] == '<' && p[1] == '=') ||  // <=
+                 (p[0] == '>' && p[1] == '=') ||  // >=
+                 (p[0] == '&' && p[1] == '&') ||  // &&
+                 (p[0] == '|' && p[1] == '|') ||  // ||
+                 (p[0] == '<' && p[1] == '<') ||  // <<
+                 (p[0] == '>' && p[1] == '>'))    // >>
+           ) {
             // 2 character operator
             std::string op(p, p + 2);
             p += 2;
@@ -202,9 +203,9 @@ void Lexer::scan_append(const Line& line) {
         }
 
         if ((in_directive_ || expr_depth_ > 0) &&
-            (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '%' ||
-                *p == '&' || *p == '|' || *p == '^' || *p == '~' ||
-                *p == '!' || *p == '<' || *p == '>')) {
+                (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '%' ||
+                 *p == '&' || *p == '|' || *p == '^' || *p == '~' ||
+                 *p == '!' || *p == '<' || *p == '>')) {
             // single character operator
             std::string op(1, *p);
             p++;
@@ -214,8 +215,8 @@ void Lexer::scan_append(const Line& line) {
 
         // Invalid charcater
         g_error_reporter.report_error(loc,
-            "invalid character '" + std::string(1, *p) + "'"
-        );
+                                      "invalid character '" + std::string(1, *p) + "'"
+                                     );
         tokens_.emplace_back(TokenType::Error, "", loc);
         break;
     }
@@ -243,8 +244,8 @@ Token Lexer::get() {
         Line line;
         if (!getline(line)) {
             return Token(TokenType::EndOfInput, "",
-                SourceLocation(g_file_stack.filename(),
-                    g_file_stack.line_num(), 0));
+                         SourceLocation(g_file_stack.filename(),
+                                        g_file_stack.line_num(), 0));
         }
         scan_append(line);
     }
@@ -256,8 +257,8 @@ Token Lexer::peek(size_t offset) {
         Line line;
         if (!getline(line)) {
             return Token(TokenType::EndOfInput, "",
-                SourceLocation(g_file_stack.filename(), 
-                    g_file_stack.line_num(), 0));
+                         SourceLocation(g_file_stack.filename(),
+                                        g_file_stack.line_num(), 0));
         }
         scan_append(line);
     }

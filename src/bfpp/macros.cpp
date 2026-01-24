@@ -61,7 +61,7 @@ bool MacroExpander::try_expand(Parser& parser, const Token& token) {
     // Recursion guard
     if (expanding_.count(macro->name)) {
         g_error_reporter.report_error(token.loc,
-            "macro '" + macro->name + "' expands to itself");
+                                      "macro '" + macro->name + "' expands to itself");
         return false;
     }
 
@@ -71,8 +71,8 @@ bool MacroExpander::try_expand(Parser& parser, const Token& token) {
     // Validate arity
     if (args.size() != macro->params.size()) {
         g_error_reporter.report_error(token.loc,
-            "macro '" + macro->name + "' expects " +
-            std::to_string(macro->params.size()) + " arguments");
+                                      "macro '" + macro->name + "' expects " +
+                                      std::to_string(macro->params.size()) + " arguments");
         return false;
     }
 
@@ -95,8 +95,7 @@ void MacroExpander::remove_expanding(const std::string& name) {
 }
 
 std::vector<std::vector<Token>> MacroExpander::collect_args(Parser& parser,
-    const Macro& macro)
-{
+const Macro& macro) {
     std::vector<std::vector<Token>> actuals;
 
     // Object-like macro: no arguments expected
@@ -131,7 +130,7 @@ std::vector<std::vector<Token>> MacroExpander::collect_args(Parser& parser,
 
         while (true) {
             if (parser.current_.type == TokenType::EndOfInput ||
-                parser.current_.type == TokenType::EndOfLine) {
+                    parser.current_.type == TokenType::EndOfLine) {
                 g_error_reporter.report_error(
                     parser.current_.loc,
                     "unterminated macro argument list for '" + macro.name + "'"
@@ -201,8 +200,7 @@ std::vector<std::vector<Token>> MacroExpander::collect_args(Parser& parser,
 }
 
 std::vector<Token> MacroExpander::substitute_body(const Macro& macro,
-    const std::vector<std::vector<Token>>& args)
-{
+        const std::vector<std::vector<Token>>& args) {
     std::vector<Token> result;
 
     for (const Token& tok : macro.body) {
@@ -223,7 +221,7 @@ std::vector<Token> MacroExpander::substitute_body(const Macro& macro,
         // Not a parameter --> copy token as-is
         result.push_back(tok);
 
-    next_token:
+next_token:
         continue;
     }
 

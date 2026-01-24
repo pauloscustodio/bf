@@ -12,7 +12,7 @@ Preprocessor::Preprocessor() :
 
 // Entry point: run the preprocessing pipeline and return the output.
 bool Preprocessor::run(std::string& output) {
-    return parser_.run(output); 
+    return parser_.run(output);
 }
 
 bool Preprocessor::push_file(const std::string& filename) {

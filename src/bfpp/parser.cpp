@@ -60,11 +60,11 @@ std::string Parser::to_string() const {
 
 Token Parser::peek(size_t offset) {
     size_t remaining = offset;
-    
+
     // Walk from top to bottom, skipping exhausted frames
     for (auto it = expansion_stack_.rbegin(); it != expansion_stack_.rend(); ++it) {
-        size_t available = (it->index < it->tokens.size()) 
-                           ? (it->tokens.size() - it->index) 
+        size_t available = (it->index < it->tokens.size())
+                           ? (it->tokens.size() - it->index)
                            : 0;
         if (remaining < available) {
             return it->tokens[it->index + remaining];
@@ -79,19 +79,19 @@ Token Parser::peek(size_t offset) {
 void Parser::advance() {
     // Pop exhausted frames AND remove from expanding set
     while (!expansion_stack_.empty() &&
-        expansion_stack_.back().index >= expansion_stack_.back().tokens.size()) {
+            expansion_stack_.back().index >= expansion_stack_.back().tokens.size()) {
         // Clean up the recursion guard
         macro_expander_.remove_expanding(expansion_stack_.back().macro_name);
         expansion_stack_.pop_back();
     }
-    
+
     // Try to consume from the top frame (if any)
     if (!expansion_stack_.empty()) {
         auto& frame = expansion_stack_.back();
         current_ = frame.tokens[frame.index++];
         return;
     }
-    
+
     // No expansion frames, get from lexer
     current_ = lexer_.get();
 }
@@ -102,7 +102,7 @@ void Parser::parse_directive() {
 
     // Parse directive arguments until EndOfLine
     while (current_.type != TokenType::EndOfLine &&
-        current_.type != TokenType::EndOfInput) {
+            current_.type != TokenType::EndOfInput) {
         // ... parse directive content ...
         advance();  // consume each token
     }
@@ -114,8 +114,8 @@ void Parser::parse_directive() {
 
 void Parser::parse_statements() {
     while (current_.type != TokenType::EndOfLine &&
-        current_.type != TokenType::EndOfInput &&
-        current_.type != TokenType::Error) {
+            current_.type != TokenType::EndOfInput &&
+            current_.type != TokenType::Error) {
         parse_statement();
     }
 }
@@ -154,10 +154,18 @@ void Parser::parse_bfinstr() {
     if (count < 0) {
         // invert operation
         count = -count;
-        if (op == '<') op = '>';
-        else if (op == '>') op = '<';
-        else if (op == '+') op = '-';
-        else if (op == '-') op = '+';
+        if (op == '<') {
+            op = '>';
+        }
+        else if (op == '>') {
+            op = '<';
+        }
+        else if (op == '+') {
+            op = '-';
+        }
+        else if (op == '-') {
+            op = '+';
+        }
     }
 
     // output possibly zero tokens

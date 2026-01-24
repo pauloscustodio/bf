@@ -51,7 +51,7 @@ std::string BFOutput::to_string() const {
     int line_num = 1;
     int indent_level = 0;
     bool at_line_start = true;
-    
+
     for (const Token& t : output_) {
         // synchronize line numbers with SourceLocation
         while (line_num < t.loc.line_num) {
@@ -59,7 +59,7 @@ std::string BFOutput::to_string() const {
             line_num++;
             at_line_start = true;
         }
-        
+
         if (t.text == "[") {
             // Output '[' with current indentation on its own line
             if (!at_line_start) {

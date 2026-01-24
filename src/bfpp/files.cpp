@@ -53,8 +53,8 @@ bool InputFile::is_eof() const {
     return stream_->eof();
 }
 
-const std::string& InputFile::filename() const { 
-    return filename_; 
+const std::string& InputFile::filename() const {
+    return filename_;
 }
 
 int InputFile::line_num() const {

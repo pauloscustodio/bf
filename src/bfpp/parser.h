@@ -23,7 +23,9 @@ public:
     Parser(Lexer& lexer);
 
     bool run(std::string& output);
-    const Token& current() const { return current_; }
+    const Token& current() const {
+        return current_;
+    }
     Token peek(size_t offset = 0);
     void advance();
 

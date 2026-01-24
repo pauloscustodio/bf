@@ -69,7 +69,7 @@ int main(int argc, char* argv[]) {
                 macro.name = name;
                 macro.params = {};  // object-like macro
                 macro.body.push_back(Token::make_int(value,
-                    SourceLocation("<command-line>", 0, 0)));
+                                                     SourceLocation("<command-line>", 0, 0)));
                 macro.loc = SourceLocation("<command-line>", 0, 0);
 
                 g_macro_table.define(macro);
