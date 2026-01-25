@@ -26,6 +26,14 @@ public:
     InputFile(const std::string& filename, std::istream* stream, bool owns_stream);
     virtual ~InputFile();
 
+    // Delete copy operations (cannot safely copy owned stream)
+    InputFile(const InputFile&) = delete;
+    InputFile& operator=(const InputFile&) = delete;
+
+    // Move operations (transfer ownership)
+    InputFile(InputFile&& other) noexcept;
+    InputFile& operator=(InputFile&& other) noexcept;
+
     bool getline(std::string& line);
     bool is_eof() const;
     const std::string& filename() const;
@@ -43,6 +51,8 @@ public:
     FileStack() = default;
     virtual ~FileStack();
 
+    void add_include_path(const std::string& path);
+
     bool push_file(const std::string& filename);
     bool push_file(const std::string& filename, const SourceLocation& loc);
     void push_stream(std::istream& s, const std::string& virtual_name);
@@ -55,6 +65,9 @@ public:
 
 private:
     std::vector<InputFile> stack_;
+    std::vector<std::string> file_include_path_;
+
+    std::string resolve_include_path(const std::string& filename);
 };
 
 extern FileStack g_file_stack;

@@ -104,15 +104,45 @@ void Parser::parse_directive() {
     Token directive = current_;
     advance(); // consume directive keyword
 
-    // Parse directive arguments until EndOfLine
-    while (current_.type != TokenType::EndOfLine &&
-            current_.type != TokenType::EndOfInput) {
-        // ... parse directive content ...
-        advance();  // consume each token
+    if (directive.text == "#include") {
+        parse_include();
+    }
+    else {
+        g_error_reporter.report_error(
+            directive.loc,
+            "unknown directive: '" + directive.text + "'"
+        );
+        skip_to_end_of_line();
     }
 
-    if (current_.type == TokenType::EndOfLine) {
-        advance(); // consume EndOfLine
+    if (current_.type != TokenType::EndOfLine &&
+            current_.type != TokenType::EndOfInput) {
+        g_error_reporter.report_error(
+            current_.loc,
+            "unexpected token after " + directive.text +
+            ": '" + current_.text + "'"
+        );
+    }
+
+    skip_to_end_of_line();
+}
+
+void Parser::parse_include() {
+    if (current_.type != TokenType::String) {
+        g_error_reporter.report_error(
+            current_.loc,
+            "expected string literal after #include"
+        );
+        skip_to_end_of_line();
+        return;
+    }
+
+    std::string filename = current_.text;
+    advance();
+
+    if (!g_file_stack.push_file(filename, current_.loc)) {
+        // error already reported
+        return;
     }
 }
 
@@ -303,12 +333,14 @@ bool Parser::parse_bf_int_arg(int& output) {
     return false;
 }
 
-#if 0
-
-Parser::Parser(Lexer& lexer)
-    : lexer_(lexer), macro_expander_(g_macro_table) {
-    advance(); // load first token
+void Parser::skip_to_end_of_line() {
+    while (current_.type != TokenType::EndOfLine &&
+            current_.type != TokenType::EndOfInput) {
+        advance(); // skip to end of line
+    }
 }
+
+#if 0
 
 std::string Parser::run() {
     while (current_.type != TokenType::EndOfFile &&
@@ -573,23 +605,7 @@ void Parser::parse_directive() {
     advance(); // consume unknown directive to avoid infinite loop
 }
 
-void Parser::parse_include() {
-    if (current_.type != TokenType::String) {
-        g_error_reporter.report_error(
-            current_.loc,
-            "expected string literal after #include"
-        );
-        return;
-    }
 
-    std::string filename = current_.text;
-    advance();
-
-    if (!g_file_stack.push_file(filename, current_.loc)) {
-        // error already reported
-        return;
-    }
-}
 
 void Parser::parse_define() {
     // At entry: current_ is the identifier after '#define'

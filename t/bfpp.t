@@ -5,33 +5,33 @@ BEGIN { use lib 't'; require 'testlib.pl'; }
 use Modern::Perl;
 
 # question mark shows usage
-capture_nok("bfpp -?", <<'END');
-error: Usage: bfpp [-o output_file] [-D name=value] [input_file]
+capture_nok("bfpp -?", <<END);
+usage: bfpp [-o output_file] [-I include_path] [-D name=value] [input_file]
 END
 
 # use as a filter
 spew("$test.in", ">>++");
-capture_ok("bfpp < $test.in", <<'END');
+capture_ok("bfpp < $test.in", <<END);
 >>++
 END
 
 # use with an input file
 spew("$test.in", ">>++");
-capture_ok("bfpp $test.in", <<'END');
+capture_ok("bfpp $test.in", <<END);
 >>++
 END
 
 # use with an output file
 spew("$test.in", ">>++");
 capture_ok("bfpp -o $test.out $test.in", "");
-check_text_file("$test.out", <<'END');
+check_text_file("$test.out", <<END);
 >>++
 END
 
 # test all BF commands
 spew("$test.in", "+++[->+<],+.");
 capture_ok("bfpp -o $test.out $test.in", "");
-check_text_file("$test.out", <<'END');
+check_text_file("$test.out", <<END);
 +++
 [
   ->+<
@@ -41,18 +41,18 @@ END
 
 # test single line comments
 spew("$test.in", "+++//this is a comment with bf chars +-<>[].,");
-capture_ok("bfpp $test.in", <<'END');
+capture_ok("bfpp $test.in", <<END);
 +++
 END
 
 # test multi-line comments
-spew("$test.in", <<'END');
+spew("$test.in", <<END);
 +++/*
 this is a comment with bf chars +-<>[].,
 and with ***
 */---
 END
-capture_ok("bfpp $test.in", <<'END');
+capture_ok("bfpp $test.in", <<END);
 +++
 
 
@@ -61,27 +61,27 @@ END
 
 # test error on negative tape index
 spew("$test.in", "<");
-capture_nok("bfpp $test.in", <<'END');
-test_t_bfpp.in:1:1: error: tape pointer moved to negative position
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:1: error: tape pointer moved to negative position
 END
 
 # test error with unbalanced []
 spew("$test.in", "[[[");
-capture_nok("bfpp $test.in", <<'END');
-test_t_bfpp.in:1:1: error: unmatched '[' instruction
-test_t_bfpp.in:1:2: error: unmatched '[' instruction
-test_t_bfpp.in:1:3: error: unmatched '[' instruction
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:1: error: unmatched '[' instruction
+$test.in:1:2: error: unmatched '[' instruction
+$test.in:1:3: error: unmatched '[' instruction
 END
 
 spew("$test.in", "]]]");
-capture_nok("bfpp $test.in", <<'END');
-test_t_bfpp.in:1:1: error: unmatched ']' instruction
-test_t_bfpp.in:1:2: error: unmatched ']' instruction
-test_t_bfpp.in:1:3: error: unmatched ']' instruction
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:1: error: unmatched ']' instruction
+$test.in:1:2: error: unmatched ']' instruction
+$test.in:1:3: error: unmatched ']' instruction
 END
 
 # test count after -/+
-spew("$test.in", <<'END');
+spew("$test.in", <<END);
 +0
 +
 +4
@@ -91,7 +91,7 @@ spew("$test.in", <<'END');
 -4
 -(-4)
 END
-capture_ok("bfpp $test.in", <<'END');
+capture_ok("bfpp $test.in", <<END);
 
 +
 ++++
@@ -103,26 +103,26 @@ capture_ok("bfpp $test.in", <<'END');
 END
 
 # test abolute position after >/<
-spew("$test.in", <<'END');
+spew("$test.in", <<END);
 >0
 >4
 >4
 >0
 END
-capture_ok("bfpp $test.in", <<'END');
+capture_ok("bfpp $test.in", <<END);
 
 >>>>
 
 <<<<
 END
 
-spew("$test.in", <<'END');
+spew("$test.in", <<END);
 <8
 <8
 <4
 <8
 END
-capture_ok("bfpp $test.in", <<'END');
+capture_ok("bfpp $test.in", <<END);
 >>>>>>>>
 
 <<<<
@@ -131,22 +131,22 @@ END
 
 # test undefined symbols after <>+-
 spew("$test.in", "+X-X>X<X");
-capture_nok("bfpp $test.in", <<'END');
-test_t_bfpp.in:1:2: error: macro 'X' is not defined
-test_t_bfpp.in:1:4: error: macro 'X' is not defined
-test_t_bfpp.in:1:6: error: macro 'X' is not defined
-test_t_bfpp.in:1:8: error: macro 'X' is not defined
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:2: error: macro 'X' is not defined
+$test.in:1:4: error: macro 'X' is not defined
+$test.in:1:6: error: macro 'X' is not defined
+$test.in:1:8: error: macro 'X' is not defined
 END
 
 # test symbols after <>-+
-spew("$test.in", <<'END');
+spew("$test.in", <<END);
 +X
 -X
 >X
 >0
 <X
 END
-capture_ok("bfpp -DX=4 $test.in", <<'END');
+capture_ok("bfpp -DX=4 $test.in", <<END);
 ++++
 ----
 >>>>
@@ -154,23 +154,23 @@ capture_ok("bfpp -DX=4 $test.in", <<'END');
 >>>>
 END
 
-spew("$test.in", <<'END');
+spew("$test.in", <<END);
 +X
 -X
 >X
 <X
 END
-capture_ok("bfpp -DX=0 $test.in", <<'END');
+capture_ok("bfpp -DX=0 $test.in", <<END);
 END
 
 # expressions after <>+-
-spew("$test.in", <<'END');
+spew("$test.in", <<END);
 +(X-8)
 -(X-8)
 <(Y*(Y))
 >0
 END
-capture_ok("bfpp -D X=4 -D Y=2 $test.in", <<'END');
+capture_ok("bfpp -D X=4 -D Y=2 $test.in", <<END);
 ----
 ++++
 >>>>
@@ -179,28 +179,28 @@ END
 
 # invalid characters in expression
 spew("$test.in", "+(*2)");
-capture_nok("bfpp $test.in", <<'END');
-test_t_bfpp.in:1:3: error: unexpected token in expression
-test_t_bfpp.in:1:4: error: expected ')'
-test_t_bfpp.in:1:4: error: unexpected token in statement: '2'
-test_t_bfpp.in:1:5: error: unexpected token in statement: ')'
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:3: error: unexpected token in expression
+$test.in:1:4: error: expected ')'
+$test.in:1:4: error: unexpected token in statement: '2'
+$test.in:1:5: error: unexpected token in statement: ')'
 END
 
 # invalid characters in code
 spew("$test.in", "Hello");
-capture_nok("bfpp $test.in", <<'END');
-test_t_bfpp.in:1:1: error: unexpected token in statement: 'Hello'
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:1: error: unexpected token in statement: 'Hello'
 END
 
 # add quoted-characters in BF instructions
-spew("$test.in", <<'END');
+spew("$test.in", <<END);
 +'H'.[-]
 +'e'.[-]
 +'l'.[-]
 +'l'.[-]
 +'o'.[-]
 END
-capture_ok("bfpp $test.in", <<'END');
+capture_ok("bfpp $test.in", <<END);
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++.
 [
   -
@@ -228,13 +228,13 @@ capture_ok("bfpp $test.in", <<'END');
 END
 
 # labeled loops
-spew("$test.in", <<'END');
+spew("$test.in", <<END);
 >4
 +4
 >0
 [4 - ]
 END
-capture_ok("bfpp $test.in", <<'END');
+capture_ok("bfpp $test.in", <<END);
 >>>>
 ++++
 <<<<
@@ -246,10 +246,61 @@ END
 
 # detect mismatch in tape position between start and end loop
 spew("$test.in", "[>]");
-capture_nok("bfpp $test.in", <<'END');
-test_t_bfpp.in:1:3: error: tape pointer mismatch at ']' instruction (expected 0, got 1)
-test_t_bfpp.in:1:1: note: corresponding '[' instruction here
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:3: error: tape pointer mismatch at ']' instruction (expected 0, got 1)
+$test.in:1:1: note: corresponding '[' instruction here
 END
+
+# test #include errors
+spew("$test.in", "#include");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:9: error: expected string literal after #include
+END
+
+spew("$test.in", "#include 123");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:10: error: expected string literal after #include
+END
+
+spew("$test.inc", "");
+spew("$test.in", "#include \"$test.inc\" 123");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:28: error: unexpected token after #include: '123'
+END
+
+unlink("$test.inc");
+spew("$test.in", "#include \"$test.inc\"");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:27: error: cannot open file '$test.inc'
+END
+
+# test #include files
+spew("$test.inc", "+++");
+spew("$test.in", <<END);
+#include "$test.inc"
+>
+#include "$test.inc"
+>
+END
+capture_ok("bfpp $test.in", <<END);
++++
+>+++
+
+>
+END
+
+# include from -I path
+path("$test.dir")->mkpath;
+spew("$test.dir/$test.inc", "+++");
+spew("$test.in", <<END);
+#include "$test.inc"
+>
+END
+capture_ok("bfpp -I $test.dir $test.in", <<END);
++++
+>
+END
+path("$test.dir")->remove_tree;
 
 unlink_testfiles;
 done_testing;

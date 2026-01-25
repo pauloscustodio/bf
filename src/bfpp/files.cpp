@@ -20,6 +20,36 @@ InputFile::~InputFile() {
     }
 }
 
+InputFile::InputFile(InputFile&& other) noexcept
+    : filename_(std::move(other.filename_)),
+      stream_(other.stream_),
+      owns_stream_(other.owns_stream_),
+      line_num_(other.line_num_) {
+    // Transfer ownership - prevent other from deleting the stream
+    other.stream_ = nullptr;
+    other.owns_stream_ = false;
+}
+
+InputFile& InputFile::operator=(InputFile&& other) noexcept {
+    if (this != &other) {
+        // Delete current owned stream
+        if (owns_stream_) {
+            delete stream_;
+        }
+
+        // Transfer ownership from other
+        filename_ = std::move(other.filename_);
+        stream_ = other.stream_;
+        owns_stream_ = other.owns_stream_;
+        line_num_ = other.line_num_;
+
+        // Prevent other from deleting the stream
+        other.stream_ = nullptr;
+        other.owns_stream_ = false;
+    }
+    return *this;
+}
+
 bool InputFile::getline(std::string& line) {
     line.clear();
     bool got_any = false;
@@ -27,6 +57,9 @@ bool InputFile::getline(std::string& line) {
     while (true) {
         int ch = stream_->get();
         if (ch == EOF) {
+            if (got_any) {
+                ++line_num_;  // Count line even if no trailing newline
+            }
             return got_any;
         }
 
@@ -67,23 +100,28 @@ FileStack::~FileStack() {
     }
 }
 
+void FileStack::add_include_path(const std::string& path) {
+    file_include_path_.push_back(path);
+}
+
 bool FileStack::push_file(const std::string& filename) {
     return push_file(filename, SourceLocation(filename, 0, 0));
 }
 
 bool FileStack::push_file(const std::string& filename, const SourceLocation& loc) {
-    std::ifstream* f = new std::ifstream(filename);
+    std::string resolved = resolve_include_path(filename);
+    std::ifstream* f = new std::ifstream(resolved);
     if (!*f) {
         delete f;
         f = nullptr;
         g_error_reporter.report_error(
             loc,
-            "cannot open file"
+            "cannot open file '" + resolved + "'"
         );
         return false;
     }
     else {
-        stack_.emplace_back(filename, f, /*owns_stream=*/true);
+        stack_.emplace_back(resolved, f, /*owns_stream=*/true);
         return true;
     }
 }
@@ -124,6 +162,40 @@ int FileStack::line_num() const {
     else {
         return stack_.back().line_num();
     }
+}
+
+std::string FileStack::resolve_include_path(const std::string& filename) {
+    auto exists = [](const std::string & path) -> bool {
+        std::ifstream f(path);
+        return f.good();
+    };
+
+    // 1) As provided (current directory or absolute path)
+    if (exists(filename)) {
+        return filename;
+    }
+
+    // 2) Search include paths
+    for (const auto& dir : file_include_path_) {
+        if (dir.empty()) {
+            continue;
+        }
+        std::string candidate;
+        char last = dir.back();
+        if (last == '/' || last == '\\') {
+            candidate = dir + filename;
+        }
+        else {
+            candidate = dir + "/" + filename;
+        }
+
+        if (exists(candidate)) {
+            return candidate;
+        }
+    }
+
+    // 3) Not found: return original
+    return filename;
 }
 
 bool FileStack::getline(std::string& line) {

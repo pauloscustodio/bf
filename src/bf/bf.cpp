@@ -25,7 +25,8 @@ void error(const std::string& msg) {
 }
 
 void usage_error() {
-    error("Usage: bf [-t] [-D] [input_file]");
+    std::cerr << "usage: bf [-t] [-D] [input_file]" << std::endl;
+    exit(EXIT_FAILURE);
 }
 
 void read_code(std::istream& in) {

@@ -87,3 +87,6 @@ private:
     void scan_append(const Line& line);
     bool getline(Line& line);
 };
+
+bool is_identifier(const std::string& ident);
+bool is_integer(const std::string& str);

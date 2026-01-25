@@ -2,7 +2,7 @@
 
 Brainfuck interpreter
 
-Usage: bf [-t] [-D] [input_file]
+usage: bf [-t] [-D] [input_file]
 
 - -t : Trace execution to stdout
 
@@ -14,9 +14,11 @@ Usage: bf [-t] [-D] [input_file]
 
 Brainfuck preprocessor - expands macros and outputs plain BF code.
 
-Usage: bfpp [-o output_file] [-D name=value] [input_file]
+usage: bfpp [-o output_file] [-I include_path] [-D name=value] [input_file]
 
 - -o output_file : outputs BF code to given file instead of stdout
+
+- -I include_path : add directory to search path for source and include files
 
 - -D name=value : defines numeric macro to be used in the code
 
@@ -35,3 +37,7 @@ Extended BF code translated to plain BF code:
 - +'c' : increment the cell by the ASCII code of the quoted character
 
 - [(number|name|(expr) : start the loop at the given absolute tape position, the end loop ] will check if the tape position changed from the start position
+
+Directives:
+
+- #include "file" : searches for file in the include path and inserts it in the input stream

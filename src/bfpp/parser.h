@@ -46,6 +46,7 @@ private:
 
     bool parse();
     void parse_directive();
+    void parse_include();
     void parse_statements();
     void parse_statement();
     void parse_bfinstr();
@@ -57,6 +58,7 @@ private:
     void parse_bf_output(const Token& tok);
     void output_count_bf_instr(const Token& tok, int count);
     bool parse_bf_int_arg(int& output);
+    void skip_to_end_of_line();
 };
 
 

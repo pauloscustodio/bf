@@ -5,8 +5,11 @@
 //-----------------------------------------------------------------------------
 
 #include "errors.h"
-#include "preprocessor.h"
+#include "files.h"
+#include "lexer.h"
 #include "macros.h"
+#include "preprocessor.h"
+#include "utils.h"
 #include <fstream>
 #include <iostream>
 
@@ -18,12 +21,34 @@ int main(int argc, char* argv[]) {
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
 
+        // handle -o output_file
         if (arg == "-o") {
             if (i + 1 >= argc) {
                 std::cerr << "bfpp: missing filename after -o" << std::endl;
                 return EXIT_FAILURE;
             }
             output_filename = argv[++i];
+            continue;
+        }
+
+        // Handle -I path or -Ipath
+        if (arg == "-I" || (arg.length() > 2 && arg.substr(0, 2) == "-I")) {
+            std::string path;
+            if (arg == "-I") {
+                if (i + 1 >= argc) {
+                    std::cerr << "bfpp: missing path after -I" << std::endl;
+                    return EXIT_FAILURE;
+                }
+                path = argv[++i];
+            }
+            else {
+                path = arg.substr(2); // -Ipath
+            }
+            if (path.empty()) {
+                std::cerr << "bfpp: empty include path" << std::endl;
+                return EXIT_FAILURE;
+            }
+            g_file_stack.add_include_path(path);
             continue;
         }
 
@@ -47,42 +72,34 @@ int main(int argc, char* argv[]) {
             std::string value_str = (eq_pos != std::string::npos) ? def.substr(eq_pos + 1) : "1";
 
             // Validate name is a valid identifier
-            if (name.empty() || (!std::isalpha(name[0]) && name[0] != '_')) {
+            if (!is_identifier(name)) {
                 std::cerr << "bfpp: invalid macro name: " << name << std::endl;
                 return EXIT_FAILURE;
             }
 
-            // Validate remaining characters of name
-            for (char c : name) {
-                if (!std::isalnum(c) && c != '_') {
-                    std::cerr << "bfpp: invalid macro name: " << name << std::endl;
-                    return EXIT_FAILURE;
-                }
-            }
-
-            // Parse integer value
-            try {
-                int value = std::stoi(value_str);
-
-                // Create macro with single integer token
-                Macro macro;
-                macro.name = name;
-                macro.params = {};  // object-like macro
-                macro.body.push_back(Token::make_int(value,
-                                                     SourceLocation("<command-line>", 0, 0)));
-                macro.loc = SourceLocation("<command-line>", 0, 0);
-
-                g_macro_table.define(macro);
-            }
-            catch (const std::exception&) {
+            // validate value is an integer
+            if (!is_integer(value_str)) {
                 std::cerr << "bfpp: invalid integer value: " << value_str << std::endl;
                 return EXIT_FAILURE;
             }
+
+            // Parse integer value
+            int value = std::stoi(value_str);
+
+            // Create macro with single integer token
+            Macro macro;
+            macro.name = name;
+            macro.params = {};  // object-like macro
+            macro.body.push_back(Token::make_int(value,
+                                                 SourceLocation("<command-line>", 0, 0)));
+            macro.loc = SourceLocation("<command-line>", 0, 0);
+
+            g_macro_table.define(macro);
             continue;
         }
 
         if (arg[0] == '-') {
-            std::cerr << "error: Usage: bfpp [-o output_file] [-D name=value] [input_file]" << std::endl;
+            std::cerr << "usage: bfpp [-o output_file] [-I include_path] [-D name=value] [input_file]" << std::endl;
             return EXIT_FAILURE;
         }
 

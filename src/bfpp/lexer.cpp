@@ -12,10 +12,10 @@
 bool CommentStripper::getline(Line& out) {
     std::string raw;
     while (true) {
-        int line_num = g_file_stack.line_num();
         if (!g_file_stack.getline(raw)) {
             return false; // EOF
         }
+        int line_num = g_file_stack.line_num() - 1;  // Line just read
 
         std::string clean;
         clean.reserve(raw.size());
@@ -76,6 +76,7 @@ void Lexer::scan_append(const Line& line) {
 
     in_directive_ = false;
     expr_depth_ = 0;
+    size_t start_token_count = tokens_.size();
 
     const char* p = line.text.c_str();
     while (*p) {
@@ -92,7 +93,8 @@ void Lexer::scan_append(const Line& line) {
         int column = static_cast<int>(start - line.text.c_str() + 1);
         SourceLocation loc(filename, line_num, column);
 
-        if (tokens_.size() == 0 && *p == '#' && is_alpha(*(p + 1))) {
+        if (tokens_.size() == start_token_count &&
+                *p == '#' && is_alpha(*(p + 1))) {
             // directive
             in_directive_ = true;
             p++;
@@ -144,6 +146,7 @@ void Lexer::scan_append(const Line& line) {
             }
             ++p; // skip closing "
             tokens_.emplace_back(TokenType::String, str, loc);
+            continue;
         }
 
         if (p[0] == '\'' && p[2] == '\'') {
@@ -272,4 +275,31 @@ bool Lexer::at_end() const {
     else {
         return false;
     }
+}
+
+bool is_identifier(const std::string& ident) {
+    if (ident.empty()) {
+        return false;
+    }
+    if (!is_alpha(ident[0]) && ident[0] != '_') {
+        return false;
+    }
+    for (char c : ident) {
+        if (!is_alnum(c) && c != '_') {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool is_integer(const std::string& str) {
+    if (str.empty()) {
+        return false;
+    }
+    for (char c : str) {
+        if (!is_digit(c)) {
+            return false;
+        }
+    }
+    return true;
 }
