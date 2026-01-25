@@ -18,6 +18,7 @@ public:
     void put(const Token& tok);
     std::string to_string() const;
     void check_loops() const;
+    int tape_ptr() const;
 
 private:
     int tape_ptr_ = 0;

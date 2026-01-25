@@ -25,37 +25,8 @@ bool Parser::run(std::string& output_) {
     }
 }
 
-bool Parser::parse() {
-    while (true) {
-        if (current_.type == TokenType::EndOfInput) {
-            break;
-        }
-
-        if (current_.type == TokenType::EndOfLine) {
-            advance();
-            continue;
-        }
-
-        if (current_.type == TokenType::Error) {
-            return false;
-        }
-
-        if (current_.type == TokenType::Directive) {
-            parse_directive();
-        }
-        else {
-            parse_statements();
-        }
-    }
-
-    // After finishing, check for unmatched loops
-    output_.check_loops();
-
-    return !g_error_reporter.has_errors();
-}
-
-std::string Parser::to_string() const {
-    return output_.to_string();
+const Token& Parser::current() const {
+    return current_;
 }
 
 Token Parser::peek(size_t offset) {
@@ -94,6 +65,39 @@ void Parser::advance() {
 
     // No expansion frames, get from lexer
     current_ = lexer_.get();
+}
+
+std::string Parser::to_string() const {
+    return output_.to_string();
+}
+
+bool Parser::parse() {
+    while (true) {
+        if (current_.type == TokenType::EndOfInput) {
+            break;
+        }
+
+        if (current_.type == TokenType::EndOfLine) {
+            advance();
+            continue;
+        }
+
+        if (current_.type == TokenType::Error) {
+            return false;
+        }
+
+        if (current_.type == TokenType::Directive) {
+            parse_directive();
+        }
+        else {
+            parse_statements();
+        }
+    }
+
+    // After finishing, check for unmatched loops
+    output_.check_loops();
+
+    return !g_error_reporter.has_errors();
 }
 
 void Parser::parse_directive() {
@@ -143,42 +147,138 @@ void Parser::parse_bfinstr() {
     char op = op_tok.text[0];
     advance(); // consume BFInstr
 
-    // instruction without arguments
-    if (op == '[' || op == ']' || op == ',' || op == '.') {
-        output_.put(Token::make_bf(op, op_tok.loc));
-        return;
-    }
-
-    // instruction with optional repeat count
-    int count = parse_repeat_count();
-    if (count < 0) {
-        // invert operation
-        count = -count;
-        if (op == '<') {
-            op = '>';
-        }
-        else if (op == '>') {
-            op = '<';
-        }
-        else if (op == '+') {
-            op = '-';
-        }
-        else if (op == '-') {
-            op = '+';
-        }
-    }
-
-    // output possibly zero tokens
-    for (int i = 0; i < count; i++) {
-        output_.put(Token::make_bf(op, op_tok.loc));
+    switch (op) {
+    case '+':
+    case '-':
+        parse_bf_plus_minus(op_tok);
+        break;
+    case '<':
+    case '>':
+        parse_bf_left_right(op_tok);
+        break;
+    case '[':
+        parse_bf_loop_start(op_tok);
+        break;
+    case ']':
+        parse_bf_loop_end(op_tok);
+        break;
+    case ',':
+        parse_bf_input(op_tok);
+        break;
+    case '.':
+        parse_bf_output(op_tok);
+        break;
+    default:
+        g_error_reporter.report_error(
+            op_tok.loc,
+            "invalid Brainfuck instruction: '" + op_tok.text + "'"
+        );
     }
 }
 
-int Parser::parse_repeat_count() {
+void Parser::parse_bf_plus_minus(const Token& tok) {
+    int count = 1;
+    int arg = 0;
+    if (parse_bf_int_arg(arg)) {
+        count = arg;
+    }
+    output_count_bf_instr(tok, count);
+}
+
+void Parser::parse_bf_left_right(const Token& tok) {
+    int count = 1;
+    int pos = 0;
+    if (parse_bf_int_arg(pos)) {
+        if (tok.text[0] == '>') {
+            count = pos - output_.tape_ptr();
+        }
+        else {
+            count = output_.tape_ptr() - pos;
+        }
+    }
+    output_count_bf_instr(tok, count);
+}
+
+void Parser::parse_bf_loop_start(const Token& tok) {
+    int pos = output_.tape_ptr();
+    int arg = 0;
+    if (parse_bf_int_arg(arg)) {
+        int delta = arg - pos;
+        output_count_bf_instr(Token::make_bf('>', tok.loc), delta);
+        pos = arg;
+    }
+    loop_stack_.push_back(LoopFrame{ tok.loc, pos });
+    output_count_bf_instr(tok, 1);
+}
+
+void Parser::parse_bf_loop_end(const Token& tok) {
+    if (loop_stack_.empty()) {
+        g_error_reporter.report_error(
+            tok.loc,
+            "unmatched ']' instruction"
+        );
+        return;
+    }
+    if (loop_stack_.back().tape_ptr_at_start != output_.tape_ptr()) {
+        g_error_reporter.report_error(
+            tok.loc,
+            "tape pointer mismatch at ']' instruction (expected " +
+            std::to_string(loop_stack_.back().tape_ptr_at_start) +
+            ", got " + std::to_string(output_.tape_ptr()) + ")"
+        );
+        g_error_reporter.report_note(
+            loop_stack_.back().loc,
+            "corresponding '[' instruction here"
+        );
+    }
+    loop_stack_.pop_back();
+    output_count_bf_instr(tok, 1);
+}
+
+void Parser::parse_bf_input(const Token& tok) {
+    output_count_bf_instr(tok, 1);
+}
+
+void Parser::parse_bf_output(const Token& tok) {
+    output_count_bf_instr(tok, 1);
+}
+
+void Parser::output_count_bf_instr(const Token& tok, int count) {
+    char op = tok.text[0];
+    if (count < 0) {
+        // invert direction
+        switch (op) {
+        case '<':
+            op = '>';
+            break;
+        case '>':
+            op = '<';
+            break;
+        case '+':
+            op = '-';
+            break;
+        case '-':
+            op = '+';
+            break;
+        default:
+            g_error_reporter.report_error(
+                tok.loc,
+                "cannot invert Brainfuck instruction: '" + tok.text + "'"
+            );
+            return;
+        }
+        count = -count;
+    }
+    for (int i = 0; i < count; ++i) {
+        output_.put(Token::make_bf(op, tok.loc));
+    }
+}
+
+bool Parser::parse_bf_int_arg(int& output) {
     if (current_.type == TokenType::Integer) {
-        int count = current_.int_value;
+        output = current_.int_value;
         advance();      // consume integer
-        return count;   // default repeat count
+        return true;
     }
 
     if (current_.type == TokenType::Identifier) {
@@ -186,21 +286,21 @@ int Parser::parse_repeat_count() {
         std::vector<Token> expr_tokens{ current_ };
         ArrayTokenSource source(expr_tokens);
         ExpressionParser expr(source);
-        int value = expr.parse_expression();
+        output = expr.parse_expression();
         advance(); // consume identifier
-        return value;
+        return true;
     }
 
     if (current_.type == TokenType::LParen) {
         // Parse expression until matching RParen
         ParserTokenSource source(*this);
         ExpressionParser expr(source);
-        int value = expr.parse_expression();
-        return value;
+        output = expr.parse_expression();
+        return true;
     }
 
-    // no arguments, return defualt 1
-    return 1;
+    // no arguments
+    return false;
 }
 
 #if 0

@@ -80,18 +80,53 @@ test_t_bfpp.in:1:2: error: unmatched ']' instruction
 test_t_bfpp.in:1:3: error: unmatched ']' instruction
 END
 
-# test numbers after <>-+
+# test count after -/+
 spew("$test.in", <<'END');
-+4+0
--4-0
->4>0
-<4<0
++0
++
++4
++(-4)
+-0
+-
+-4
+-(-4)
 END
 capture_ok("bfpp $test.in", <<'END');
+
++
 ++++
 ----
+
+-
+----
+++++
+END
+
+# test abolute position after >/<
+spew("$test.in", <<'END');
+>0
+>4
+>4
+>0
+END
+capture_ok("bfpp $test.in", <<'END');
+
 >>>>
+
 <<<<
+END
+
+spew("$test.in", <<'END');
+<8
+<8
+<4
+<8
+END
+capture_ok("bfpp $test.in", <<'END');
+>>>>>>>>
+
+<<<<
+>>>>
 END
 
 # test undefined symbols after <>+-
@@ -108,6 +143,7 @@ spew("$test.in", <<'END');
 +X
 -X
 >X
+>0
 <X
 END
 capture_ok("bfpp -DX=4 $test.in", <<'END');
@@ -115,6 +151,7 @@ capture_ok("bfpp -DX=4 $test.in", <<'END');
 ----
 >>>>
 <<<<
+>>>>
 END
 
 spew("$test.in", <<'END');
@@ -130,8 +167,8 @@ END
 spew("$test.in", <<'END');
 +(X-8)
 -(X-8)
-<(Y*(-Y))
->(-Y*Y)
+<(Y*(Y))
+>0
 END
 capture_ok("bfpp -D X=4 -D Y=2 $test.in", <<'END');
 ----
@@ -188,6 +225,30 @@ capture_ok("bfpp $test.in", <<'END');
 [
   -
 ]
+END
+
+# labeled loops
+spew("$test.in", <<'END');
+>4
++4
+>0
+[4 - ]
+END
+capture_ok("bfpp $test.in", <<'END');
+>>>>
+++++
+<<<<
+>>>>
+[
+  -
+]
+END
+
+# detect mismatch in tape position between start and end loop
+spew("$test.in", "[>]");
+capture_nok("bfpp $test.in", <<'END');
+test_t_bfpp.in:1:3: error: tape pointer mismatch at ']' instruction (expected 0, got 1)
+test_t_bfpp.in:1:1: note: corresponding '[' instruction here
 END
 
 unlink_testfiles;

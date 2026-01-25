@@ -6,7 +6,7 @@ use Modern::Perl;
 
 # question mark shows usage
 capture_nok("bf -?", <<'END');
-Error: Usage: bf [-t] [-D] [file]
+Error: Usage: bf [-t] [-D] [input_file]
 END
 
 # move past the beginning of the tape issues an error

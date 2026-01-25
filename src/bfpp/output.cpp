@@ -105,3 +105,7 @@ void BFOutput::check_loops() const {
         );
     }
 }
+
+int BFOutput::tape_ptr() const {
+    return tape_ptr_;
+}

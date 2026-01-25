@@ -18,34 +18,45 @@ struct MacroExpansionFrame {
     std::size_t index = 0;
 };
 
+struct LoopFrame {
+    SourceLocation loc;
+    int tape_ptr_at_start = 0;
+};
+
 class Parser {
 public:
     Parser(Lexer& lexer);
 
     bool run(std::string& output);
-    const Token& current() const {
-        return current_;
-    }
+    const Token& current() const;
     Token peek(size_t offset = 0);
     void advance();
 
 private:
     Lexer lexer_;
     std::vector<MacroExpansionFrame> expansion_stack_;
+    std::vector<LoopFrame> loop_stack_;
     MacroExpander macro_expander_;
     Token current_;
     BFOutput output_;
 
     friend class MacroExpander;
 
-    bool parse();
     std::string to_string() const;
 
+    bool parse();
     void parse_directive();
     void parse_statements();
     void parse_statement();
     void parse_bfinstr();
-    int parse_repeat_count();
+    void parse_bf_plus_minus(const Token& tok);
+    void parse_bf_left_right(const Token& tok);
+    void parse_bf_loop_start(const Token& tok);
+    void parse_bf_loop_end(const Token& tok);
+    void parse_bf_input(const Token& tok);
+    void parse_bf_output(const Token& tok);
+    void output_count_bf_instr(const Token& tok, int count);
+    bool parse_bf_int_arg(int& output);
 };
 
 
