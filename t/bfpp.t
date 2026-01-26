@@ -256,6 +256,27 @@ capture_ok("bfpp $test.in", <<END);
 ]
 END
 
+# test braces
+spew("$test.in", "}");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:1: error: unmatched '}' brace
+END
+
+spew("$test.in", "{");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:1: error: unmatched '{' brace
+END
+
+spew("$test.in", "{ >>>> }");
+capture_ok("bfpp $test.in", <<END);
+>>>><<<<
+END
+
+spew("$test.in", ">>>> { <<<< }");
+capture_ok("bfpp $test.in", <<END);
+>>>><<<<>>>>
+END
+
 # detect mismatch in tape position between start and end loop
 spew("$test.in", "[>]");
 capture_nok("bfpp $test.in", <<END);
@@ -388,7 +409,7 @@ END
 # #define - multi-line function macro
 spew("$test.in", <<END);
 #define COPY(A,B,T)
->B [-] >T [-] [A - >B + >T + >A ] [T - >A + >T ] >A
+{ >B [-] >T [-] [A - >B + >T + >A ] [T - >A + >T ] }
 #end 
 ++++
 COPY(0,1,2)

@@ -26,17 +26,21 @@ usage: bfpp [-o output_file] [-I include_path] [-D name=value] [input_file]
 
 Extended BF code translated to plain BF code:
 
-- [<>]number : move the tape to the given abolute tape location, starting at zero
+- [<>] number : move the tape to the given abolute tape location, starting at zero
 
-- [-+]number : decrement/increment the current cell by the given number of times
+- [-+] number : decrement/increment the current cell by the given number of times
 
-- [<>-+]name : expands the named macro and evaluates the resulting integer expression; the macro may refer to other macros that are expanded recursively
+- [<>-+] name : expands the named macro and evaluates the resulting integer expression; the macro may refer to other macros that are expanded recursively
 
-- [<>-+](expr) : evaluate the given integer expression with all the valid C operators; the expression may refer to macros that are expanded recursively
+- [<>-+] '(' expr ')' : evaluate the given integer expression with all the valid C operators; the expression may refer to macros that are expanded recursively
 
 - +'c' : increment the cell by the ASCII code of the quoted character
 
 - [(number|name|(expr) : start the loop at the given absolute tape position, the end loop ] will check if the tape position changed from the start position
+
+- { : remember the current tape postion
+
+- } : emit > or < instructions to return to the tape position remebered by {
 
 Directives:
 

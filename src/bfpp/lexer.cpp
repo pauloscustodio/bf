@@ -178,6 +178,33 @@ void Lexer::scan_append(const Line& line) {
             continue;
         }
 
+        if (*p == '{') {
+            // LBrace
+            std::string op(1, *p);
+            p++;
+            tokens_.emplace_back(TokenType::LBrace, op, loc);
+            continue;
+        }
+
+        if (*p == '}') {
+            // RBrace
+            std::string op(1, *p);
+            p++;
+            tokens_.emplace_back(TokenType::RBrace, op, loc);
+            continue;
+        }
+
+        if (*p == ')') {
+            // RParen
+            if (expr_depth_ > 0) {
+                expr_depth_--;
+            }
+            std::string op(1, *p);
+            p++;
+            tokens_.emplace_back(TokenType::RParen, op, loc);
+            continue;
+        }
+
         if (*p == ',') {
             // Comma - valid both in expressions and BFInstr
             std::string op(1, *p);

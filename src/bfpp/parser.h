@@ -23,6 +23,11 @@ struct LoopFrame {
     int tape_ptr_at_start = 0;
 };
 
+struct BraceFrame {
+    SourceLocation loc;
+    int tape_ptr_at_start = 0;
+};
+
 class Parser {
 public:
     Parser(Lexer& lexer);
@@ -36,6 +41,7 @@ private:
     Lexer lexer_;
     std::vector<MacroExpansionFrame> expansion_stack_;
     std::vector<LoopFrame> loop_stack_;
+    std::vector<BraceFrame> brace_stack_;
     MacroExpander macro_expander_;
     Token current_;
     BFOutput output_;
@@ -60,6 +66,8 @@ private:
     void output_count_bf_instr(const Token& tok, int count);
     bool parse_bf_int_arg(int& output);
     void skip_to_end_of_line();
+    void parse_left_brace();
+    void parse_right_brace();
 };
 
 

@@ -6,6 +6,7 @@
 
 #include "errors.h"
 #include "expr.h"
+#include "lexer.h"
 #include "macros.h"
 #include "parser.h"
 
@@ -94,8 +95,14 @@ bool Parser::parse() {
         }
     }
 
-    // After finishing, check for unmatched loops
+    // After finishing, check for unmatched loops/braces
     output_.check_loops();
+    for (const BraceFrame& frame : brace_stack_) {
+        g_error_reporter.report_error(
+            frame.loc,
+            "unmatched '{' brace"
+        );
+    }
 
     return !g_error_reporter.has_errors();
 }
@@ -340,6 +347,16 @@ void Parser::parse_statement() {
         advance(); // load first token from expansion
     }
 
+    if (current_.type == TokenType::LBrace) {
+        parse_left_brace();
+        return;
+    }
+
+    if (current_.type == TokenType::RBrace) {
+        parse_right_brace();
+        return;
+    }
+
     if (current_.type == TokenType::BFInstr) {
         parse_bfinstr();
         return;
@@ -518,6 +535,31 @@ void Parser::skip_to_end_of_line() {
             current_.type != TokenType::EndOfInput) {
         advance(); // skip to end of line
     }
+}
+
+void Parser::parse_left_brace() {
+    BraceFrame frame;
+    frame.loc = current_.loc;
+    frame.tape_ptr_at_start = output_.tape_ptr();
+    brace_stack_.push_back(std::move(frame));
+    advance(); // consume '{'
+}
+
+void Parser::parse_right_brace() {
+    if (brace_stack_.empty()) {
+        g_error_reporter.report_error(
+            current_.loc,
+            "unmatched '}' brace"
+        );
+        advance(); // consume '}'
+        return;
+    }
+    int move_dist = brace_stack_.back().tape_ptr_at_start - output_.tape_ptr();
+    if (move_dist != 0) {
+        output_count_bf_instr(Token::make_bf('>', current_.loc), move_dist);
+    }
+    brace_stack_.pop_back();
+    advance(); // consume '}'
 }
 
 #if 0

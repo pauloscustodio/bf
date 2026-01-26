@@ -33,6 +33,8 @@ enum class TokenType {
     String,
     LParen,         // (
     RParen,         // )
+    LBrace,         // {
+    RBrace,         // }
     BFInstr,        // + - < > [ ] . ,
     Operator,       // "+", "-", "*", "/", "<<", "&&", etc.
 };
