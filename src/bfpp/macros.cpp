@@ -228,6 +228,28 @@ next_token:
     return result;
 }
 
+bool is_reserved_keyword(const std::string& name) {
+    return name == "if" ||
+           name == "else" ||
+           name == "endif" ||
+           name == "elsif" ||
+           name == "include" ||
+           name == "define" ||
+           name == "end" ||
+           name == "undef";
+}
+
+bool contains_directive_token(const std::vector<Token>& body) {
+    for (const Token& t : body) {
+        if (t.type == TokenType::Directive) {
+            // Any '#' token is forbidden in macro bodies
+            return true;
+        }
+    }
+    return false;
+}
+
+
 #if 0
 
 void MacroExpander::expand_token(const Token& tok,
@@ -606,35 +628,6 @@ std::vector<Token> MacroExpander::resolve_ident_to_expr_tokens(const Token& iden
 
     // Object-like macro: its body is the expression
     return m->body;
-}
-
-bool contains_comment_tokens(const std::vector<Token>& body) {
-    for (const Token& t : body) {
-        if (t.type == TokenType::Operator && t.text == "/") {
-            return true;
-        }
-    }
-    return false;
-}
-
-bool contains_directive_token(const std::vector<Token>& body) {
-    for (const Token& t : body) {
-        if (t.type == TokenType::Directive) {
-            // Any '#' token is forbidden in macro bodies
-            return true;
-        }
-    }
-    return false;
-}
-
-bool is_reserved_keyword(const std::string& name) {
-    return name == "if" ||
-           name == "else" ||
-           name == "endif" ||
-           name == "elsif" ||   // or "elif" depending on your spelling
-           name == "include" ||
-           name == "define" ||
-           name == "undef";
 }
 
 bool token_allowed_in_expression(const Token& t) {

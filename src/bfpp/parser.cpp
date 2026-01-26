@@ -107,6 +107,26 @@ void Parser::parse_directive() {
     if (directive.text == "#include") {
         parse_include();
     }
+    else if (directive.text == "#define") {
+        parse_define();
+    }
+    /*
+    else if (directive.text == "#undef") {
+        parse_undef();
+    }
+    else if (directive.text == "#if") {
+        parse_if();
+    }
+    else if (directive.text == "#elsif") {
+        parse_elsif();
+    }
+    else if (directive.text == "#else") {
+        parse_else();
+    }
+    else if (directive.text == "#endif") {
+        parse_endif();
+    }
+    */
     else {
         g_error_reporter.report_error(
             directive.loc,
@@ -144,6 +164,166 @@ void Parser::parse_include() {
         // error already reported
         return;
     }
+}
+
+void Parser::parse_define() {
+    SourceLocation define_loc = current_.loc;
+
+    // Expect macro name
+    if (current_.type != TokenType::Identifier) {
+        g_error_reporter.report_error(current_.loc, "expected macro name");
+        skip_to_end_of_line();
+        return;
+    }
+
+    std::string name = current_.text;
+    SourceLocation name_loc = current_.loc;
+    advance(); // consume name
+
+    // Reserved keyword check
+    if (is_reserved_keyword(name)) {
+        g_error_reporter.report_error(
+            name_loc,
+            "cannot define macro '" + name + "': reserved directive keyword"
+        );
+        skip_to_end_of_line();
+        return;
+    }
+
+    std::vector<std::string> params;
+    std::vector<Token> body;
+
+    // Function-like macro?
+    if (current_.type == TokenType::LParen) {
+        // Parse parameter list
+        advance(); // consume '('
+
+        if (current_.type != TokenType::RParen) {
+            while (true) {
+                if (current_.type != TokenType::Identifier) {
+                    g_error_reporter.report_error(
+                        current_.loc,
+                        "expected parameter name"
+                    );
+                    skip_to_end_of_line();
+                    return;
+                }
+
+                params.push_back(current_.text);
+                advance(); // consume parameter
+
+                if (current_.type == TokenType::RParen) {
+                    break;
+                }
+
+                if (!current_.is_comma()) {
+                    g_error_reporter.report_error(
+                        current_.loc,
+                        "expected ',' or ')'"
+                    );
+                    skip_to_end_of_line();
+                    return;
+                }
+
+                advance(); // consume comma
+            }
+        }
+
+        advance(); // consume ')'
+
+        // Multi-line body until #end
+        while (true) {
+            advance();
+
+            if (current_.type == TokenType::EndOfInput) {
+                g_error_reporter.report_error(
+                    name_loc,
+                    "unterminated macro '" + name + "': missing #end"
+                );
+                return;
+            }
+
+            if (current_.type == TokenType::Directive &&
+                    current_.text == "#end") {
+                break;
+            }
+
+            body.push_back(current_);
+        }
+        // consume the '#end'
+        advance();
+    }
+    else {
+        // Object-like macro
+        // Two cases:
+        //   a) single-line: #define X 3
+        //   b) multi-line:  #define X ... #end
+
+        bool single_line = (current_.type != TokenType::EndOfLine);
+
+        if (single_line) {
+            // Collect tokens until end of line
+            while (current_.type != TokenType::EndOfInput &&
+                    current_.type != TokenType::EndOfLine) {
+                body.push_back(current_);
+                advance();
+            }
+        }
+        else {
+            // Multi-line object-like macro
+            while (true) {
+                advance();
+
+                if (current_.type == TokenType::EndOfInput) {
+                    g_error_reporter.report_error(
+                        name_loc,
+                        "unterminated macro '" + name + "': missing #end"
+                    );
+                    return;
+                }
+
+                if (current_.type == TokenType::Directive &&
+                        current_.text == "#end") {
+                    break;
+                }
+
+                body.push_back(current_);
+            }
+            // consume the '#end'
+            advance();
+        }
+    }
+
+    // Duplicate parameter validation
+    for (std::size_t i = 0; i + 1 < params.size(); ++i) {
+        for (std::size_t j = i + 1; j < params.size(); ++j) {
+            if (params[i] == params[j]) {
+                g_error_reporter.report_error(
+                    define_loc,
+                    "duplicate parameter name '" + params[i] +
+                    "' in macro '" + name + "'"
+                );
+                return;
+            }
+        }
+    }
+
+    // check if nested directives in body
+    if (contains_directive_token(body)) {
+        g_error_reporter.report_error(
+            name_loc,
+            "macro '" + name + "' contains a directive"
+        );
+        return;
+    }
+
+    // Store macro
+    Macro macro;
+    macro.name = name;
+    macro.loc = name_loc;
+    macro.params = params;
+    macro.body = body;
+    g_macro_table.define(macro);
 }
 
 void Parser::parse_statements() {
@@ -563,11 +743,6 @@ void Parser::parse_directive() {
     advance(); // consume directive keyword
     set_expansion_context(ExpansionContext::Normal);
 
-    if (directive.text == "#include") {
-        parse_include();
-        return;
-    }
-
     if (directive.text == "#define") {
         parse_define();
         return;
@@ -607,180 +782,6 @@ void Parser::parse_directive() {
 
 
 
-void Parser::parse_define() {
-    // At entry: current_ is the identifier after '#define'
-    SourceLocation define_loc = current_.loc;
-
-    // --- 1. Expect macro name ---
-    if (current_.type != TokenType::Identifier) {
-        g_error_reporter.report_error(current_.loc, "expected macro name");
-        skip_to_end_of_line(define_loc.line);
-        return;
-    }
-
-    std::string name = current_.text;
-    SourceLocation name_loc = current_.loc;
-    advance(); // consume name
-
-    // Reserved keyword check (hygiene rule)
-    if (is_reserved_keyword(name)) {
-        g_error_reporter.report_error(
-            name_loc,
-            "cannot define macro '" + name + "': reserved directive keyword"
-        );
-        skip_to_end_of_line(define_loc.line);
-        return;
-    }
-
-    std::vector<std::string> params;
-    std::vector<Token> body;
-
-
-    // --- 2. Function-like macro? ---
-    if (current_.type == TokenType::LParen) {
-        // Parse parameter list
-        advance(); // consume '('
-
-        if (current_.type != TokenType::RParen) {
-            while (true) {
-                if (current_.type != TokenType::Identifier) {
-                    g_error_reporter.report_error(
-                        current_.loc,
-                        "expected parameter name"
-                    );
-                    skip_to_end_of_line(define_loc.line);
-                    return;
-                }
-
-                params.push_back(current_.text);
-                advance(); // consume parameter
-
-                if (current_.type == TokenType::RParen) {
-                    break;
-                }
-
-                if (current_.type != TokenType::Comma) {
-                    g_error_reporter.report_error(
-                        current_.loc,
-                        "expected ',' or ')'"
-                    );
-                    skip_to_end_of_line(define_loc.line);
-                    return;
-                }
-
-                advance(); // consume comma
-            }
-        }
-
-        advance(); // consume ')'
-
-        // --- 3. Multi-line body until #end ---
-        while (true) {
-            advance();
-
-            if (current_.type == TokenType::EndOfFile) {
-                g_error_reporter.report_error(
-                    name_loc,
-                    "unterminated macro '" + name + "': missing #end"
-                );
-                return;
-            }
-
-            if (current_.type == TokenType::Directive &&
-                    current_.text == "#end") {
-                break;
-            }
-
-            body.push_back(current_);
-        }
-        // consume the '#end'
-        advance();
-    }
-    else {
-        // --- 4. Object-like macro ---
-        // Two cases:
-        //   a) single-line: #define X 3
-        //   b) multi-line:  #define X ... #end
-
-        bool single_line = (current_.loc.line == name_loc.line);
-
-        if (single_line) {
-            // Collect tokens until end of line
-            while (current_.type != TokenType::EndOfFile &&
-                    current_.loc.line == name_loc.line) {
-                body.push_back(current_);
-                advance();
-            }
-        }
-        else {
-            // Multi-line object-like macro
-            while (true) {
-                advance();
-
-                if (current_.type == TokenType::EndOfFile) {
-                    g_error_reporter.report_error(
-                        name_loc,
-                        "unterminated macro '" + name + "': missing #end"
-                    );
-                    return;
-                }
-
-                if (current_.type == TokenType::Directive &&
-                        current_.text == "#end") {
-                    break;
-                }
-
-                body.push_back(current_);
-            }
-            // consume the '#end'
-            advance();
-        }
-    }
-
-    // Duplicate parameter validation
-    for (std::size_t i = 0; i + 1 < params.size(); ++i) {
-        for (std::size_t j = i + 1; j < params.size(); ++j) {
-            if (params[i] == params[j]) {
-                g_error_reporter.report_error(
-                    define_loc,
-                    "duplicate parameter name '" + params[i] +
-                    "' in macro '" + name + "'"
-                );
-                return;
-            }
-        }
-    }
-
-    // --- 5. Hygiene checks ---
-    if (!check_macro_body_token_boundaries(name, name_loc, body)) {
-        return;
-    }
-
-    if (contains_directive_token(body)) {
-        g_error_reporter.report_error(
-            name_loc,
-            "macro '" + name + "' contains a directive, which is not allowed"
-        );
-        return;
-    }
-
-    if (contains_comment_tokens(body)) {
-        g_error_reporter.report_error(
-            name_loc,
-            "macro '" + name + "' contains comment delimiters, which is not allowed"
-        );
-        return;
-    }
-
-    // --- 6. Store macro ---
-    Macro macro;
-    macro.name = name;
-    macro.loc = name_loc;
-    macro.params = params;
-    macro.body = body;
-    g_macro_table.define(macro);
-}
-
 void Parser::skip_to_end_of_line(int line) {
     while (current_.type != TokenType::EndOfFile &&
             current_.type != TokenType::EndOfExpression &&
@@ -810,54 +811,6 @@ void Parser::parse_undef() {
 
     g_macro_table.undef(name);
     advance();
-}
-
-bool Parser::check_macro_body_token_boundaries(const std::string& name,
-        const SourceLocation& name_loc,
-        const std::vector<Token>& body) {
-    if (body.empty()) {
-        return true;    // empty macro is always safe
-    }
-
-    const Token& first = body.front();
-    const Token& last = body.back();
-
-    auto is_glue_sensitive = [](const Token & t) -> bool {
-        if (t.type == TokenType::Identifier) {
-            return true;
-        }
-        if (t.type == TokenType::Integer) {
-            return true;
-        }
-
-        if (t.type == TokenType::Operator) {
-            const std::string& op = t.text;
-            if (op == "<" || op == ">" || op == "=" || op == "!" ||
-                    op == "&" || op == "|" || op == "+" || op == "-" ||
-                    op == "/" || op == "%" || op == "^") {
-                return true;
-            }
-        }
-
-        if (t.type == TokenType::Directive) {
-            // body starting with '#' is not allowed (Rule 5 will also cover this)
-            if (!t.text.empty() && t.text[0] == '#') {
-                return true;
-            }
-        }
-
-        return false;
-    };
-
-    if (is_glue_sensitive(first) || is_glue_sensitive(last)) {
-        g_error_reporter.report_error(
-            name_loc,
-            "macro '" + name + "' has a body that may break token boundaries"
-        );
-        return false;
-    }
-
-    return true;
 }
 
 void Parser::parse_if() {

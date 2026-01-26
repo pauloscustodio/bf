@@ -178,6 +178,14 @@ void Lexer::scan_append(const Line& line) {
             continue;
         }
 
+        if (*p == ',') {
+            // Comma - valid both in expressions and BFInstr
+            std::string op(1, *p);
+            p++;
+            tokens_.emplace_back(TokenType::BFInstr, op, loc);
+            continue;
+        }
+
         if (expr_depth_ == 0 &&
                 (*p == '+' || *p == '-' || *p == '<' || *p == '>' ||
                  *p == '[' || *p == ']' || *p == '.' || *p == ',')) {
@@ -303,3 +311,4 @@ bool is_integer(const std::string& str) {
     }
     return true;
 }
+

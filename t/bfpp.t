@@ -177,6 +177,18 @@ capture_ok("bfpp -D X=4 -D Y=2 $test.in", <<END);
 <<<<
 END
 
+# test invalid names in -D
+spew("$test.in", "");
+capture_nok("bfpp -Dend $test.in", <<END);
+bfpp: macro name is a reserved keyword: end
+END
+
+# default -D
+spew("$test.in", "+X");
+capture_ok("bfpp -D X $test.in", <<END);
++
+END
+
 # invalid characters in expression
 spew("$test.in", "+(*2)");
 capture_nok("bfpp $test.in", <<END);
@@ -301,6 +313,108 @@ capture_ok("bfpp -I $test.dir $test.in", <<END);
 >
 END
 path("$test.dir")->remove_tree;
+
+# #define error - no name
+spew("$test.in", "#define");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:8: error: expected macro name
+END
+
+# #define error - reserved name
+spew("$test.in", "#define if 1");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:9: error: cannot define macro 'if': reserved directive keyword
+END
+
+# #define error - duplicate parameters
+spew("$test.in", <<END);
+#define X(A,A)
+	+A
+#end
+END
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:9: error: duplicate parameter name 'A' in macro 'X'
+END
+
+# #define error - no #end
+spew("$test.in", <<END);
+#define X(A)
+	+A
+END
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:9: error: unterminated macro 'X': missing #end
+END
+
+# #define error - nested directives
+spew("$test.in", <<END);
+#define X(A)
+	+A
+#define B 1
+#end
+END
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:9: error: macro 'X' contains a directive
+END
+
+# #define - single-line object macro
+spew("$test.in", <<END);
+#define A B
+#define B C
+#define C 4
++A
+END
+capture_ok("bfpp $test.in", <<END);
+
+
+
+++++
+END
+
+# #define - multi-line object macro
+spew("$test.in", <<END);
+#define X
+[-]+'H'.
+#end
+X
+END
+capture_ok("bfpp $test.in", <<END);
+
+[
+  -
+]
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++.
+END
+
+# #define - multi-line function macro
+spew("$test.in", <<END);
+#define COPY(A,B,T)
+>B [-] >T [-] [A - >B + >T + >A ] [T - >A + >T ] >A
+#end 
+++++
+COPY(0,1,2)
+END
+capture_ok("bfpp $test.in", <<END);
+
+
+
+++++>
+[
+  -
+]
+>
+[
+  -
+]
+<<
+[
+  ->+>+<<
+]
+>>
+[
+  -<<+>>
+]
+<<
+END
 
 unlink_testfiles;
 done_testing;

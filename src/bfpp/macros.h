@@ -54,6 +54,9 @@ private:
                                        const std::vector<std::vector<Token>>& args);
 };
 
+bool is_reserved_keyword(const std::string& name);
+bool contains_directive_token(const std::vector<Token>& body);
+
 #if 0
 
 class MacroExpander {
@@ -82,9 +85,6 @@ private:
     std::vector<Token> resolve_ident_to_expr_tokens(const Token& ident);
 };
 
-bool contains_comment_tokens(const std::vector<Token>& body);
-bool contains_directive_token(const std::vector<Token>& body);
-bool is_reserved_keyword(const std::string& name);
 bool token_allowed_in_expression(const Token& t);
 bool all_tokens_allowed_in_expression(const std::vector<Token>& tokens);
 

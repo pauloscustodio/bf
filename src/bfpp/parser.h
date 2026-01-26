@@ -47,6 +47,7 @@ private:
     bool parse();
     void parse_directive();
     void parse_include();
+    void parse_define();
     void parse_statements();
     void parse_statement();
     void parse_bfinstr();
@@ -95,9 +96,6 @@ private:
     void parse_include();
     void parse_define();
     void parse_undef();
-    bool check_macro_body_token_boundaries(const std::string& name,
-                                           const SourceLocation& name_loc,
-                                           const std::vector<Token>& body);
     void skip_to_end_of_line(int line);
     void parse_if();
     void parse_elsif();

@@ -77,6 +77,11 @@ int main(int argc, char* argv[]) {
                 return EXIT_FAILURE;
             }
 
+            if (is_reserved_keyword(name)) {
+                std::cerr << "bfpp: macro name is a reserved keyword: " << name << std::endl;
+                return EXIT_FAILURE;
+            }
+
             // validate value is an integer
             if (!is_integer(value_str)) {
                 std::cerr << "bfpp: invalid integer value: " << value_str << std::endl;

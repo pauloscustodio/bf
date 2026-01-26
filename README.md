@@ -41,3 +41,9 @@ Extended BF code translated to plain BF code:
 Directives:
 
 - #include "file" : searches for file in the include path and inserts it in the input stream
+
+- #define name value : define single-line object like macro
+
+- #define name '\n' ... '\n' #end : define multi-line object like macro
+
+- #define name(param,...) '\n' ... '\n' #end : define multi-line function like macro
