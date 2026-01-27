@@ -73,34 +73,43 @@ std::string Parser::to_string() const {
 }
 
 bool Parser::parse() {
-    while (true) {
-        if (current_.type == TokenType::EndOfInput) {
-            break;
-        }
-
+    while (current_.type != TokenType::EndOfInput) {
         if (current_.type == TokenType::EndOfLine) {
             advance();
             continue;
-        }
-
-        if (current_.type == TokenType::Error) {
-            return false;
         }
 
         if (current_.type == TokenType::Directive) {
             parse_directive();
         }
         else {
-            parse_statements();
+            // only execute when all active #if conditions are true
+            if (if_branch_active()) {
+                parse_statements();
+            }
+            else {
+                skip_to_end_of_line();
+            }
         }
     }
 
-    // After finishing, check for unmatched loops/braces
+    // After finishing, check for unmatched loops
     output_.check_loops();
+
+    // After finishing, check for unmatched braces
     for (const BraceFrame& frame : brace_stack_) {
         g_error_reporter.report_error(
             frame.loc,
             "unmatched '{' brace"
+        );
+    }
+
+    // After finishing the file, check for unclosed #if blocks
+    if (!if_stack_.empty()) {
+        const IfState& state = if_stack_.back();
+        g_error_reporter.report_error(
+            state.loc,  // store loc when pushing IfState
+            "unterminated #if (missing #endif)"
         );
     }
 
@@ -112,15 +121,20 @@ void Parser::parse_directive() {
     advance(); // consume directive keyword
 
     if (directive.text == "#include") {
-        parse_include();
+        if (if_branch_active()) {
+            parse_include();
+        }
     }
     else if (directive.text == "#define") {
-        parse_define();
+        if (if_branch_active()) {
+            parse_define();
+        }
     }
     else if (directive.text == "#undef") {
-        parse_undef();
+        if (if_branch_active()) {
+            parse_undef();
+        }
     }
-    /*
     else if (directive.text == "#if") {
         parse_if();
     }
@@ -133,7 +147,6 @@ void Parser::parse_directive() {
     else if (directive.text == "#endif") {
         parse_endif();
     }
-    */
     else {
         g_error_reporter.report_error(
             directive.loc,
@@ -142,13 +155,15 @@ void Parser::parse_directive() {
         skip_to_end_of_line();
     }
 
-    if (current_.type != TokenType::EndOfLine &&
-            current_.type != TokenType::EndOfInput) {
-        g_error_reporter.report_error(
-            current_.loc,
-            "unexpected token after " + directive.text +
-            ": '" + current_.text + "'"
-        );
+    if (if_branch_active()) {
+        if (current_.type != TokenType::EndOfLine &&
+                current_.type != TokenType::EndOfInput) {
+            g_error_reporter.report_error(
+                current_.loc,
+                "unexpected token after " + directive.text +
+                ": '" + current_.text + "'"
+            );
+        }
     }
 
     skip_to_end_of_line();
@@ -353,10 +368,104 @@ void Parser::parse_undef() {
     advance();
 }
 
+void Parser::parse_if() {
+    SourceLocation loc = current_.loc;   // location of #if
+
+    if (current_.type == TokenType::EndOfLine) {
+        g_error_reporter.report_error(loc, "missing expression after #if");
+        return;
+    }
+
+    // Evaluate expression
+    ParserTokenSource ts(*this);
+    ExpressionParser expr(ts, /*undefined_as_zero=*/true);
+    int value = expr.parse_expression();
+
+    IfState state;
+    state.condition_true = (value != 0);
+    state.branch_taken = state.condition_true;
+    state.in_else = false;
+    state.loc = loc;
+
+    if_stack_.push_back(state);
+}
+
+void Parser::parse_elsif() {
+    SourceLocation loc = current_.loc;   // location of #elsif
+
+    if (current_.type == TokenType::EndOfLine) {
+        g_error_reporter.report_error(loc, "missing expression after #elsif");
+        return;
+    }
+
+    // Evaluate expression
+    ParserTokenSource ts(*this);
+    ExpressionParser expr(ts, /*undefined_as_zero=*/true);
+    int value = expr.parse_expression();
+
+    if (if_stack_.empty()) {
+        g_error_reporter.report_error(loc, "#elsif without matching #if");
+        return;
+    }
+
+    IfState& state = if_stack_.back();
+
+    if (state.in_else) {
+        g_error_reporter.report_error(loc, "#elsif after #else");
+        return;
+    }
+
+    if (state.branch_taken) {
+        // A previous branch was already taken; this branch is inactive
+        state.condition_true = false;
+    }
+    else {
+        state.condition_true = (value != 0);
+        state.branch_taken = state.condition_true;
+    }
+}
+
+void Parser::parse_else() {
+    SourceLocation loc = current_.loc;
+
+    if (if_stack_.empty()) {
+        g_error_reporter.report_error(loc, "#else without matching #if");
+        return;
+    }
+
+    IfState& state = if_stack_.back();
+
+    if (state.in_else) {
+        g_error_reporter.report_error(loc, "multiple #else in the same #if");
+        return;
+    }
+
+    state.in_else = true;
+
+    if (state.branch_taken) {
+        // A previous branch already executed; this else is inactive
+        state.condition_true = false;
+    }
+    else {
+        state.condition_true = true;
+        state.branch_taken = true;
+    }
+}
+
+void Parser::parse_endif() {
+    SourceLocation loc = current_.loc;
+
+    if (if_stack_.empty()) {
+        g_error_reporter.report_error(loc, "#endif without matching #if");
+        return;
+    }
+
+    if_stack_.pop_back();
+}
+
 void Parser::parse_statements() {
     while (current_.type != TokenType::EndOfLine &&
-            current_.type != TokenType::EndOfInput &&
-            current_.type != TokenType::Error) {
+            current_.type != TokenType::EndOfInput) {
         parse_statement();
     }
 }
@@ -582,517 +691,11 @@ void Parser::parse_right_brace() {
     advance(); // consume '}'
 }
 
-#if 0
-
-std::string Parser::run() {
-    while (current_.type != TokenType::EndOfFile &&
-            current_.type != TokenType::Error) {
-
-        parse_statements();
-    }
-
-    // After finishing the file, check for unclosed #if blocks
-    if (!if_stack_.empty()) {
-        const IfState& state = if_stack_.back();
-        g_error_reporter.report_error(
-            state.loc,  // store loc when pushing IfState
-            "unterminated #if (missing #endif)"
-        );
-    }
-
-    return to_string();
-}
-
-
-Token Parser::current() const {
-    return current_;
-}
-
-void Parser::advance() {
-    // If we already have expanded tokens, consume one
-    if (!expanded_.empty()) {
-        current_ = expanded_.front();
-        expanded_.pop_front();
-        return;
-    }
-
-    while (expanded_.empty()) {
-        Token raw = lexer_.get();
-
-        if (raw.type == TokenType::EndOfFile) {
-            current_ = raw;
-            return;
-        }
-
-        if (raw.type == TokenType::Identifier) {
-            const Macro* m = g_macro_table.lookup(raw.text);
-            if (m) {
-                // Peek: function-like or object-like?
-                Token next = lexer_.peek();
-                if (!m->params.empty() && next.type == TokenType::LParen) {
-                    parse_macro_invocation(*m, raw.loc);
-                    continue; // expanded_ now has tokens
-                }
-                else if (m->params.empty()) {
-                    // object-like: just substitute body
-                    substitute_object_like_macro(*m);
-                    continue;
-                }
-            }
-        }
-
-        // Not a macro, or not a call: expand normally (hygiene etc.)
-        macro_expander_.expand_token(raw, expanded_);
-    }
-
-    current_ = expanded_.front();
-    expanded_.pop_front();
-}
-
-void Parser::parse_macro_invocation(const Macro& m, SourceLocation call_loc) {
-    // We already consumed the identifier in advance(), and peeked '('.
-    Token lparen = lexer_.get(); // consume '('
-    (void)lparen; // we know it's '('
-
-    std::vector<std::vector<Token>> args;
-
-    // Empty arg list?
-    Token t = lexer_.peek();
-    if (t.type != TokenType::RParen) {
-        while (true) {
-            std::vector<Token> expr = parse_macro_argument_expression();
-            args.push_back(std::move(expr));
-
-            t = lexer_.peek();
-            if (t.type == TokenType::RParen) {
-                break;
-            }
-
-            if (t.type != TokenType::Comma) {
-                g_error_reporter.report_error(
-                    t.loc,
-                    "expected ',' or ')' in macro call"
-                );
-                // Try to resync: consume until ')'
-                do {
-                    t = lexer_.get();
-                }
-                while (t.type != TokenType::RParen &&
-                        t.type != TokenType::EndOfFile);
-                break;
-            }
-
-            lexer_.get(); // consume ','
+bool Parser::if_branch_active() const {
+    for (const auto& state : if_stack_) {
+        if (!state.condition_true) {
+            return false;
         }
     }
-
-    Token rparen = lexer_.get(); // consume ')'
-    (void)rparen;
-
-    // Arity check
-    if (args.size() != m.params.size()) {
-        g_error_reporter.report_error(
-            call_loc,
-            "macro '" + m.name + "' expects " +
-            std::to_string(m.params.size()) +
-            " arguments but got " +
-            std::to_string(args.size())
-        );
-        return;
-    }
-
-    substitute_function_like_macro(m, args);
-}
-
-std::vector<Token> Parser::parse_macro_argument_expression() {
-    std::vector<Token> result;
-    int paren_depth = 0;
-
-    while (true) {
-        Token t = lexer_.get();
-
-        if (t.type == TokenType::EndOfFile) {
-            break;
-        }
-
-        if (t.type == TokenType::LParen) {
-            paren_depth++;
-            result.push_back(t);
-            continue;
-        }
-
-        if (t.type == TokenType::RParen) {
-            if (paren_depth == 0) {
-                // Put it back for caller (we stop before ')')
-                lexer_.unget(t);
-                break;
-            }
-            paren_depth--;
-            result.push_back(t);
-            continue;
-        }
-
-        if (t.type == TokenType::Comma && paren_depth == 0) {
-            // Stop before comma; caller will consume it
-            lexer_.unget(t);
-            break;
-        }
-
-        result.push_back(t);
-    }
-
-    return result;
-}
-
-void Parser::substitute_object_like_macro(const Macro& m) {
-    for (const Token& t : m.body) {
-        expanded_.push_back(t);
-    }
-}
-
-void Parser::substitute_function_like_macro(const Macro& m, const std::vector<std::vector<Token>>& args) {
-    std::unordered_map<std::string, const std::vector<Token>*> param_map;
-
-    for (size_t i = 0; i < m.params.size(); ++i) {
-        param_map[m.params[i]] = &args[i];
-    }
-
-    for (const Token& t : m.body) {
-        if (t.type == TokenType::Identifier) {
-            auto it = param_map.find(t.text);
-            if (it != param_map.end()) {
-                // Insert argument tokens
-                for (const Token& a : *it->second) {
-                    expanded_.push_back(a);
-                }
-                continue;
-            }
-        }
-        expanded_.push_back(t);
-    }
-}
-
-Token Parser::next_raw_token() {
-    while (!expansion_stack_.empty()) {
-        auto& frame = expansion_stack_.back();
-        if (frame.index < frame.tokens.size()) {
-            return frame.tokens[frame.index++];
-        }
-        expansion_stack_.pop_back();
-    }
-    return lexer_.get();
-}
-
-bool Parser::match(TokenType type) {
-    if (current_.type == type) {
-        advance();
-        return true;
-    }
-    return false;
-}
-
-void Parser::expect(TokenType type, const std::string& message) {
-    if (current_.type != type) {
-        g_error_reporter.report_error(current_.loc, message);
-        return;
-    }
-    advance();
-}
-
-void Parser::parse_directive() {
-    Token directive = current_;
-    set_expansion_context(ExpansionContext::DirectiveKeyword);
-    advance(); // consume directive keyword
-    set_expansion_context(ExpansionContext::Normal);
-
-    if (directive.text == "#define") {
-        parse_define();
-        return;
-    }
-
-    if (directive.text == "#undef") {
-        parse_undef();
-        return;
-    }
-
-    if (directive.text == "#if") {
-        parse_if();
-        return;
-    }
-
-    if (directive.text == "#elsif") {
-        parse_elsif();
-        return;
-    }
-
-    if (directive.text == "#else") {
-        parse_else();
-        return;
-    }
-
-    if (directive.text == "#endif") {
-        parse_endif();
-        return;
-    }
-
-    g_error_reporter.report_error(
-        directive.loc,
-        "unknown directive '" + directive.text + "'"
-    );
-    advance(); // consume unknown directive to avoid infinite loop
-}
-
-
-
-void Parser::skip_to_end_of_line(int line) {
-    while (current_.type != TokenType::EndOfFile &&
-            current_.type != TokenType::EndOfExpression &&
-            current_.loc.line == line) {
-        advance();
-    }
-}
-
-void Parser::parse_if() {
-    SourceLocation loc = current_.loc;   // location of #if
-
-    // Switch lexer to expression mode
-    lexer_.set_mode(ExpansionContext::DirectiveExpression);
-    set_expansion_context(ExpansionContext::DirectiveExpression);
-
-    ExpressionParser expr(*this);
-    int value = expr.parse_expression();
-
-    // Restore normal mode
-    lexer_.set_mode(ExpansionContext::Normal);
-    set_expansion_context(ExpansionContext::Normal);
-
-    IfState state;
-    state.condition_true = (value != 0);
-    state.branch_taken = state.condition_true;
-    state.in_else = false;
-    state.loc = loc;
-
-    if_stack_.push_back(state);
-
-    // If false, skip until next branch
-    if (!state.condition_true) {
-        skip_until_else_or_endif();
-    }
-}
-
-void Parser::parse_elsif() {
-    SourceLocation loc = current_.loc;   // location of #elsif
-
-    if (if_stack_.empty()) {
-        g_error_reporter.report_error(loc, "#elsif without matching #if");
-        return;
-    }
-
-    IfState& state = if_stack_.back();
-
-    if (state.in_else) {
-        g_error_reporter.report_error(loc, "#elsif after #else");
-        return;
-    }
-
-    // If a previous branch was already taken, skip this one
-    if (state.branch_taken) {
-        skip_until_else_or_endif();
-        return;
-    }
-
-    // Evaluate the new condition
-    lexer_.set_mode(ExpansionContext::DirectiveExpression);
-    set_expansion_context(ExpansionContext::DirectiveExpression);
-
-    ExpressionParser expr(*this);
-    int value = expr.parse_expression();
-
-    lexer_.set_mode(ExpansionContext::Normal);
-    set_expansion_context(ExpansionContext::Normal);
-
-    state.condition_true = (value != 0);
-
-    if (state.condition_true) {
-        state.branch_taken = true;
-    }
-    else {
-        skip_until_else_or_endif();
-    }
-}
-
-void Parser::parse_else() {
-    SourceLocation loc = current_.loc;
-
-    if (if_stack_.empty()) {
-        g_error_reporter.report_error(loc, "#else without matching #if");
-        return;
-    }
-
-    IfState& state = if_stack_.back();
-
-    if (state.in_else) {
-        g_error_reporter.report_error(loc, "multiple #else in the same #if");
-        return;
-    }
-
-    state.in_else = true;
-
-    // If no branch has been taken yet, this one executes
-    if (!state.branch_taken) {
-        state.condition_true = true;
-        state.branch_taken = true;
-    }
-    else {
-        // Otherwise skip until #endif
-        skip_until_endif();
-    }
-}
-
-void Parser::parse_endif() {
-    SourceLocation loc = current_.loc;
-
-    if (if_stack_.empty()) {
-        g_error_reporter.report_error(loc, "#endif without matching #if");
-        return;
-    }
-
-    if_stack_.pop_back();
-}
-
-bool Parser::read_directive_keyword(std::string& out) {
-    if (current_.type != TokenType::Directive) {
-        return false;
-    }
-
-    out = current_.text;   // "#if", "#else", "#endif", "#elsif", etc.
     return true;
 }
-
-void Parser::skip_until_else_or_endif() {
-    int depth = 0;
-
-    while (true) {
-        advance();  // consume current token
-
-        if (current_.type == TokenType::EndOfFile) {
-            return;
-        }
-
-        // Only directives matter during skipping
-        if (current_.type != TokenType::Directive) {
-            continue;
-        }
-
-        std::string kw = current_.text;
-
-        if (kw == "#if") {
-            depth++;
-            continue;
-        }
-
-        if (kw == "#endif") {
-            if (depth == 0) {
-                // End of the current conditional block
-                return;
-            }
-            depth--;
-            continue;
-        }
-
-        if (depth == 0) {
-            // Only consider #else and #elsif at depth 0
-            if (kw == "#else" || kw == "#elsif") {
-                return;
-            }
-        }
-
-        // Otherwise ignore directive and continue
-    }
-}
-
-void Parser::skip_until_endif() {
-    int depth = 0;
-
-    while (true) {
-        advance();
-
-        if (current_.type == TokenType::EndOfFile) {
-            return;
-        }
-
-        if (current_.type != TokenType::Directive) {
-            continue;
-        }
-
-        std::string kw = current_.text;
-
-        if (kw == "#if") {
-            depth++;
-            continue;
-        }
-
-        if (kw == "#endif") {
-            if (depth == 0) {
-                // End of the current #if block
-                return;
-            }
-            depth--;
-            continue;
-        }
-
-        // #else and #elsif are ignored here because we are skipping
-        // the entire remainder of the block after #else.
-    }
-}
-
-void Parser::parse_statements() {
-    // Expand macros until no more expansions occur
-    while (try_expand_macro()) {
-        // keep expanding
-    }
-
-    switch (current_.type) {
-    case TokenType::BFInstr:
-        emit_bf_instruction(current_);
-        advance();
-        return;
-
-    case TokenType::Identifier:
-        g_error_reporter.report_error(
-            current_.loc,
-            "unknown identifier '" + current_.text + "'"
-        );
-        advance();
-        return;
-
-    default:
-        g_error_reporter.report_error(
-            current_.loc,
-            "unexpected token in statement: '" + current_.text + "'"
-        );
-        advance();
-        return;
-    }
-}
-
-
-
-
-
-
-void Parser::emit_bf_instruction(const Token& t) {
-    // All BF instructions must go through the macro expander
-    macro_expander_.expand_token(t, expanded_);
-}
-
-
-ExpansionContext Parser::expansion_context() const {
-    return context_;
-}
-
-void Parser::set_expansion_context(ExpansionContext c) {
-    context_ = c;
-}
-
-#endif

@@ -141,7 +141,6 @@ void Lexer::scan_append(const Line& line) {
                 g_error_reporter.report_error(loc,
                                               "unterminated string literal"
                                              );
-                tokens_.emplace_back(TokenType::Error, "", loc);
                 break;
             }
             ++p; // skip closing "
@@ -255,7 +254,6 @@ void Lexer::scan_append(const Line& line) {
         g_error_reporter.report_error(loc,
                                       "invalid character '" + std::string(1, *p) + "'"
                                      );
-        tokens_.emplace_back(TokenType::Error, "", loc);
         break;
     }
 

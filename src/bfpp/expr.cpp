@@ -8,8 +8,8 @@
 #include "expr.h"
 #include "parser.h"
 
-ExpressionParser::ExpressionParser(TokenSource& source)
-    : source_(source) {
+ExpressionParser::ExpressionParser(TokenSource& source, bool undefined_as_zero)
+    : source_(source), undefined_as_zero_(undefined_as_zero) {
 }
 
 int ExpressionParser::parse_expression() {
@@ -341,6 +341,9 @@ int ExpressionParser::eval_macro_recursive(const Token& tok,
     std::string name = tok.text;
     const Macro* macro = g_macro_table.lookup(name);
     if (!macro) {
+        if (undefined_as_zero_) {
+            return 0; // undefined treated as 0 without error
+        }
         g_error_reporter.report_error(
             tok.loc,
             "macro '" + name + "' is not defined"
@@ -373,7 +376,7 @@ int ExpressionParser::eval_macro_recursive(const Token& tok,
 
     expanding.insert(name);
     ArrayTokenSource source(macro->body);
-    ExpressionParser expr(source);
+    ExpressionParser expr(source, undefined_as_zero_);
     int result = expr.parse_expression();
     expanding.erase(name);
 

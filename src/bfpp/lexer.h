@@ -26,7 +26,6 @@ private:
 enum class TokenType {
     EndOfInput,
     EndOfLine,
-    Error,
     Directive,      // #define, #include, #if, #else, #endif
     Identifier,
     Integer,

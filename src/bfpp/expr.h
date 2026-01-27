@@ -64,12 +64,13 @@ private:
 
 class ExpressionParser {
 public:
-    ExpressionParser(TokenSource& source);
+    explicit ExpressionParser(TokenSource& source, bool undefined_as_zero = false);
 
     int parse_expression();
 
 private:
     TokenSource& source_;  // Single interface for both contexts
+    bool undefined_as_zero_ = false;
 
     int parse_logical_or();
     int parse_logical_and();
