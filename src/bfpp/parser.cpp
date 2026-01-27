@@ -117,10 +117,10 @@ void Parser::parse_directive() {
     else if (directive.text == "#define") {
         parse_define();
     }
-    /*
     else if (directive.text == "#undef") {
         parse_undef();
     }
+    /*
     else if (directive.text == "#if") {
         parse_if();
     }
@@ -331,6 +331,26 @@ void Parser::parse_define() {
     macro.params = params;
     macro.body = body;
     g_macro_table.define(macro);
+}
+
+void Parser::parse_undef() {
+    if (current_.type != TokenType::Identifier) {
+        g_error_reporter.report_error(current_.loc, "expected macro name");
+        return;
+    }
+
+    std::string name = current_.text;
+    if (is_reserved_keyword(name)) {
+        g_error_reporter.report_error(
+            current_.loc,
+            "cannot undefine reserved directive keyword '" + name + "'"
+        );
+        advance();
+        return;
+    }
+
+    g_macro_table.undef(name);
+    advance();
 }
 
 void Parser::parse_statements() {
@@ -830,29 +850,6 @@ void Parser::skip_to_end_of_line(int line) {
             current_.loc.line == line) {
         advance();
     }
-}
-
-void Parser::parse_undef() {
-    advance(); // consume #undef
-
-    if (current_.type != TokenType::Identifier) {
-        g_error_reporter.report_error(current_.loc, "expected macro name");
-        return;
-    }
-
-    std::string name = current_.text;
-
-    if (is_reserved_keyword(lowercase(name))) {
-        g_error_reporter.report_error(
-            current_.loc,
-            "cannot undefine reserved directive keyword '" + name + "'"
-        );
-        advance();
-        return;
-    }
-
-    g_macro_table.undef(name);
-    advance();
 }
 
 void Parser::parse_if() {

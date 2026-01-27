@@ -377,6 +377,16 @@ capture_nok("bfpp $test.in", <<END);
 $test.in:1:9: error: macro 'X' contains a directive
 END
 
+# #define error - duplicate macro
+spew("$test.in", <<END);
+#define X 1
+#define X 2
+END
+capture_nok("bfpp $test.in", <<END);
+$test.in:2:9: error: macro 'X' redefined
+$test.in:1:9: note: previous definition was here
+END
+
 # #define - single-line object macro
 spew("$test.in", <<END);
 #define A B
@@ -435,6 +445,31 @@ capture_ok("bfpp $test.in", <<END);
   -<<+>>
 ]
 <<
+END
+
+# #undef errors
+spew("$test.in", "#undef");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:7: error: expected macro name
+END
+
+spew("$test.in", "#undef if");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:8: error: cannot undefine reserved directive keyword 'if'
+END
+
+# #undef
+spew("$test.in", <<END);
+#define X 2
+#undef X
+#define X 3
++X
+END
+capture_ok("bfpp $test.in", <<END);
+
+
+
++++
 END
 
 unlink_testfiles;

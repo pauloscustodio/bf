@@ -54,6 +54,7 @@ private:
     void parse_directive();
     void parse_include();
     void parse_define();
+    void parse_undef();
     void parse_statements();
     void parse_statement();
     void parse_bfinstr();
