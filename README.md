@@ -36,11 +36,11 @@ Extended BF code translated to plain BF code:
 
 - +'c' : increment the cell by the ASCII code of the quoted character
 
-- [(number|name|(expr) : start the loop at the given absolute tape position, the end loop ] will check if the tape position changed from the start position
+- '[' (number|name|(expr) : start the loop at the given absolute tape position, the end loop ] will check if the tape position changed from the start position
 
-- { : remember the current tape postion
+- '{' : remember the current tape postion
 
-- } : emit > or < instructions to return to the tape position remebered by {
+- '}' : emit > or < instructions to return to the tape position remebered by {
 
 Directives:
 
@@ -51,3 +51,7 @@ Directives:
 - #define name '\n' ... '\n' #end : define multi-line object like macro
 
 - #define name(param,...) '\n' ... '\n' #end : define multi-line function like macro
+
+- #undef name : undefine macro
+
+- #if expr / #elsif expr / ... / #else / #endif : conditionally select one branch of code
