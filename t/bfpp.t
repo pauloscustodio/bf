@@ -59,6 +59,20 @@ capture_ok("bfpp $test.in", <<END);
 ---
 END
 
+# test continuation lines
+spew("$test.in", <<END);
++++\\
+---\\
+>>>
+<<<
+END
+capture_ok("bfpp $test.in", <<END);
++++--->>>
+
+
+<<<
+END
+
 # test error on negative tape index
 spew("$test.in", "<");
 capture_nok("bfpp $test.in", <<END);

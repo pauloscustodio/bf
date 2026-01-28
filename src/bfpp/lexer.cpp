@@ -11,55 +11,76 @@
 // CommentStripper: remove // and /* */ outside of strings (strings don't span lines)
 bool CommentStripper::getline(Line& out) {
     std::string raw;
+    int base_line_num = 0;
+    bool have_any = false;
+
+    // Gather continuation lines ending with backslash
     while (true) {
-        if (!g_file_stack.getline(raw)) {
-            return false; // EOF
-        }
-        int line_num = g_file_stack.line_num() - 1;  // Line just read
-
-        std::string clean;
-        clean.reserve(raw.size());
-        bool in_string = false;
-
-        for (std::size_t i = 0; i < raw.size(); ++i) {
-            char c = raw[i];
-
-            if (in_block_comment_) {
-                if (c == '*' && i + 1 < raw.size() && raw[i + 1] == '/') {
-                    in_block_comment_ = false;
-                    ++i; // consume '/'
-                }
-                continue; // skip everything inside block comment
-            }
-
-            if (!in_string) {
-                if (c == '"' ) {
-                    in_string = true;
-                    clean.push_back(c);
-                    continue;
-                }
-                if (c == '/' && i + 1 < raw.size() && raw[i + 1] == '/') {
-                    break; // line comment: drop rest of line
-                }
-                if (c == '/' && i + 1 < raw.size() && raw[i + 1] == '*') {
-                    in_block_comment_ = true;
-                    ++i; // consume '*'
-                    continue;
-                }
-                clean.push_back(c);
-            }
-            else {
-                clean.push_back(c);
-                if (c == '"') {
-                    in_string = false;
-                }
-            }
+        std::string segment;
+        if (!g_file_stack.getline(segment)) {
+            if (!have_any) return false; // EOF, nothing read
+            break; // EOF after a continued line: return what we have
         }
 
-        out.text = std::move(clean);
-        out.line_num = line_num;
-        return true;
+        int seg_line = g_file_stack.line_num() - 1; // line just read
+        if (!have_any) {
+            base_line_num = seg_line;
+            have_any = true;
+        }
+
+        raw += segment;
+
+        // Continuation if last char is backslash
+        if (!segment.empty() && segment.back() == '\\') {
+            raw.pop_back(); // drop the backslash
+            raw.push_back(' '); // replace with space
+            continue;       // keep reading next physical line
+        }
+        break; // no continuation
     }
+
+    std::string clean;
+    clean.reserve(raw.size());
+    bool in_string = false;
+
+    for (std::size_t i = 0; i < raw.size(); ++i) {
+        char c = raw[i];
+
+        if (in_block_comment_) {
+            if (c == '*' && i + 1 < raw.size() && raw[i + 1] == '/') {
+                in_block_comment_ = false;
+                ++i; // consume '/'
+            }
+            continue; // skip everything inside block comment
+        }
+
+        if (!in_string) {
+            if (c == '"' ) {
+                in_string = true;
+                clean.push_back(c);
+                continue;
+            }
+            if (c == '/' && i + 1 < raw.size() && raw[i + 1] == '/') {
+                break; // line comment: drop rest of line
+            }
+            if (c == '/' && i + 1 < raw.size() && raw[i + 1] == '*') {
+                in_block_comment_ = true;
+                ++i; // consume '*'
+                continue;
+            }
+            clean.push_back(c);
+        }
+        else {
+            clean.push_back(c);
+            if (c == '"') {
+                in_string = false;
+            }
+        }
+    }
+
+    out.text = std::move(clean);
+    out.line_num = base_line_num;
+    return true;
 }
 
 bool CommentStripper::is_eof() const {
