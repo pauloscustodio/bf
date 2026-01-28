@@ -231,6 +231,16 @@ void Parser::parse_define() {
                     return;
                 }
 
+                // Reserved keyword check
+                if (is_reserved_keyword(current_.text)) {
+                    g_error_reporter.report_error(
+                        current_.loc,
+                        "cannot define parameter '" + current_.text + "': reserved directive keyword"
+                    );
+                    skip_to_end_of_line();
+                    return;
+                }
+
                 params.push_back(current_.text);
                 advance(); // consume parameter
 
@@ -252,68 +262,13 @@ void Parser::parse_define() {
         }
 
         advance(); // consume ')'
-
-        // Multi-line body until #end
-        while (true) {
-            advance();
-
-            if (current_.type == TokenType::EndOfInput) {
-                g_error_reporter.report_error(
-                    name_loc,
-                    "unterminated macro '" + name + "': missing #end"
-                );
-                return;
-            }
-
-            if (current_.type == TokenType::Directive &&
-                    current_.text == "#end") {
-                break;
-            }
-
-            body.push_back(current_);
-        }
-        // consume the '#end'
-        advance();
     }
-    else {
-        // Object-like macro
-        // Two cases:
-        //   a) single-line: #define X 3
-        //   b) multi-line:  #define X ... #end
 
-        bool single_line = (current_.type != TokenType::EndOfLine);
-
-        if (single_line) {
-            // Collect tokens until end of line
-            while (current_.type != TokenType::EndOfInput &&
-                    current_.type != TokenType::EndOfLine) {
-                body.push_back(current_);
-                advance();
-            }
-        }
-        else {
-            // Multi-line object-like macro
-            while (true) {
-                advance();
-
-                if (current_.type == TokenType::EndOfInput) {
-                    g_error_reporter.report_error(
-                        name_loc,
-                        "unterminated macro '" + name + "': missing #end"
-                    );
-                    return;
-                }
-
-                if (current_.type == TokenType::Directive &&
-                        current_.text == "#end") {
-                    break;
-                }
-
-                body.push_back(current_);
-            }
-            // consume the '#end'
-            advance();
-        }
+    // Collect the replacement list until end of line (object-like or function-like)
+    while (current_.type != TokenType::EndOfLine &&
+            current_.type != TokenType::EndOfInput) {
+        body.push_back(current_);
+        advance();
     }
 
     // Duplicate parameter validation
@@ -328,15 +283,6 @@ void Parser::parse_define() {
                 return;
             }
         }
-    }
-
-    // check if nested directives in body
-    if (contains_directive_token(body)) {
-        g_error_reporter.report_error(
-            name_loc,
-            "macro '" + name + "' contains a directive"
-        );
-        return;
     }
 
     // Store macro

@@ -55,37 +55,3 @@ private:
 };
 
 bool is_reserved_keyword(const std::string& name);
-bool contains_directive_token(const std::vector<Token>& body);
-
-#if 0
-
-class MacroExpander {
-public:
-
-    void expand_token(const Token& tok, std::deque<Token>& out);
-    void expand_macro_body(const Macro& m,
-                           const std::vector<Token>& substituted_body,
-                           std::deque<Token>& out);
-
-private:
-    int pointer_pos_ = 0;
-
-    bool try_expand_extended_bf(TokenStream& in,
-                                std::deque<Token>& out);
-    bool expand_extended_bf(const std::vector<Token>& body,
-                            size_t& i,
-                            std::deque<Token>& out);
-    int eval_expr_tokens(const std::vector<Token>& expr,
-                         const SourceLocation& loc);
-    void emit_bf_token(const Token& t,
-                       std::deque<Token>& out);
-    void apply_extended_bf_op(const Token& op,
-                              int value,
-                              std::deque<Token>& out);
-    std::vector<Token> resolve_ident_to_expr_tokens(const Token& ident);
-};
-
-bool token_allowed_in_expression(const Token& t);
-bool all_tokens_allowed_in_expression(const std::vector<Token>& tokens);
-
-#endif

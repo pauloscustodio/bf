@@ -18,7 +18,9 @@ bool CommentStripper::getline(Line& out) {
     while (true) {
         std::string segment;
         if (!g_file_stack.getline(segment)) {
-            if (!have_any) return false; // EOF, nothing read
+            if (!have_any) {
+                return false;    // EOF, nothing read
+            }
             break; // EOF after a continued line: return what we have
         }
 

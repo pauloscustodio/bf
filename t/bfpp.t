@@ -193,8 +193,8 @@ END
 
 # test invalid names in -D
 spew("$test.in", "");
-capture_nok("bfpp -Dend $test.in", <<END);
-bfpp: macro name is a reserved keyword: end
+capture_nok("bfpp -Dif $test.in", <<END);
+bfpp: macro name is a reserved keyword: if
 END
 
 # default -D
@@ -363,32 +363,17 @@ END
 
 # #define error - duplicate parameters
 spew("$test.in", <<END);
-#define X(A,A)
+#define X(A,A) 	\\
 	+A
-#end
 END
 capture_nok("bfpp $test.in", <<END);
 $test.in:1:9: error: duplicate parameter name 'A' in macro 'X'
 END
 
-# #define error - no #end
-spew("$test.in", <<END);
-#define X(A)
-	+A
-END
+# #define error - reserved parameter
+spew("$test.in", "#define X(if)");
 capture_nok("bfpp $test.in", <<END);
-$test.in:1:9: error: unterminated macro 'X': missing #end
-END
-
-# #define error - nested directives
-spew("$test.in", <<END);
-#define X(A)
-	+A
-#define B 1
-#end
-END
-capture_nok("bfpp $test.in", <<END);
-$test.in:1:9: error: macro 'X' contains a directive
+$test.in:1:11: error: cannot define parameter 'if': reserved directive keyword
 END
 
 # #define error - duplicate macro
@@ -417,13 +402,11 @@ END
 
 # #define - multi-line object macro
 spew("$test.in", <<END);
-#define X
+#define X	\\
 [-]+'H'.
-#end
 X
 END
 capture_ok("bfpp $test.in", <<END);
-
 [
   -
 ]
@@ -432,14 +415,12 @@ END
 
 # #define - multi-line function macro
 spew("$test.in", <<END);
-#define COPY(A,B,T)
+#define COPY(A,B,T)	\\
 { >B [-] >T [-] [A - >B + >T + >A ] [T - >A + >T ] }
-#end 
 ++++
 COPY(0,1,2)
 END
 capture_ok("bfpp $test.in", <<END);
-
 
 
 ++++>
