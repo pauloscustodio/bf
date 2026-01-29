@@ -43,13 +43,13 @@ public:
     // Returns true if token was expanded, false otherwise
     bool try_expand(Parser& parser, const Token& token);
     void remove_expanding(const std::string& name);
+    std::vector<std::vector<Token>> collect_args(Parser& parser,
+                                 const Macro& macro);
 
 private:
     MacroTable& table_;
     std::unordered_set<std::string> expanding_; // recursion guard
 
-    std::vector<std::vector<Token>> collect_args(Parser& parser,
-                                 const Macro& macro);
     std::vector<Token> substitute_body(const Macro& macro,
                                        const std::vector<std::vector<Token>>& args);
 };

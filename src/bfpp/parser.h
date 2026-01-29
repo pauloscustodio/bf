@@ -43,6 +43,8 @@ public:
     const Token& current() const;
     Token peek(size_t offset = 0);
     void advance();
+    MacroExpander& macro_expander();
+    BFOutput& output();
 
 private:
     Lexer lexer_;
@@ -53,6 +55,9 @@ private:
     MacroExpander macro_expander_;
     Token current_;
     BFOutput output_;
+
+    // If set, the next macro-expansion loop in parse_statement must not advance().
+    bool suppress_next_advance_ = false;
 
     friend class MacroExpander;
 

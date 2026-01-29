@@ -46,12 +46,16 @@ Directives:
 
 - #include "file" : searches for file in the include path and inserts it in the input stream
 
-- #define name value : define single-line object like macro
+- #define name value : define object like macro
 
-- #define name '\n' ... '\n' #end : define multi-line object like macro
-
-- #define name(param,...) '\n' ... '\n' #end : define multi-line function like macro
+- #define name(param,...) value : define function like macro
 
 - #undef name : undefine macro
 
 - #if expr / #elsif expr / ... / #else / #endif : conditionally select one branch of code
+
+Built-in macros:
+
+- alloc_cell(NAME) : reserves one cell on the tape, creates a macro NAME with it's address; cells are reserved from 0 upwards
+
+- free_cell(NAME) : frees a cell reserved by alloc_cell() and removes the macro NAME

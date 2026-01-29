@@ -68,6 +68,14 @@ void Parser::advance() {
     current_ = lexer_.get();
 }
 
+MacroExpander& Parser::macro_expander() {
+    return macro_expander_;
+}
+
+BFOutput& Parser::output() {
+    return output_;
+}
+
 std::string Parser::to_string() const {
     return output_.to_string();
 }
@@ -206,7 +214,7 @@ void Parser::parse_define() {
     if (is_reserved_keyword(name)) {
         g_error_reporter.report_error(
             name_loc,
-            "cannot define macro '" + name + "': reserved directive keyword"
+            "cannot define macro '" + name + "': reserved word"
         );
         skip_to_end_of_line();
         return;
@@ -235,7 +243,7 @@ void Parser::parse_define() {
                 if (is_reserved_keyword(current_.text)) {
                     g_error_reporter.report_error(
                         current_.loc,
-                        "cannot define parameter '" + current_.text + "': reserved directive keyword"
+                        "cannot define parameter '" + current_.text + "': reserved word"
                     );
                     skip_to_end_of_line();
                     return;
@@ -304,7 +312,7 @@ void Parser::parse_undef() {
     if (is_reserved_keyword(name)) {
         g_error_reporter.report_error(
             current_.loc,
-            "cannot undefine reserved directive keyword '" + name + "'"
+            "cannot undefine reserved word '" + name + "'"
         );
         advance();
         return;
@@ -419,7 +427,16 @@ void Parser::parse_statements() {
 void Parser::parse_statement() {
     // Try macro expansion first
     while (macro_expander_.try_expand(*this, current_)) {
-        advance(); // load first token from expansion
+        if (suppress_next_advance_) {
+            suppress_next_advance_ = false;
+        } else {
+            advance(); // load first token from expansion or move past macro name
+        }
+    }
+
+    if (current_.type == TokenType::EndOfLine ||
+        current_.type == TokenType::EndOfInput) {
+        return;
     }
 
     if (current_.type == TokenType::LBrace) {

@@ -10,6 +10,7 @@
 #include "lexer.h"
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 class BFOutput {
 public:
@@ -20,8 +21,21 @@ public:
     void check_loops() const;
     int tape_ptr() const;
 
+    // allocate cells on the tape
+    int alloc_cells(int count);
+    void free_cells(int addr);
+
 private:
     int tape_ptr_ = 0;
+    int reserved_ptr_ = 0;
     std::vector<SourceLocation> loop_stack_;
     std::vector<Token> output_;
+
+    // heap management
+    // free_list_: vector of {start, length}, kept merged and non-overlapping
+    std::vector<std::pair<int,int>> free_list_;
+    // alloc_map_: start -> length
+    std::unordered_map<int,int> alloc_map_;
+
+    void add_free_block(int start, int len);
 };

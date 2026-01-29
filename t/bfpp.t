@@ -358,7 +358,7 @@ END
 # #define error - reserved name
 spew("$test.in", "#define if 1");
 capture_nok("bfpp $test.in", <<END);
-$test.in:1:9: error: cannot define macro 'if': reserved directive keyword
+$test.in:1:9: error: cannot define macro 'if': reserved word
 END
 
 # #define error - duplicate parameters
@@ -373,7 +373,7 @@ END
 # #define error - reserved parameter
 spew("$test.in", "#define X(if)");
 capture_nok("bfpp $test.in", <<END);
-$test.in:1:11: error: cannot define parameter 'if': reserved directive keyword
+$test.in:1:11: error: cannot define parameter 'if': reserved word
 END
 
 # #define error - duplicate macro
@@ -451,7 +451,7 @@ END
 # #undef error - reserved word
 spew("$test.in", "#undef if");
 capture_nok("bfpp $test.in", <<END);
-$test.in:1:8: error: cannot undefine reserved directive keyword 'if'
+$test.in:1:8: error: cannot undefine reserved word 'if'
 END
 
 # #undef error - extra arguments
@@ -690,6 +690,117 @@ capture_ok("bfpp $test.in", <<END);
 
 ++++
 END
+
+# alloc_cell - error no arguments
+spew("$test.in", "alloc_cell");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:11: error: expected '(' after macro name 'alloc_cell'
+$test.in:1:11: error: alloc_cell expects one identifier
+END
+
+# alloc_cell - error empty arguments
+spew("$test.in", "alloc_cell()");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:13: error: alloc_cell expects one identifier
+END
+
+# alloc_cell - error too many arguments
+spew("$test.in", "alloc_cell(A,B)");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:13: error: expected ')' at end of macro call, found ','
+$test.in:1:16: error: alloc_cell expects one identifier
+END
+
+# alloc_cell - wrong type of arguments
+spew("$test.in", "alloc_cell(1)");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:14: error: alloc_cell expects one identifier
+END
+
+# alloc_cell - use as reserved word
+spew("$test.in", "#define alloc_cell 1");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:9: error: cannot define macro 'alloc_cell': reserved word
+END
+
+# alloc_cell
+spew("$test.in", <<END);
+alloc_cell(A) /* A=0 */
+alloc_cell(B) /* B=1 */
+>A
+>B
+>A
+END
+capture_ok("bfpp $test.in", <<END);
+
+
+
+>
+<
+END
+
+# free_cell - error no arguments
+spew("$test.in", "free_cell");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:10: error: expected '(' after macro name 'free_cell'
+$test.in:1:10: error: free_cell expects one identifier
+END
+
+# free_cell - error empty arguments
+spew("$test.in", "free_cell()");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:12: error: free_cell expects one identifier
+END
+
+# free_cell - error too many arguments
+spew("$test.in", "free_cell(A,B)");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:12: error: expected ')' at end of macro call, found ','
+$test.in:1:15: error: free_cell expects one identifier
+END
+
+# free_cell - wrong type of arguments
+spew("$test.in", "free_cell(1)");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:13: error: free_cell expects one identifier
+END
+
+# free_cell - use as reserved word
+spew("$test.in", "#define free_cell 1");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:9: error: cannot define macro 'free_cell': reserved word
+END
+
+# free_cell - use after free
+spew("$test.in", "alloc_cell(A) free_cell(A) >A");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:29: error: macro 'A' is not defined
+END
+
+# free_cell
+spew("$test.in", <<END);
+alloc_cell(A) /* A=0 */
+alloc_cell(B) /* B=1 */
+alloc_cell(C) /* C=2 */
+free_cell(B)
+alloc_cell(X) /* X=1 */
+>A
+>X
+>C
+>A
+END
+capture_ok("bfpp $test.in", <<END);
+
+
+
+
+
+
+>
+>
+<<
+END
+
 
 
 unlink_testfiles;
