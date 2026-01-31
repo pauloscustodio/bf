@@ -231,22 +231,18 @@ capture_ok("bfpp $test.in", <<END);
 [
   -
 ]
-
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++.
 [
   -
 ]
-
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++.
 [
   -
 ]
-
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++.
 [
   -
 ]
-
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++.
 [
   -
@@ -695,7 +691,6 @@ END
 spew("$test.in", "alloc_cell");
 capture_nok("bfpp $test.in", <<END);
 $test.in:1:11: error: expected '(' after macro name 'alloc_cell'
-$test.in:1:11: error: alloc_cell expects one identifier
 END
 
 # alloc_cell - error empty arguments
@@ -708,7 +703,6 @@ END
 spew("$test.in", "alloc_cell(A,B)");
 capture_nok("bfpp $test.in", <<END);
 $test.in:1:13: error: expected ')' at end of macro call, found ','
-$test.in:1:16: error: alloc_cell expects one identifier
 END
 
 # alloc_cell - wrong type of arguments
@@ -732,18 +726,20 @@ alloc_cell(B) /* B=1 */
 >A
 END
 capture_ok("bfpp $test.in", <<END);
-
-
-
+[
+  -
+]
 >
-<
+[
+  -
+]
+<><
 END
 
 # free_cell - error no arguments
 spew("$test.in", "free_cell");
 capture_nok("bfpp $test.in", <<END);
 $test.in:1:10: error: expected '(' after macro name 'free_cell'
-$test.in:1:10: error: free_cell expects one identifier
 END
 
 # free_cell - error empty arguments
@@ -756,7 +752,6 @@ END
 spew("$test.in", "free_cell(A,B)");
 capture_nok("bfpp $test.in", <<END);
 $test.in:1:12: error: expected ')' at end of macro call, found ','
-$test.in:1:15: error: free_cell expects one identifier
 END
 
 # free_cell - wrong type of arguments
@@ -790,18 +785,27 @@ alloc_cell(X) /* X=1 */
 >A
 END
 capture_ok("bfpp $test.in", <<END);
-
-
-
-
-
-
+[
+  -
+]
 >
->
-<<
+[
+  -
+]
+<>>
+[
+  -
+]
+<<>
+[
+  -
+]
+<>
+[
+  -
+]
+<>><<
 END
-
-
 
 unlink_testfiles;
 done_testing;

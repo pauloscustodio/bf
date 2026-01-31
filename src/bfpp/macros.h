@@ -43,13 +43,29 @@ public:
     // Returns true if token was expanded, false otherwise
     bool try_expand(Parser& parser, const Token& token);
     void remove_expanding(const std::string& name);
-    std::vector<std::vector<Token>> collect_args(Parser& parser,
-                                 const Macro& macro);
+
+    // Collect arguments for a macro call.
+    // Returns false on syntax error (error already reported), true otherwise.
+    bool collect_args(Parser& parser,
+                      const Macro& macro,
+                      std::vector<std::vector<Token>>& args);
+
+    // Query built-in names (needed by is_reserved_keyword, etc.)
+    static bool is_builtin_name(const std::string& name);
 
 private:
+    struct Builtin {
+        const char* name;
+        bool (MacroExpander::*handler)(Parser& parser, const Token& tok);
+    };
+
+    static const Builtin kBuiltins[];
+
     MacroTable& table_;
     std::unordered_set<std::string> expanding_; // recursion guard
 
+    bool handle_alloc_cell(Parser& parser, const Token& tok);
+    bool handle_free_cell(Parser& parser, const Token& tok);
     std::vector<Token> substitute_body(const Macro& macro,
                                        const std::vector<std::vector<Token>>& args);
 };

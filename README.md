@@ -56,6 +56,6 @@ Directives:
 
 Built-in macros:
 
-- alloc_cell(NAME) : reserves one cell on the tape, creates a macro NAME with it's address; cells are reserved from 0 upwards
+- alloc_cell(NAME) : reserves one cell on the tape, creates a macro NAME with it's address; cells are reserved from 0 upwards; clears the resrved cell
 
-- free_cell(NAME) : frees a cell reserved by alloc_cell() and removes the macro NAME
+- free_cell(NAME) : frees a cell reserved by alloc_cell() and removes the macro NAME; clears the freed cell;

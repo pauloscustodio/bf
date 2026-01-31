@@ -89,203 +89,201 @@ bool CommentStripper::is_eof() const {
     return g_file_stack.is_eof();
 }
 
-Lexer::Lexer(CommentStripper& stripper)
-    : stripper_(stripper) {
-}
+void TokenScanner::scan_line(const std::string& text,
+                             const std::string& filename,
+                             int line_num,
+                             std::vector<Token>& tokens,
+                             bool& in_directive,
+                             int& expr_depth) const {
+    size_t start_token_count = tokens.size();
 
-void Lexer::scan_append(const Line& line) {
-    // DON'T clear tokens_ or reset pos_
-    // Scan and append new tokens to the existing buffer
-
-    in_directive_ = false;
-    expr_depth_ = 0;
-    size_t start_token_count = tokens_.size();
-
-    const char* p = line.text.c_str();
+    const char* p = text.c_str();
     while (*p) {
-        // Skip whitespace
-        if (is_space(*p)) {
+        if (*p != '\n' && is_space(*p)) {
             ++p;
             continue;
         }
 
-        // token start position
+        if (*p == '\n') {
+            ++p;
+            int column = static_cast<int>(p - text.c_str() + 1);
+            SourceLocation loc(filename, line_num, column);
+            tokens.emplace_back(TokenType::EndOfLine, "", loc);
+            in_directive = false;
+            expr_depth = 0;
+            start_token_count = tokens.size();
+            continue;
+        }
+
         const char* start = p;
-        std::string filename = g_file_stack.filename();
-        int line_num = line.line_num;
-        int column = static_cast<int>(start - line.text.c_str() + 1);
+        int column = static_cast<int>(start - text.c_str() + 1);
         SourceLocation loc(filename, line_num, column);
 
-        if (tokens_.size() == start_token_count &&
+        if (tokens.size() == start_token_count &&
                 *p == '#' && is_alpha(*(p + 1))) {
-            // directive
-            in_directive_ = true;
+            in_directive = true;
             p++;
             while (is_alpha(*p)) {
                 ++p;
             }
             std::string directive(start, p - start);
-            tokens_.emplace_back(TokenType::Directive, directive, loc);
+            tokens.emplace_back(TokenType::Directive, directive, loc);
             continue;
         }
 
         if (is_alpha(*p) || *p == '_') {
-            // Identifier
             while (is_alnum(*p) || *p == '_') {
                 ++p;
             }
             std::string ident(start, p - start);
-            tokens_.emplace_back(TokenType::Identifier, ident, loc);
+            tokens.emplace_back(TokenType::Identifier, ident, loc);
             continue;
         }
 
         if (is_digit(*p)) {
-            // Integer
             int value = 0;
             while (is_digit(*p)) {
                 value = value * 10 + (*p - '0');
                 ++p;
             }
             Token t = Token::make_int(value, loc);
-            tokens_.push_back(t);
+            tokens.push_back(t);
             continue;
         }
 
         if (*p == '"') {
-            // String
-            ++p; // skip opening "
+            ++p;
             std::string str;
             while (*p && *p != '"') {
                 str.push_back(*p);
                 ++p;
             }
             if (*p != '"') {
-                // Unterminated string
                 g_error_reporter.report_error(loc,
-                                              "unterminated string literal"
-                                             );
+                                              "unterminated string literal");
                 break;
             }
-            ++p; // skip closing "
-            tokens_.emplace_back(TokenType::String, str, loc);
+            ++p;
+            tokens.emplace_back(TokenType::String, str, loc);
             continue;
         }
 
         if (p[0] == '\'' && p[2] == '\'') {
-            // Char literal
             int value = static_cast<int>(static_cast<unsigned char>(p[1]));
             Token t = Token::make_int(value, loc);
-            tokens_.push_back(t);
+            tokens.push_back(t);
             p += 3;
             continue;
         }
 
         if (*p == '(') {
-            // LParen
-            expr_depth_++;
+            expr_depth++;
             std::string op(1, *p);
             p++;
-            tokens_.emplace_back(TokenType::LParen, op, loc);
+            tokens.emplace_back(TokenType::LParen, op, loc);
             continue;
         }
 
         if (*p == ')') {
-            // RParen
-            if (expr_depth_ > 0) {
-                expr_depth_--;
+            if (expr_depth > 0) {
+                expr_depth--;
             }
             std::string op(1, *p);
             p++;
-            tokens_.emplace_back(TokenType::RParen, op, loc);
+            tokens.emplace_back(TokenType::RParen, op, loc);
             continue;
         }
 
         if (*p == '{') {
-            // LBrace
             std::string op(1, *p);
             p++;
-            tokens_.emplace_back(TokenType::LBrace, op, loc);
+            tokens.emplace_back(TokenType::LBrace, op, loc);
             continue;
         }
 
         if (*p == '}') {
-            // RBrace
             std::string op(1, *p);
             p++;
-            tokens_.emplace_back(TokenType::RBrace, op, loc);
-            continue;
-        }
-
-        if (*p == ')') {
-            // RParen
-            if (expr_depth_ > 0) {
-                expr_depth_--;
-            }
-            std::string op(1, *p);
-            p++;
-            tokens_.emplace_back(TokenType::RParen, op, loc);
+            tokens.emplace_back(TokenType::RBrace, op, loc);
             continue;
         }
 
         if (*p == ',') {
-            // Comma - valid both in expressions and BFInstr
             std::string op(1, *p);
             p++;
-            tokens_.emplace_back(TokenType::BFInstr, op, loc);
+            tokens.emplace_back(TokenType::BFInstr, op, loc);
             continue;
         }
 
-        if (expr_depth_ == 0 &&
+        if (expr_depth == 0 &&
                 (*p == '+' || *p == '-' || *p == '<' || *p == '>' ||
                  *p == '[' || *p == ']' || *p == '.' || *p == ',')) {
-            // BFInstr
             std::string op(1, *p);
             p++;
-            tokens_.emplace_back(TokenType::BFInstr, op, loc);
+            tokens.emplace_back(TokenType::BFInstr, op, loc);
             continue;
         }
 
-        if ((in_directive_ || expr_depth_ > 0) &&
-                ((p[0] == '=' && p[1] == '=') ||  // ==
-                 (p[0] == '!' && p[1] == '=') ||  // !=
-                 (p[0] == '<' && p[1] == '=') ||  // <=
-                 (p[0] == '>' && p[1] == '=') ||  // >=
-                 (p[0] == '&' && p[1] == '&') ||  // &&
-                 (p[0] == '|' && p[1] == '|') ||  // ||
-                 (p[0] == '<' && p[1] == '<') ||  // <<
-                 (p[0] == '>' && p[1] == '>'))    // >>
-           ) {
-            // 2 character operator
+        if ((in_directive || expr_depth > 0) &&
+                ((p[0] == '=' && p[1] == '=') ||
+                 (p[0] == '!' && p[1] == '=') ||
+                 (p[0] == '<' && p[1] == '=') ||
+                 (p[0] == '>' && p[1] == '=') ||
+                 (p[0] == '&' && p[1] == '&') ||
+                 (p[0] == '|' && p[1] == '|') ||
+                 (p[0] == '<' && p[1] == '<') ||
+                 (p[0] == '>' && p[1] == '>'))) {
             std::string op(p, p + 2);
             p += 2;
-            tokens_.emplace_back(TokenType::Operator, op, loc);
+            tokens.emplace_back(TokenType::Operator, op, loc);
             continue;
         }
 
-        if ((in_directive_ || expr_depth_ > 0) &&
+        if ((in_directive || expr_depth > 0) &&
                 (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '%' ||
                  *p == '&' || *p == '|' || *p == '^' || *p == '~' ||
                  *p == '!' || *p == '<' || *p == '>')) {
-            // single character operator
             std::string op(1, *p);
             p++;
-            tokens_.emplace_back(TokenType::Operator, op, loc);
+            tokens.emplace_back(TokenType::Operator, op, loc);
             continue;
         }
 
-        // Invalid charcater
         g_error_reporter.report_error(loc,
-                                      "invalid character '" + std::string(1, *p) + "'"
-                                     );
+                                      "invalid character '" + std::string(1, *p) + "'");
         break;
     }
 
-    // At end of line, append EndOfLine token
-    std::string filename = g_file_stack.filename();
-    int line_num = line.line_num;
-    int column = static_cast<int>(line.text.size() + 1);
-    SourceLocation loc(filename, line_num, column);
-    tokens_.emplace_back(TokenType::EndOfLine, "", loc);
+    int column = static_cast<int>(text.size() + 1);
+    SourceLocation eol_loc(filename, line_num, column);
+    tokens.emplace_back(TokenType::EndOfLine, "", eol_loc);
+}
+
+std::vector<Token> TokenScanner::scan_string(const std::string& text,
+        const std::string& filename,
+        int line_num) const {
+    std::vector<Token> tokens;
+    bool in_directive = false;
+    int expr_depth = 0;
+    scan_line(text, filename, line_num, tokens, in_directive, expr_depth);
+    return tokens;
+}
+
+Lexer::Lexer(CommentStripper& stripper)
+    : stripper_(stripper) {
+}
+
+void Lexer::scan_append(const Line& line) {
+    in_directive_ = false;
+    expr_depth_ = 0;
+
+    TokenScanner scanner;
+    scanner.scan_line(line.text,
+                      g_file_stack.filename(),
+                      line.line_num,
+                      tokens_,
+                      in_directive_,
+                      expr_depth_);
 }
 
 bool Lexer::getline(Line& line) {

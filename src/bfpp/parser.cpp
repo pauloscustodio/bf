@@ -68,6 +68,15 @@ void Parser::advance() {
     current_ = lexer_.get();
 }
 
+void Parser::push_macro_expansion(const std::string& name, const std::vector<Token>& tokens) {
+    MacroExpansionFrame frame;
+    frame.macro_name = name;
+    frame.tokens = tokens;           // expansion body
+    frame.tokens.push_back(current_); // resume with the token we had already loaded
+    frame.index = 0;
+    expansion_stack_.push_back(std::move(frame));
+}
+
 MacroExpander& Parser::macro_expander() {
     return macro_expander_;
 }
@@ -427,15 +436,11 @@ void Parser::parse_statements() {
 void Parser::parse_statement() {
     // Try macro expansion first
     while (macro_expander_.try_expand(*this, current_)) {
-        if (suppress_next_advance_) {
-            suppress_next_advance_ = false;
-        } else {
-            advance(); // load first token from expansion or move past macro name
-        }
+        advance(); // load first token from expansion or move past macro name
     }
 
     if (current_.type == TokenType::EndOfLine ||
-        current_.type == TokenType::EndOfInput) {
+            current_.type == TokenType::EndOfInput) {
         return;
     }
 

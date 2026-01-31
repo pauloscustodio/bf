@@ -65,23 +65,25 @@ std::string BFOutput::to_string() const {
             // Output '[' with current indentation on its own line
             if (!at_line_start) {
                 result += '\n';
+                line_num++;
             }
             result += std::string(indent_level * 2, ' ');
             result += "[\n";
+            line_num++;
             indent_level++;
             at_line_start = true;
-            // Don't increment line_num for bracket lines
         }
         else if (t.text == "]") {
             // Decrease indent, then output ']' on its own line
             if (!at_line_start) {
                 result += '\n';
+                line_num++;
             }
             indent_level--;
             result += std::string(indent_level * 2, ' ');
             result += "]\n";
+            line_num++;
             at_line_start = true;
-            // Don't increment line_num for bracket lines
         }
         else {
             // Regular BF instruction with indentation only at line start
@@ -126,7 +128,8 @@ int BFOutput::alloc_cells(int count) {
             int remaining = len - count;
             if (remaining == 0) {
                 free_list_.erase(free_list_.begin() + static_cast<long>(i));
-            } else {
+            }
+            else {
                 free_list_[i].first = start + count;
                 free_list_[i].second = remaining;
             }
@@ -149,9 +152,11 @@ void BFOutput::add_free_block(int start, int len) {
     // insert and merge
     free_list_.push_back({start, len});
     std::sort(free_list_.begin(), free_list_.end(),
-              [](auto& a, auto& b) { return a.first < b.first; });
+    [](auto & a, auto & b) {
+        return a.first < b.first;
+    });
 
-    std::vector<std::pair<int,int>> merged;
+    std::vector<std::pair<int, int>> merged;
     for (auto& blk : free_list_) {
         if (merged.empty()) {
             merged.push_back(blk);
@@ -166,7 +171,8 @@ void BFOutput::add_free_block(int start, int len) {
         if (blk_start <= back_end) { // overlap or adjacent
             int new_end = std::max(back_end, blk_end);
             back.second = new_end - back_start;
-        } else {
+        }
+        else {
             merged.push_back(blk);
         }
     }

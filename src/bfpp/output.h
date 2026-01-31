@@ -33,9 +33,9 @@ private:
 
     // heap management
     // free_list_: vector of {start, length}, kept merged and non-overlapping
-    std::vector<std::pair<int,int>> free_list_;
+    std::vector<std::pair<int, int>> free_list_;
     // alloc_map_: start -> length
-    std::unordered_map<int,int> alloc_map_;
+    std::unordered_map<int, int> alloc_map_;
 
     void add_free_block(int start, int len);
 };

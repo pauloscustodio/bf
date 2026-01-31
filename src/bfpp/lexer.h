@@ -71,6 +71,22 @@ struct Token {
     }
 };
 
+class TokenScanner {
+public:
+    // Scan a single line of text into `tokens`, updating directive/expr state.
+    void scan_line(const std::string& text,
+                   const std::string& filename,
+                   int line_num,
+                   std::vector<Token>& tokens,
+                   bool& in_directive,
+                   int& expr_depth) const;
+
+    // Convenience: tokenize a string and return the tokens.
+    std::vector<Token> scan_string(const std::string& text,
+                                   const std::string& filename = "(string)",
+                                   int line_num = 1) const;
+};
+
 class Lexer {
 public:
     Lexer(CommentStripper& stripper);
