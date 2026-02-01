@@ -64,3 +64,7 @@ Built-in macros:
 
 - set(expr1, expr2) : sets the cell pointed by expr1 to the value of expr2
 
+- move(expr1, expr2) : move the value of cell at expr1 to cell at expr2, cell at expr1 is zeroed
+
+- copy(expr1, expr2) : copy the value of cell at expr1 to cell at expr2, uses a temporary allocated from the start of the tape and releases it
+

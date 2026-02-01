@@ -605,7 +605,8 @@ bool Parser::parse_bf_int_arg(int& output) {
         return true;
     }
 
-    if (current_.type == TokenType::Identifier) {
+    if (current_.type == TokenType::Identifier &&
+            !is_reserved_keyword(current_.text)) {
         // evaluate expression result of macro expansion
         std::vector<Token> expr_tokens{ current_ };
         ArrayTokenSource source(expr_tokens);

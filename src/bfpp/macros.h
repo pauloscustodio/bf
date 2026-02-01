@@ -68,8 +68,11 @@ private:
     bool handle_free_cell(Parser& parser, const Token& tok);
     bool handle_clear(Parser& parser, const Token& tok);
     bool handle_set(Parser& parser, const Token& tok);
+    bool handle_move(Parser& parser, const Token& tok);
+    bool handle_copy(Parser& parser, const Token& tok);
     std::vector<Token> substitute_body(const Macro& macro,
                                        const std::vector<std::vector<Token>>& args);
 };
 
 bool is_reserved_keyword(const std::string& name);
+std::string make_temp_name();

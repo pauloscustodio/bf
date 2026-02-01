@@ -838,6 +838,14 @@ capture_ok("bfpp $test.in", <<END);
 <
 END
 
+# clear - execute a test program
+spew("$test.in", "++++>++++< clear(0) clear(1)");
+capture_ok("bfpp $test.in | bf -D", <<END);
+Tape:  0   0 
+     ^^^ (ptr=0)
+
+END
+
 # set - error no arguments
 spew("$test.in", "set");
 capture_nok("bfpp $test.in", <<END);
@@ -867,6 +875,134 @@ capture_ok("bfpp $test.in", <<END);
   -
 ]
 ++<
+END
+
+# set - execute a test program
+spew("$test.in", "++++ set(0,10)");
+capture_ok("bfpp $test.in | bf -D", <<END);
+Tape: 10 
+     ^^^ (ptr=0)
+
+END
+
+# move - error no arguments
+spew("$test.in", "move");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:5: error: expected '(' after macro name 'move'
+END
+
+# move - error empty arguments
+spew("$test.in", "move()");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:7: error: move expects two arguments
+END
+
+# move - error too many arguments
+spew("$test.in", "move(A,B,C)");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:9: error: expected ')' at end of macro call, found ','
+END
+
+# move - move contents between cells
+spew("$test.in", "move(0,1) move(1,0)");
+capture_ok("bfpp $test.in", <<END);
+>
+[
+  -
+]
+<
+[
+  ->+<
+]
+[
+  -
+]
+>
+[
+  -<+>
+]
+<
+END
+
+# move - execute a test program
+spew("$test.in", "++++ move(0,1)");
+capture_ok("bfpp $test.in | bf -D", <<END);
+Tape:  0   4 
+     ^^^ (ptr=0)
+
+END
+
+# copy - error no arguments
+spew("$test.in", "copy");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:5: error: expected '(' after macro name 'copy'
+END
+
+# copy - error empty arguments
+spew("$test.in", "copy()");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:7: error: copy expects two arguments
+END
+
+# copy - error too many arguments
+spew("$test.in", "copy(A,B,C)");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:9: error: expected ')' at end of macro call, found ','
+END
+
+# copy - copy contents between cells
+spew("$test.in", "set(1,4) copy(1,2) copy(1,3)");
+capture_ok("bfpp $test.in", <<END);
+>
+[
+  -
+]
+++++<
+[
+  -
+]
+>>
+[
+  -
+]
+<
+[
+  ->+<<+>
+]
+<
+[
+  ->+<
+]
+[
+  -
+]
+[
+  -
+]
+>>>
+[
+  -
+]
+<<
+[
+  ->>+<<<+>
+]
+<
+[
+  ->+<
+]
+[
+  -
+]
+END
+
+# copy - execute a test program
+# Note: cell 0 is the temp used by copy
+spew("$test.in", ">++++ copy(1,2)");
+capture_ok("bfpp $test.in | bf -D", <<END);
+Tape:  0   4   4 
+         ^^^ (ptr=1)
+
 END
 
 unlink_testfiles;

@@ -17,6 +17,8 @@ const MacroExpander::Builtin MacroExpander::kBuiltins[] = {
     { "free_cell",  &MacroExpander::handle_free_cell  },
     { "clear",      &MacroExpander::handle_clear      },
     { "set",        &MacroExpander::handle_set        },
+    { "move",       &MacroExpander::handle_move       },
+    { "copy",       &MacroExpander::handle_copy       },
 };
 
 bool MacroTable::define(const Macro& macro) {
@@ -381,6 +383,89 @@ bool MacroExpander::handle_set(Parser& parser, const Token& tok) {
     return true;
 }
 
+bool MacroExpander::handle_move(Parser& parser, const Token& tok) {
+    // move(a, b) -> emits: { >b [-] >a [ - >b + >a ] }
+    Macro fake;
+    fake.name   = tok.text;
+    fake.params = { "a", "b" };
+
+    std::vector<std::vector<Token>> args;
+    if (!collect_args(parser, fake, args)) {
+        return true; // error already reported
+    }
+
+    if (args.size() != 2) {
+        g_error_reporter.report_error(tok.loc, "move expects two arguments");
+        return true;
+    }
+
+    ArrayTokenSource src_a(args[0]);
+    ExpressionParser expr_a(src_a, /*undefined_as_zero=*/false);
+    int a_val = expr_a.parse_expression();
+
+    ArrayTokenSource src_b(args[1]);
+    ExpressionParser expr_b(src_b, /*undefined_as_zero=*/false);
+    int b_val = expr_b.parse_expression();
+
+    TokenScanner scanner;
+    std::string mock_filename = "(move)";
+    // { >b [-] >a [ - >b + >a ] }
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            "{ >" + std::to_string(b_val) +
+            " [-] >" + std::to_string(a_val) +
+            " [ - >" + std::to_string(b_val) +
+            " + >" + std::to_string(a_val) + " ] }",
+            mock_filename));
+    return true;
+}
+
+bool MacroExpander::handle_copy(Parser& parser, const Token& tok) {
+    // copy(a, b) -> { alloc_cell(T) >b [-] >a [ - >b + >T + >a ] >T [ - >a + >T ] free_cell(T) }
+    Macro fake;
+    fake.name   = tok.text;
+    fake.params = { "a", "b" };
+
+    std::vector<std::vector<Token>> args;
+    if (!collect_args(parser, fake, args)) {
+        return true; // error already reported
+    }
+
+    if (args.size() != 2) {
+        g_error_reporter.report_error(tok.loc, "copy expects two arguments");
+        return true;
+    }
+
+    ArrayTokenSource src_a(args[0]);
+    ExpressionParser expr_a(src_a, /*undefined_as_zero=*/false);
+    int a_val = expr_a.parse_expression();
+
+    ArrayTokenSource src_b(args[1]);
+    ExpressionParser expr_b(src_b, /*undefined_as_zero=*/false);
+    int b_val = expr_b.parse_expression();
+
+    std::string temp_name = make_temp_name();
+
+    TokenScanner scanner;
+    std::string mock_filename = "(copy)";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            "{ alloc_cell(" + temp_name + ")"
+            " >" + std::to_string(b_val) + " [-]"
+            " >" + std::to_string(a_val) +
+            " [ - >" + std::to_string(b_val) +
+            " + >" + temp_name +
+            " + >" + std::to_string(a_val) + " ]"
+            " >" + temp_name +
+            " [ - >" + std::to_string(a_val) +
+            " + >" + temp_name + " ]"
+            " free_cell(" + temp_name + ") }",
+            mock_filename));
+    return true;
+}
+
 std::vector<Token> MacroExpander::substitute_body(const Macro& macro,
         const std::vector<std::vector<Token>>& args) {
     std::vector<Token> result;
@@ -419,4 +504,10 @@ bool is_reserved_keyword(const std::string& name) {
            name == "define" ||
            name == "undef" ||
            MacroExpander::is_builtin_name(name);
+}
+
+std::string make_temp_name() {
+    static int s_temp_counter = 0;
+    std::string temp_name = "_T" + std::to_string(++s_temp_counter);
+    return temp_name;
 }
