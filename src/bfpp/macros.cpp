@@ -16,6 +16,7 @@ const MacroExpander::Builtin MacroExpander::kBuiltins[] = {
     { "alloc_cell", &MacroExpander::handle_alloc_cell },
     { "free_cell",  &MacroExpander::handle_free_cell  },
     { "clear",      &MacroExpander::handle_clear      },
+    { "set",        &MacroExpander::handle_set        },
 };
 
 bool MacroTable::define(const Macro& macro) {
@@ -338,6 +339,43 @@ bool MacroExpander::handle_clear(Parser& parser, const Token& tok) {
         mock_filename,
         scanner.scan_string(
             "{ >" + std::to_string(value) + " [-] }",
+            mock_filename));
+
+    return true;
+}
+
+bool MacroExpander::handle_set(Parser& parser, const Token& tok) {
+    // set(a, b) -> emits: { >a [-] +b }
+    Macro fake;
+    fake.name = tok.text;
+    fake.params = { "a", "b" };
+
+    std::vector<std::vector<Token>> args;
+    if (!collect_args(parser, fake, args)) {
+        return true; // error already reported
+    }
+
+    if (args.size() != 2) {
+        g_error_reporter.report_error(tok.loc, "set expects two arguments");
+        return true;
+    }
+
+    // Evaluate both expressions
+    ArrayTokenSource src_a(args[0]);
+    ExpressionParser expr_a(src_a, /*undefined_as_zero=*/false);
+    int a_val = expr_a.parse_expression();
+
+    ArrayTokenSource src_b(args[1]);
+    ExpressionParser expr_b(src_b, /*undefined_as_zero=*/false);
+    int b_val = expr_b.parse_expression();
+
+    // Build expansion: { >a_val [-] +b_val }
+    TokenScanner scanner;
+    std::string mock_filename = "(set)";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            "{ >" + std::to_string(a_val) + " [-] +" + std::to_string(b_val) + " }",
             mock_filename));
 
     return true;

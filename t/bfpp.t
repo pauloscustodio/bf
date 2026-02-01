@@ -838,6 +838,36 @@ capture_ok("bfpp $test.in", <<END);
 <
 END
 
+# set - error no arguments
+spew("$test.in", "set");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:4: error: expected '(' after macro name 'set'
+END
+
+# set - error empty arguments
+spew("$test.in", "set()");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:6: error: set expects two arguments
+END
+
+# set - error too many arguments
+spew("$test.in", "set(A,B,C)");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:8: error: expected ')' at end of macro call, found ','
+END
+
+# set - set the given cells
+spew("$test.in", "set(0,3) set(1,2)");
+capture_ok("bfpp $test.in", <<END);
+[
+  -
+]
++++>
+[
+  -
+]
+++<
+END
 
 unlink_testfiles;
 done_testing;

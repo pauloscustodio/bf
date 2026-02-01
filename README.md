@@ -62,3 +62,5 @@ Built-in macros:
 
 - clear(expr) : clears the cell pointed by the expression
 
+- set(expr1, expr2) : sets the cell pointed by expr1 to the value of expr2
+
