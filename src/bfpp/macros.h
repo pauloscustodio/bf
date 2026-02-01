@@ -66,6 +66,7 @@ private:
 
     bool handle_alloc_cell(Parser& parser, const Token& tok);
     bool handle_free_cell(Parser& parser, const Token& tok);
+    bool handle_clear(Parser& parser, const Token& tok);
     std::vector<Token> substitute_body(const Macro& macro,
                                        const std::vector<std::vector<Token>>& args);
 };

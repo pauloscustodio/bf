@@ -15,6 +15,7 @@ MacroTable g_macro_table;
 const MacroExpander::Builtin MacroExpander::kBuiltins[] = {
     { "alloc_cell", &MacroExpander::handle_alloc_cell },
     { "free_cell",  &MacroExpander::handle_free_cell  },
+    { "clear",      &MacroExpander::handle_clear      },
 };
 
 bool MacroTable::define(const Macro& macro) {
@@ -304,6 +305,39 @@ bool MacroExpander::handle_free_cell(Parser& parser, const Token& tok) {
         mock_filename,
         scanner.scan_string(
             "{ >" + std::to_string(addr) + " [-] }",
+            mock_filename));
+
+    return true;
+}
+
+bool MacroExpander::handle_clear(Parser& parser, const Token& tok) {
+    // clear(<expr>) -> emits: { >expr-value [-] }
+    Macro fake;
+    fake.name = tok.text;
+    fake.params = { "expr" };
+
+    std::vector<std::vector<Token>> args;
+    if (!collect_args(parser, fake, args)) {
+        return true; // error already reported
+    }
+
+    if (args.size() != 1) {
+        g_error_reporter.report_error(tok.loc, "clear expects one argument");
+        return true;
+    }
+
+    // Evaluate the expression argument
+    ArrayTokenSource source(args[0]);
+    ExpressionParser expr(source, /*undefined_as_zero=*/false);
+    int value = expr.parse_expression();
+
+    // Build expansion: { > value [-] }
+    TokenScanner scanner;
+    std::string mock_filename = "(clear)";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            "{ >" + std::to_string(value) + " [-] }",
             mock_filename));
 
     return true;
