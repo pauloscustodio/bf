@@ -190,6 +190,51 @@ void BFOutput::add_free_block(int start, int len) {
     }
 }
 
+void BFOutput::optimize_tape_movements() {
+    std::vector<Token> optimized;
+    int net_move = 0;
+    for (const Token& t : output_) {
+        if (t.type == TokenType::BFInstr) {
+            if (t.text == ">") {
+                net_move++;
+            }
+            else if (t.text == "<") {
+                net_move--;
+            }
+            else {
+                // flush any pending moves
+                if (net_move > 0) {
+                    for (int i = 0; i < net_move; ++i) {
+                        optimized.push_back(Token::make_bf('>', t.loc));
+                    }
+                }
+                else if (net_move < 0) {
+                    for (int i = 0; i < -net_move; ++i) {
+                        optimized.push_back(Token::make_bf('<', t.loc));
+                    }
+                }
+                net_move = 0;
+                optimized.push_back(t);
+            }
+        }
+        else {
+            optimized.push_back(t);
+        }
+    }
+    // flush any remaining moves at the end
+    if (net_move > 0) {
+        for (int i = 0; i < net_move; ++i) {
+            optimized.push_back(Token::make_bf('>', SourceLocation()));
+        }
+    }
+    else if (net_move < 0) {
+        for (int i = 0; i < -net_move; ++i) {
+            optimized.push_back(Token::make_bf('<', SourceLocation()));
+        }
+    }
+    output_.swap(optimized);
+}
+
 void BFOutput::free_cells(int addr) {
     auto it = alloc_map_.find(addr);
     if (it == alloc_map_.end()) {

@@ -63,14 +63,14 @@ END
 spew("$test.in", <<END);
 +++\\
 ---\\
->>>
-<<<
+>>> +
+<<< -
 END
 capture_ok("bfpp $test.in", <<END);
-+++--->>>
++++--->>>+
 
 
-<<<
+<<<-
 END
 
 # test error on negative tape index
@@ -118,29 +118,29 @@ END
 
 # test abolute position after >/<
 spew("$test.in", <<END);
->0
->4
->4
->0
+>0 +
+>4 +
+>4 +
+>0 +
 END
 capture_ok("bfpp $test.in", <<END);
-
->>>>
-
-<<<<
++
+>>>>+
++
+<<<<+
 END
 
 spew("$test.in", <<END);
-<8
-<8
-<4
-<8
+<8 +
+<8 +
+<4 +
+<8 +
 END
 capture_ok("bfpp $test.in", <<END);
->>>>>>>>
-
-<<<<
->>>>
+>>>>>>>>+
++
+<<<<+
+>>>>+
 END
 
 # test undefined symbols after <>+-
@@ -156,16 +156,16 @@ END
 spew("$test.in", <<END);
 +X
 -X
->X
->0
-<X
+>X+
+>0+
+<X+
 END
 capture_ok("bfpp -DX=4 $test.in", <<END);
 ++++
 ----
->>>>
-<<<<
->>>>
+>>>>+
+<<<<+
+>>>>+
 END
 
 spew("$test.in", <<END);
@@ -181,14 +181,14 @@ END
 spew("$test.in", <<END);
 +(X-8)
 -(X-8)
-<(Y*(Y))
->0
+<(Y*(Y))+
+>0+
 END
 capture_ok("bfpp -D X=4 -D Y=2 $test.in", <<END);
 ----
 ++++
->>>>
-<<<<
+>>>>+
+<<<<+
 END
 
 # test invalid names in -D
@@ -260,14 +260,14 @@ capture_nok("bfpp $test.in", <<END);
 $test.in:1:1: error: unmatched '{' brace
 END
 
-spew("$test.in", "{ >>>> }");
+spew("$test.in", "{ >>>>+ }");
 capture_ok("bfpp $test.in", <<END);
->>>><<<<
+>>>>+<<<<
 END
 
-spew("$test.in", ">>>> { <<<< }");
+spew("$test.in", ">>>>+ { <<<<+ }");
 capture_ok("bfpp $test.in", <<END);
->>>><<<<>>>>
+>>>>+<<<<+>>>>
 END
 
 # detect mismatch in tape position between start and end loop
@@ -309,10 +309,7 @@ spew("$test.in", <<END);
 >
 END
 capture_ok("bfpp $test.in", <<END);
-+++
->+++
-
->
++++>+++>
 END
 
 # include from -I path
@@ -323,8 +320,7 @@ spew("$test.in", <<END);
 >
 END
 capture_ok("bfpp -I $test.dir $test.in", <<END);
-+++
->
++++>
 END
 path("$test.dir")->remove_tree;
 
@@ -716,7 +712,7 @@ capture_ok("bfpp $test.in", <<END);
 [
   -
 ]
-<><
+<
 END
 
 # free_cell - error no arguments
@@ -775,19 +771,18 @@ capture_ok("bfpp $test.in", <<END);
 [
   -
 ]
-<>>
+>
 [
   -
 ]
-<<>
+<
 [
   -
 ]
-<>
 [
   -
 ]
-<>><<
+<
 END
 
 # clear - error no arguments
@@ -1016,11 +1011,11 @@ capture_ok("bfpp $test.in", <<END);
 [
   -
 ]
-<>>
+>
 [
   -
 ]
-<<>
+<
 [
   -
 ]
@@ -1128,15 +1123,15 @@ capture_ok("bfpp $test.in", <<END);
 [
   -
 ]
-<<>>>
+>
 [
   -
 ]
-<<<>>>>
+>
 [
   -
 ]
-<<<<>>>
+<
 [
   -
 ]
@@ -1151,15 +1146,14 @@ capture_ok("bfpp $test.in", <<END);
 [
   -
 ]
-<<<<>>>>
 [
   -
 ]
-<<<<>>>>>
+>
 [
   -
 ]
-<<<<<>>>>
+<
 [
   -
 ]
@@ -1167,7 +1161,7 @@ capture_ok("bfpp $test.in", <<END);
 [
   ->+<
 ]
-<<<>>>+>>+<
++>>+<
 [
   ->
   [
@@ -1182,11 +1176,11 @@ capture_ok("bfpp $test.in", <<END);
 [
   -
 ]
-<<<<<>>>>
+<
 [
   -
 ]
-<<<<>>
+<<
 [
   -
 ]
@@ -1201,15 +1195,14 @@ capture_ok("bfpp $test.in", <<END);
 [
   -
 ]
-<<<<>>>>
 [
   -
 ]
-<<<<>>>>>
+>
 [
   -
 ]
-<<<<<>>>>
+<
 [
   -
 ]
@@ -1217,7 +1210,7 @@ capture_ok("bfpp $test.in", <<END);
 [
   ->>+<<
 ]
-<<>>+>>>+<
++>>>+<
 [
   ->
   [
@@ -1232,7 +1225,7 @@ capture_ok("bfpp $test.in", <<END);
 [
   -
 ]
-<<<<<>>
+<<<
 [
   <+>-
 ]
@@ -1243,7 +1236,7 @@ capture_ok("bfpp $test.in", <<END);
 [
   -
 ]
-<<<>
+<<
 END
 
 # run if - endif
@@ -1298,7 +1291,7 @@ capture_ok("bfpp $test.in", <<END);
 [
   -
 ]
-<>>
+>
 [
   -
 ]
@@ -1310,15 +1303,15 @@ capture_ok("bfpp $test.in", <<END);
 [
   -
 ]
-<<<>>>>
+>
 [
   -
 ]
-<<<<>>>>>
+>
 [
   -
 ]
-<<<<<>>>>
+<
 [
   -
 ]
@@ -1333,15 +1326,14 @@ capture_ok("bfpp $test.in", <<END);
 [
   -
 ]
-<<<<<>>>>>
 [
   -
 ]
-<<<<<>>>>>>
+>
 [
   -
 ]
-<<<<<<>>>>>
+<
 [
   -
 ]
@@ -1349,7 +1341,7 @@ capture_ok("bfpp $test.in", <<END);
 [
   ->+<
 ]
-<<<<>>>>+>>+<
++>>+<
 [
   ->
   [
@@ -1364,11 +1356,11 @@ capture_ok("bfpp $test.in", <<END);
 [
   -
 ]
-<<<<<<>>>>>
+<
 [
   -
 ]
-<<<<<>>>
+<<
 [
   -
 ]
@@ -1383,15 +1375,14 @@ capture_ok("bfpp $test.in", <<END);
 [
   -
 ]
-<<<<<>>>>>
 [
   -
 ]
-<<<<<>>>>>>
+>
 [
   -
 ]
-<<<<<<>>>>>
+<
 [
   -
 ]
@@ -1399,7 +1390,7 @@ capture_ok("bfpp $test.in", <<END);
 [
   ->>+<<
 ]
-<<<>>>+>>>+<
++>>>+<
 [
   ->
   [
@@ -1414,7 +1405,7 @@ capture_ok("bfpp $test.in", <<END);
 [
   -
 ]
-<<<<<<>>>
+<<<
 [
   <<+>>-
 ]
@@ -1430,7 +1421,7 @@ capture_ok("bfpp $test.in", <<END);
 [
   -
 ]
-<<<<>
+<<<
 END
 
 # run if - else - endif

@@ -25,6 +25,9 @@ public:
     int alloc_cells(int count);
     void free_cells(int addr);
 
+    // optimize tape movements by combining consecutive < and >
+    void optimize_tape_movements();
+
 private:
     int tape_ptr_ = 0;
     int reserved_ptr_ = 0;
@@ -38,4 +41,5 @@ private:
     std::unordered_map<int, int> alloc_map_;
 
     void add_free_block(int start, int len);
+
 };

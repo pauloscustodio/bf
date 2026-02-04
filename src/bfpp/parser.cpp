@@ -17,6 +17,7 @@ Parser::Parser(Lexer& lexer)
 bool Parser::run(std::string& output_) {
     advance();  // get first token
     if (parse()) {
+        optimize_tape_movements();
         output_ = to_string();
         return true;
     }
@@ -83,6 +84,10 @@ MacroExpander& Parser::macro_expander() {
 
 BFOutput& Parser::output() {
     return output_;
+}
+
+void Parser::optimize_tape_movements() {
+    output_.optimize_tape_movements();
 }
 
 std::string Parser::to_string() const {

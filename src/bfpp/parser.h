@@ -60,6 +60,7 @@ private:
 
     friend class MacroExpander;
 
+    void optimize_tape_movements();
     std::string to_string() const;
 
     bool parse();
