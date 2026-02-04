@@ -528,12 +528,6 @@ void Parser::parse_bf_left_right(const Token& tok) {
 
 void Parser::parse_bf_loop_start(const Token& tok) {
     int pos = output_.tape_ptr();
-    int arg = 0;
-    if (parse_bf_int_arg(arg)) {
-        int delta = arg - pos;
-        output_count_bf_instr(Token::make_bf('>', tok.loc), delta);
-        pos = arg;
-    }
     loop_stack_.push_back(LoopFrame{ tok.loc, pos });
     output_count_bf_instr(tok, 1);
 }

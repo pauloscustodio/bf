@@ -36,8 +36,6 @@ Extended BF code translated to plain BF code:
 
 - +'c' : increment the cell by the ASCII code of the quoted character
 
-- '[' (number|name|(expr) : start the loop at the given absolute tape position, the end loop ] will check if the tape position changed from the start position
-
 - '{' : remember the current tape postion
 
 - '}' : emit > or < instructions to return to the tape position remebered by {

@@ -249,23 +249,6 @@ capture_ok("bfpp $test.in", <<END);
 ]
 END
 
-# labeled loops
-spew("$test.in", <<END);
->4
-+4
->0
-[4 - ]
-END
-capture_ok("bfpp $test.in", <<END);
->>>>
-++++
-<<<<
->>>>
-[
-  -
-]
-END
-
 # test braces
 spew("$test.in", "}");
 capture_nok("bfpp $test.in", <<END);
@@ -412,7 +395,7 @@ END
 # #define - multi-line function macro
 spew("$test.in", <<END);
 #define COPY(A,B,T)	\\
-{ >B [-] >T [-] [A - >B + >T + >A ] [T - >A + >T ] }
+{ >B [-] >T [-] >A [ - >B + >T + >A ] >T [ - >A + >T ] }
 ++++
 COPY(0,1,2)
 END
