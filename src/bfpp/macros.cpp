@@ -19,6 +19,10 @@ const MacroExpander::Builtin MacroExpander::kBuiltins[] = {
     { "set",        &MacroExpander::handle_set        },
     { "move",       &MacroExpander::handle_move       },
     { "copy",       &MacroExpander::handle_copy       },
+    { "not",        &MacroExpander::handle_not        },
+    { "if",         &MacroExpander::handle_if         },
+    { "else",       &MacroExpander::handle_else       },
+    { "endif",      &MacroExpander::handle_endif      },
 };
 
 bool MacroTable::define(const Macro& macro) {
@@ -235,6 +239,27 @@ bool MacroExpander::is_builtin_name(const std::string& name) {
         }
     }
     return false;
+}
+
+void MacroExpander::check_struct_stack() const {
+    for (const BuiltinStructLevel& level : struct_stack_) {
+        switch (level.type) {
+        case BuiltinStruct::IF:
+            g_error_reporter.report_error(
+                level.loc,
+                "if without matching endif"
+            );
+            break;
+        case BuiltinStruct::ELSE:
+            g_error_reporter.report_error(
+                level.loc,
+                "else without matching endif"
+            );
+            break;
+        default:
+            break;
+        }
+    }
 }
 
 bool MacroExpander::handle_alloc_cell(Parser& parser, const Token& tok) {
@@ -463,6 +488,171 @@ bool MacroExpander::handle_copy(Parser& parser, const Token& tok) {
             " + >" + temp_name + " ]"
             " free_cell(" + temp_name + ") }",
             mock_filename));
+    return true;
+}
+
+bool MacroExpander::handle_not(Parser& parser, const Token& tok) {
+    // not(expr) : sets cell to 1 if expr == 0, else 0
+    Macro fake;
+    fake.name = tok.text;
+    fake.params = { "expr" };
+
+    std::vector<std::vector<Token>> args;
+    if (!collect_args(parser, fake, args)) {
+        return true; // error already reported
+    }
+
+    if (args.size() != 1) {
+        g_error_reporter.report_error(tok.loc, "not expects one argument");
+        return true;
+    }
+
+    ArrayTokenSource src(args[0]);
+    ExpressionParser expr(src, /*undefined_as_zero=*/false);
+    int X = expr.parse_expression();
+
+    std::string T = make_temp_name();
+    std::string F = make_temp_name();
+
+    TokenScanner scanner;
+    std::string mock_filename = "(not)";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            // allocate T and F
+            "{ alloc_cell(" + T + ") "
+            "  alloc_cell(" + F + ") "
+            // Move X to T destoying X
+            "  move(" + std::to_string(X) + ", " + T + ") "
+            // Initialize result X = 1, flag F = 1
+            "  >" + std::to_string(X) + " + "
+            "  >" + F + " + "
+            // Loop while T > 0
+            "  >" + T + " "
+            "  [ "                  // while T != 0
+            "    - "                // T--
+            "    >" + F + " [ "     //   if F != 0
+            "         - "           //     F-- (so this runs only once)
+            "         >" + std::to_string(X) + " - "    //     X-- (1 -> 0)
+            "         >" + F + " "  //     back to F
+            "       ] "             //   end if
+            "    >" + T + " "       //   back to T
+            "  ] "              // end while
+            // Now T = 0, F = 0, X = !original (0 -> 1, >0 -> 0)
+            "  free_cell(" + T + ") "
+            "  free_cell(" + F + ") "
+            "}",
+            mock_filename));
+    return true;
+}
+
+bool MacroExpander::handle_if(Parser& parser, const Token& tok) {
+    // if(cond) / else / endif
+    Macro fake;
+    fake.name = tok.text;
+    fake.params = { "expr" };
+
+    std::vector<std::vector<Token>> args;
+    if (!collect_args(parser, fake, args)) {
+        return true; // error already reported
+    }
+
+    if (args.size() != 1) {
+        g_error_reporter.report_error(tok.loc, "if expects one argument");
+        return true;
+    }
+
+    // Evaluate the expression argument
+    ArrayTokenSource source(args[0]);
+    ExpressionParser expr(source, /*undefined_as_zero=*/false);
+    int cond = expr.parse_expression();
+
+    // create the If-stack entry
+    BuiltinStructLevel level;
+    level.type = BuiltinStruct::IF; 
+    level.loc = tok.loc;
+    level.temp_if = make_temp_name();
+    level.temp_else = make_temp_name();
+
+    TokenScanner scanner;
+    std::string mock_filename = "(if)";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            // allocate temp variables
+            "{ alloc_cell(" + level.temp_if + ") "
+            "  alloc_cell(" + level.temp_else + ") "
+            // copy cond to temp_else and negate it
+            "  copy(" + std::to_string(cond) + ", " + level.temp_else + ") "
+            "  not(" + level.temp_else + ")"
+            // copy temp_else to temp_if and negate it
+            "  copy(" + level.temp_else + ", " + level.temp_if + ") "
+            "  not(" + level.temp_if + ") "
+            // enter the IF branch if temp_if == 1
+            "  >" + level.temp_if + " "
+            "  [ {",
+            mock_filename));
+    struct_stack_.push_back(std::move(level));
+    return true;
+}
+
+bool MacroExpander::handle_else(Parser& parser, const Token& tok) {
+    parser.advance(); // consume else
+    if (struct_stack_.empty()) {
+        g_error_reporter.report_error(tok.loc, "else without matching if");
+        return true;
+    }
+
+    BuiltinStructLevel& level = struct_stack_.back();
+    if (level.type != BuiltinStruct::IF) {
+        g_error_reporter.report_error(tok.loc, "else without if");
+        return true;
+    }
+    level.type = BuiltinStruct::ELSE;
+
+    TokenScanner scanner;
+    std::string mock_filename = "(else)";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            // close previous IF branch
+            "  } - ] "
+            // enter the ELSE branch if temp_else == 1
+            "  >" + level.temp_else + " "
+            "  [ {",
+            mock_filename));
+    return true;
+}
+
+bool MacroExpander::handle_endif(Parser& parser, const Token& tok) {
+    parser.advance(); // consume endif
+    if (struct_stack_.empty()) {
+        g_error_reporter.report_error(tok.loc, "endif without matching if");
+        return true;
+    }
+
+    BuiltinStructLevel& level = struct_stack_.back();
+    if (level.type != BuiltinStruct::IF &&
+        level.type != BuiltinStruct::ELSE) {
+        g_error_reporter.report_error(tok.loc, "endif without if");
+        return true;
+    }
+
+    // Close the current IF branch
+    TokenScanner scanner;
+    std::string mock_filename = "(endif)";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            // close previous IF/ELSE branch
+            "  } - ] "
+            // release temp variables
+            "  free_cell(" + level.temp_if + ") "
+            "  free_cell(" + level.temp_else + ") "
+            "}",
+            mock_filename));
+
+    struct_stack_.pop_back();
     return true;
 }
 

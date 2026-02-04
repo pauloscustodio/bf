@@ -36,6 +36,19 @@ extern MacroTable g_macro_table;
 
 class Parser; // forward declaration
 
+enum class BuiltinStruct {
+    NONE,
+    IF,
+    ELSE,
+};
+
+struct BuiltinStructLevel {
+    BuiltinStruct type = BuiltinStruct::NONE;
+    SourceLocation loc;
+    std::string temp_if;
+    std::string temp_else;
+};
+
 class MacroExpander {
 public:
     MacroExpander(MacroTable& table);
@@ -53,6 +66,9 @@ public:
     // Query built-in names (needed by is_reserved_keyword, etc.)
     static bool is_builtin_name(const std::string& name);
 
+    // check if the struct stack is empty
+    void check_struct_stack() const;
+
 private:
     struct Builtin {
         const char* name;
@@ -63,6 +79,7 @@ private:
 
     MacroTable& table_;
     std::unordered_set<std::string> expanding_; // recursion guard
+    std::vector<BuiltinStructLevel> struct_stack_;
 
     bool handle_alloc_cell(Parser& parser, const Token& tok);
     bool handle_free_cell(Parser& parser, const Token& tok);
@@ -70,6 +87,10 @@ private:
     bool handle_set(Parser& parser, const Token& tok);
     bool handle_move(Parser& parser, const Token& tok);
     bool handle_copy(Parser& parser, const Token& tok);
+    bool handle_not(Parser& parser, const Token& tok);
+    bool handle_if(Parser& parser, const Token& tok);
+    bool handle_else(Parser& parser, const Token& tok);    
+    bool handle_endif(Parser& parser, const Token& tok);
     std::vector<Token> substitute_body(const Macro& macro,
                                        const std::vector<std::vector<Token>>& args);
 };

@@ -110,6 +110,9 @@ bool Parser::parse() {
         }
     }
 
+    // After finishing, check for unclosed builtin structures
+    macro_expander_.check_struct_stack();
+
     // After finishing, check for unmatched loops
     output_.check_loops();
 
