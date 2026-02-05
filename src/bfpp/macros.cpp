@@ -25,6 +25,8 @@ const MacroExpander::Builtin MacroExpander::kBuiltins[] = {
     { "endif",      &MacroExpander::handle_endif      },
     { "while",      &MacroExpander::handle_while      },
     { "endwhile",   &MacroExpander::handle_endwhile   },
+    { "repeat",     &MacroExpander::handle_repeat      },
+    { "endrepeat",  &MacroExpander::handle_endrepeat   },
 };
 
 bool MacroTable::define(const Macro& macro) {
@@ -262,6 +264,12 @@ void MacroExpander::check_struct_stack() const {
             g_error_reporter.report_error(
                 level.loc,
                 "while without matching endwhile"
+            );
+            break;
+        case BuiltinStruct::REPEAT:
+            g_error_reporter.report_error(
+                level.loc,
+                "repeat without matching endrepeat"
             );
             break;
         default:
@@ -690,7 +698,7 @@ bool MacroExpander::handle_while(Parser& parser, const Token& tok) {
     level.type = BuiltinStruct::WHILE;
     level.loc = tok.loc;
     level.temp_if = make_temp_name();
-    level.while_cond = cond;
+    level.cond = cond;
 
     TokenScanner scanner;
     std::string mock_filename = "(while)";
@@ -700,7 +708,7 @@ bool MacroExpander::handle_while(Parser& parser, const Token& tok) {
             // allocate temp variable
             "{ alloc_cell(" + level.temp_if + ") "
             // copy cond to temp_if and negate it twice
-            "  copy(" + std::to_string(level.while_cond) + ", "
+            "  copy(" + std::to_string(level.cond) + ", "
             + level.temp_if + ") "
             "  not(" + level.temp_if + ")"
             "  not(" + level.temp_if + ")"
@@ -733,7 +741,7 @@ bool MacroExpander::handle_endwhile(Parser& parser, const Token& tok) {
             // close WHILE brace
             "  } "
             // copy cond to temp_if and negate it twice
-            "  copy(" + std::to_string(level.while_cond) + ", "
+            "  copy(" + std::to_string(level.cond) + ", "
             + level.temp_if + ") "
             "  not(" + level.temp_if + ")"
             "  not(" + level.temp_if + ")"
@@ -747,6 +755,70 @@ bool MacroExpander::handle_endwhile(Parser& parser, const Token& tok) {
     struct_stack_.pop_back();
 
     return false;
+}
+
+bool MacroExpander::handle_repeat(Parser& parser, const Token& tok) {
+    // repeat(count) / endrepeat
+    Macro fake;
+    fake.name = tok.text;
+    fake.params = { "expr" };
+
+    std::vector<std::vector<Token>> args;
+    if (!collect_args(parser, fake, args)) {
+        return true; // error already reported
+    }
+
+    if (args.size() != 1) {
+        g_error_reporter.report_error(tok.loc, "repeat expects one argument");
+        return true;
+    }
+
+    // Evaluate the expression argument
+    ArrayTokenSource source(args[0]);
+    ExpressionParser expr(source, /*undefined_as_zero=*/false);
+    int count = expr.parse_expression();
+
+    // create the Repeat-stack entry
+    BuiltinStructLevel level;
+    level.type = BuiltinStruct::REPEAT;
+    level.loc = tok.loc;
+
+    TokenScanner scanner;
+    std::string mock_filename = "(repeat)";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            // enter the REPEAT branch if count > 0
+            "{ >" + std::to_string(count) + " [ { ",
+            mock_filename));
+    struct_stack_.push_back(std::move(level));
+    return true;
+}
+
+bool MacroExpander::handle_endrepeat(Parser& parser, const Token& tok) {
+    parser.advance(); // consume endrepeat
+    if (struct_stack_.empty()) {
+        g_error_reporter.report_error(tok.loc, "endrepeat without matching repeat");
+        return true;
+    }
+    BuiltinStructLevel& level = struct_stack_.back();
+    if (level.type != BuiltinStruct::REPEAT) {
+        g_error_reporter.report_error(tok.loc, "endrepeat without matching repeat");
+        return true;
+    }
+
+    // Close the current REPEAT branch
+    TokenScanner scanner;
+    std::string mock_filename = "(endrepeat)";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            // decrement count and re-enter REPEAT branch if count > 0
+            " } - ] }",
+            mock_filename));
+    struct_stack_.pop_back();
+
+    return true;
 }
 
 std::vector<Token> MacroExpander::substitute_body(const Macro& macro,
