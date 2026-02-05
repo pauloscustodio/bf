@@ -40,6 +40,7 @@ enum class BuiltinStruct {
     NONE,
     IF,
     ELSE,
+    WHILE,
 };
 
 struct BuiltinStructLevel {
@@ -47,6 +48,7 @@ struct BuiltinStructLevel {
     SourceLocation loc;
     std::string temp_if;
     std::string temp_else;
+    int while_cond = 0;
 };
 
 class MacroExpander {
@@ -89,8 +91,10 @@ private:
     bool handle_copy(Parser& parser, const Token& tok);
     bool handle_not(Parser& parser, const Token& tok);
     bool handle_if(Parser& parser, const Token& tok);
-    bool handle_else(Parser& parser, const Token& tok);    
+    bool handle_else(Parser& parser, const Token& tok);
     bool handle_endif(Parser& parser, const Token& tok);
+    bool handle_while(Parser& parser, const Token& tok);
+    bool handle_endwhile(Parser& parser, const Token& tok);
     std::vector<Token> substitute_body(const Macro& macro,
                                        const std::vector<std::vector<Token>>& args);
 };

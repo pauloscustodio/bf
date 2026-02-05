@@ -69,3 +69,5 @@ Built-in macros:
 - not(expr) : sets cell pointed by expr to 0 if >0, or to 1 if 0
 
 - if(expr) ... else ... endif : if the value of cell at expr is non-zero, execute the code up to the else, else execute the code between else and endif
+
+- while(expr) ... endwhile : repeat the loop while the value of the cell at expr is non-zero

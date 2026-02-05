@@ -23,6 +23,8 @@ const MacroExpander::Builtin MacroExpander::kBuiltins[] = {
     { "if",         &MacroExpander::handle_if         },
     { "else",       &MacroExpander::handle_else       },
     { "endif",      &MacroExpander::handle_endif      },
+    { "while",      &MacroExpander::handle_while      },
+    { "endwhile",   &MacroExpander::handle_endwhile   },
 };
 
 bool MacroTable::define(const Macro& macro) {
@@ -254,6 +256,12 @@ void MacroExpander::check_struct_stack() const {
             g_error_reporter.report_error(
                 level.loc,
                 "else without matching endif"
+            );
+            break;
+        case BuiltinStruct::WHILE:
+            g_error_reporter.report_error(
+                level.loc,
+                "while without matching endwhile"
             );
             break;
         default:
@@ -569,7 +577,7 @@ bool MacroExpander::handle_if(Parser& parser, const Token& tok) {
 
     // create the If-stack entry
     BuiltinStructLevel level;
-    level.type = BuiltinStruct::IF; 
+    level.type = BuiltinStruct::IF;
     level.loc = tok.loc;
     level.temp_if = make_temp_name();
     level.temp_else = make_temp_name();
@@ -633,7 +641,7 @@ bool MacroExpander::handle_endif(Parser& parser, const Token& tok) {
 
     BuiltinStructLevel& level = struct_stack_.back();
     if (level.type != BuiltinStruct::IF &&
-        level.type != BuiltinStruct::ELSE) {
+            level.type != BuiltinStruct::ELSE) {
         g_error_reporter.report_error(tok.loc, "endif without if");
         return true;
     }
@@ -654,6 +662,91 @@ bool MacroExpander::handle_endif(Parser& parser, const Token& tok) {
 
     struct_stack_.pop_back();
     return true;
+}
+
+bool MacroExpander::handle_while(Parser& parser, const Token& tok) {
+    // while(cond) / endwhile
+    Macro fake;
+    fake.name = tok.text;
+    fake.params = { "expr" };
+
+    std::vector<std::vector<Token>> args;
+    if (!collect_args(parser, fake, args)) {
+        return true; // error already reported
+    }
+
+    if (args.size() != 1) {
+        g_error_reporter.report_error(tok.loc, "while expects one argument");
+        return true;
+    }
+
+    // Evaluate the expression argument
+    ArrayTokenSource source(args[0]);
+    ExpressionParser expr(source, /*undefined_as_zero=*/false);
+    int cond = expr.parse_expression();
+
+    // create the While-stack entry
+    BuiltinStructLevel level;
+    level.type = BuiltinStruct::WHILE;
+    level.loc = tok.loc;
+    level.temp_if = make_temp_name();
+    level.while_cond = cond;
+
+    TokenScanner scanner;
+    std::string mock_filename = "(while)";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            // allocate temp variable
+            "{ alloc_cell(" + level.temp_if + ") "
+            // copy cond to temp_if and negate it twice
+            "  copy(" + std::to_string(level.while_cond) + ", "
+            + level.temp_if + ") "
+            "  not(" + level.temp_if + ")"
+            "  not(" + level.temp_if + ")"
+            // enter the WHILE branch if temp_if == 1
+            "  >" + level.temp_if + " "
+            "  [ {",
+            mock_filename));
+    struct_stack_.push_back(std::move(level));
+    return true;
+}
+
+bool MacroExpander::handle_endwhile(Parser& parser, const Token& tok) {
+    parser.advance(); // consume endwhile
+    if (struct_stack_.empty()) {
+        g_error_reporter.report_error(tok.loc, "endwhile without matching while");
+        return true;
+    }
+    BuiltinStructLevel& level = struct_stack_.back();
+    if (level.type != BuiltinStruct::WHILE) {
+        g_error_reporter.report_error(tok.loc, "endwhile without matching while");
+        return true;
+    }
+
+    // Close the current WHILE branch
+    TokenScanner scanner;
+    std::string mock_filename = "(endwhile)";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            // close WHILE brace
+            "  } "
+            // copy cond to temp_if and negate it twice
+            "  copy(" + std::to_string(level.while_cond) + ", "
+            + level.temp_if + ") "
+            "  not(" + level.temp_if + ")"
+            "  not(" + level.temp_if + ")"
+            // re-enter the WHILE branch if temp_if == 1
+            "  >" + level.temp_if + " "
+            "  ] "
+            // release temp variable
+            "  free_cell(" + level.temp_if + ") "
+            "}",
+            mock_filename));
+    struct_stack_.pop_back();
+
+    return false;
 }
 
 std::vector<Token> MacroExpander::substitute_body(const Macro& macro,
