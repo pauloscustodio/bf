@@ -72,6 +72,8 @@ Built-in macros:
 
 - or(a, b) : sets cell pointed by a to 1 if any of the cells pointed by a and b are non-zero, else sets a to 0; preserves b
 
+- xor(a, b) : sets cell pointed by a to 1 if any of the cells pointed by a and b are non-zero, but not both, else sets a to 0; preserves b
+
 - if(expr) ... else ... endif : if the value of cell at expr is non-zero, execute the code up to the else, else execute the code between else and endif
 
 - while(expr) ... endwhile : repeat the loop while the value of the cell at expr is non-zero

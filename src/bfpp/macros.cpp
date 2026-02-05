@@ -22,6 +22,7 @@ const MacroExpander::Builtin MacroExpander::kBuiltins[] = {
     { "not",        &MacroExpander::handle_not        },
     { "and",        &MacroExpander::handle_and        },
     { "or",         &MacroExpander::handle_or         },
+    { "xor",        &MacroExpander::handle_xor        },
     { "if",         &MacroExpander::handle_if         },
     { "else",       &MacroExpander::handle_else       },
     { "endif",      &MacroExpander::handle_endif      },
@@ -677,6 +678,60 @@ bool MacroExpander::handle_or(Parser& parser, const Token& tok) {
             "  free_cell(" + temp_a + ") "
             "  free_cell(" + temp_b + ") "
             "  free_cell(" + temp_r + ") "
+            "}",
+            mock_filename));
+
+    return true;
+}
+
+bool MacroExpander::handle_xor(Parser& parser, const Token& tok) {
+    // xor(expr_a, expr_b) : sets expr_a cell to 1 if exactly one of expr_a or expr_b are non-zero
+    Macro fake;
+    fake.name = tok.text;
+    fake.params = { "expr_a", "expr_b" };
+
+    std::vector<std::vector<Token>> args;
+    if (!collect_args(parser, fake, args)) {
+        return true; // error already reported
+    }
+
+    if (args.size() != 2) {
+        g_error_reporter.report_error(tok.loc, "xor expects two arguments");
+        return true;
+    }
+
+    ArrayTokenSource src_a(args[0]);
+    ExpressionParser expr_a(src_a, /*undefined_as_zero=*/false);
+    int a_val = expr_a.parse_expression();
+
+    ArrayTokenSource src_b(args[1]);
+    ExpressionParser expr_b(src_b, /*undefined_as_zero=*/false);
+    int b_val = expr_b.parse_expression();
+
+    std::string temp_1 = make_temp_name();
+    std::string temp_2 = make_temp_name();
+
+    TokenScanner scanner;
+    std::string mock_filename = "(xor)";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            "{ alloc_cell(" + temp_1 + ")"
+            "  alloc_cell(" + temp_2 + ")"
+            // Compute A_OR_B into T1
+            "  copy(" + std::to_string(a_val) + ", " + temp_1 + ") "
+            "  or(" + temp_1 + ", " + std::to_string(b_val) + ") "
+            // Compute A_AND_B into T2
+            "  copy(" + std::to_string(a_val) + ", " + temp_2 + ") "
+            "  and(" + temp_2 + ", " + std::to_string(b_val) + ") "
+            // NOT(T2)
+            "  not(" + temp_2 + ") "
+            // XOR = (A OR B) AND NOT(A AND B)
+            "  copy(" + temp_1 + ", " + std::to_string(a_val) + ") "
+            "  and(" + std::to_string(a_val) + ", " + temp_2 + ") "
+            // free temps
+            "  free_cell(" + temp_1 + ") "
+            "  free_cell(" + temp_2 + ") "
             "}",
             mock_filename));
 

@@ -93,6 +93,7 @@ private:
     bool handle_not(Parser& parser, const Token& tok);
     bool handle_and(Parser& parser, const Token& tok);
     bool handle_or(Parser& parser, const Token& tok);
+    bool handle_xor(Parser& parser, const Token& tok);
     bool handle_if(Parser& parser, const Token& tok);
     bool handle_else(Parser& parser, const Token& tok);
     bool handle_endif(Parser& parser, const Token& tok);
