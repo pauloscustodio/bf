@@ -91,6 +91,8 @@ private:
     bool handle_move(Parser& parser, const Token& tok);
     bool handle_copy(Parser& parser, const Token& tok);
     bool handle_not(Parser& parser, const Token& tok);
+    bool handle_and(Parser& parser, const Token& tok);
+    bool handle_or(Parser& parser, const Token& tok);
     bool handle_if(Parser& parser, const Token& tok);
     bool handle_else(Parser& parser, const Token& tok);
     bool handle_endif(Parser& parser, const Token& tok);

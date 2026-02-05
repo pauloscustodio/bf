@@ -68,8 +68,12 @@ Built-in macros:
 
 - not(expr) : sets cell pointed by expr to 0 if >0, or to 1 if 0
 
+- and(a, b) : sets cell pointed by a to 1 if both cells pointed by a and b are non-zero, else sets a to 0; preserves b
+
+- or(a, b) : sets cell pointed by a to 1 if any of the cells pointed by a and b are non-zero, else sets a to 0; preserves b
+
 - if(expr) ... else ... endif : if the value of cell at expr is non-zero, execute the code up to the else, else execute the code between else and endif
 
 - while(expr) ... endwhile : repeat the loop while the value of the cell at expr is non-zero
 
-- repeat(COUNT) ... endrepeat : repeats block while COUNT != 0, decrements COUNT to zero
+- repeat(count) ... endrepeat : repeats block while count != 0, decrements count to zero

@@ -20,6 +20,8 @@ const MacroExpander::Builtin MacroExpander::kBuiltins[] = {
     { "move",       &MacroExpander::handle_move       },
     { "copy",       &MacroExpander::handle_copy       },
     { "not",        &MacroExpander::handle_not        },
+    { "and",        &MacroExpander::handle_and        },
+    { "or",         &MacroExpander::handle_or         },
     { "if",         &MacroExpander::handle_if         },
     { "else",       &MacroExpander::handle_else       },
     { "endif",      &MacroExpander::handle_endif      },
@@ -559,6 +561,125 @@ bool MacroExpander::handle_not(Parser& parser, const Token& tok) {
             "  free_cell(" + F + ") "
             "}",
             mock_filename));
+    return true;
+}
+
+bool MacroExpander::handle_and(Parser& parser, const Token& tok) {
+    // and(expr_a, expr_b) : sets expr_a cell to 1 if both expr_a and expr_b are non-zero
+    Macro fake;
+    fake.name = tok.text;
+    fake.params = { "expr_a", "expr_b" };
+
+    std::vector<std::vector<Token>> args;
+    if (!collect_args(parser, fake, args)) {
+        return true; // error already reported
+    }
+
+    if (args.size() != 2) {
+        g_error_reporter.report_error(tok.loc, "and expects two arguments");
+        return true;
+    }
+
+    ArrayTokenSource src_a(args[0]);
+    ExpressionParser expr_a(src_a, /*undefined_as_zero=*/false);
+    int a_val = expr_a.parse_expression();
+
+    ArrayTokenSource src_b(args[1]);
+    ExpressionParser expr_b(src_b, /*undefined_as_zero=*/false);
+    int b_val = expr_b.parse_expression();
+
+    std::string temp_a = make_temp_name();
+    std::string temp_b = make_temp_name();
+    std::string temp_r = make_temp_name();
+
+    TokenScanner scanner;
+    std::string mock_filename = "(and)";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            "{ alloc_cell(" + temp_a + ")"
+            "  alloc_cell(" + temp_b + ")"
+            "  alloc_cell(" + temp_r + ")"
+            // booleanize a_val to temp_a, destroys a_val
+            "  move(" + std::to_string(a_val) + ", " + temp_a + ") "
+            "  not(" + temp_a + ") "
+            "  not(" + temp_a + ") "
+            // booleanize b_val to temp_b, keeps b_val intact
+            "  copy(" + std::to_string(b_val) + ", " + temp_b + ") "
+            "  not(" + temp_b + ") "
+            "  not(" + temp_b + ") "
+            // if temp_a==1 move temp_b to temp_r, else temp_r = 0
+            "  >" + temp_a + " [ - move(" + temp_b + ", " + temp_r + ") ] "
+            // move temp_r to a_val
+            "  move(" + temp_r + ", " + std::to_string(a_val) + ") "
+            // free temps
+            "  free_cell(" + temp_a + ") "
+            "  free_cell(" + temp_b + ") "
+            "  free_cell(" + temp_r + ") "
+            "}",
+            mock_filename));
+    return true;
+}
+
+bool MacroExpander::handle_or(Parser& parser, const Token& tok) {
+    // or(expr_a, expr_b) : sets expr_a cell to 1 if either expr_a or expr_b are non-zero
+    Macro fake;
+    fake.name = tok.text;
+    fake.params = { "expr_a", "expr_b" };
+
+    std::vector<std::vector<Token>> args;
+    if (!collect_args(parser, fake, args)) {
+        return true; // error already reported
+    }
+
+    if (args.size() != 2) {
+        g_error_reporter.report_error(tok.loc, "or expects two arguments");
+        return true;
+    }
+
+    ArrayTokenSource src_a(args[0]);
+    ExpressionParser expr_a(src_a, /*undefined_as_zero=*/false);
+    int a_val = expr_a.parse_expression();
+
+    ArrayTokenSource src_b(args[1]);
+    ExpressionParser expr_b(src_b, /*undefined_as_zero=*/false);
+    int b_val = expr_b.parse_expression();
+
+    std::string temp_a = make_temp_name();
+    std::string temp_b = make_temp_name();
+    std::string temp_r = make_temp_name();
+
+    TokenScanner scanner;
+    std::string mock_filename = "(or)";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            "{ alloc_cell(" + temp_a + ")"
+            "  alloc_cell(" + temp_b + ")"
+            "  alloc_cell(" + temp_r + ")"
+            // booleanize a_val to temp_a, destroys a_val
+            "  move(" + std::to_string(a_val) + ", " + temp_a + ") "
+            "  not(" + temp_a + ") "
+            "  not(" + temp_a + ") "
+            // booleanize b_val to temp_b, keeps b_val intact
+            "  copy(" + std::to_string(b_val) + ", " + temp_b + ") "
+            "  not(" + temp_b + ") "
+            "  not(" + temp_b + ") "
+            // add temp_a and temp_b to temp_r (result = 0, 1 or 2)
+            "  >" + temp_a + " [ - >" + temp_r + " + >" + temp_a + " ] "
+            "  >" + temp_b + " [ - >" + temp_r + " + >" + temp_b + " ] "
+            // booleanize temp_r to 0 or 1
+            "  not(" + temp_r + ") "
+            "  not(" + temp_r + ") "
+            // move temp_r to a_val
+            "  move(" + temp_r + ", " + std::to_string(a_val) + ") "
+            // free temps
+            "  free_cell(" + temp_a + ") "
+            "  free_cell(" + temp_b + ") "
+            "  free_cell(" + temp_r + ") "
+            "}",
+            mock_filename));
+
     return true;
 }
 
