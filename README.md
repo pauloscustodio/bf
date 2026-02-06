@@ -80,6 +80,10 @@ Built-in macros:
 
 - mul(a, b) : sets a to a\*b, wraps around on 8-bit overflow; preserves b
 
+- div(a, b) : sets a to int(a/b); preserves b
+
+- mod(a, b) : sets a to a%b; preserves b
+
 - eq(a, b) : sets a to 1 if a==b, to 0 otherwise; preserves b
 
 - ne(a, b) : sets a to 1 if a!=b, to 0 otherwise; preserves b

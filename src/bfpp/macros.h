@@ -93,6 +93,8 @@ private:
     bool handle_add(Parser& parser, const Token& tok);
     bool handle_sub(Parser& parser, const Token& tok);
     bool handle_mul(Parser& parser, const Token& tok);
+    bool handle_div(Parser& parser, const Token& tok);
+    bool handle_mod(Parser& parser, const Token& tok);
     bool handle_eq(Parser& parser, const Token& tok);
     bool handle_ne(Parser& parser, const Token& tok);
     bool handle_lt(Parser& parser, const Token& tok);
