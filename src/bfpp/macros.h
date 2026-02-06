@@ -90,6 +90,10 @@ private:
     bool handle_and(Parser& parser, const Token& tok);
     bool handle_or(Parser& parser, const Token& tok);
     bool handle_xor(Parser& parser, const Token& tok);
+    bool handle_add(Parser& parser, const Token& tok);
+    bool handle_sub(Parser& parser, const Token& tok);
+    bool handle_eq(Parser& parser, const Token& tok);
+    bool handle_ne(Parser& parser, const Token& tok);
     bool handle_if(Parser& parser, const Token& tok);
     bool handle_else(Parser& parser, const Token& tok);
     bool handle_endif(Parser& parser, const Token& tok);

@@ -3116,5 +3116,440 @@ END
 	}
 }
 
+# add - error no arguments
+spew("$test.in", "add");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:4: error: expected '(' after macro name 'add'
+END
+
+# add - error empty arguments
+spew("$test.in", "add()");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:6: error: add expects two arguments
+END
+
+# add - error too many arguments
+spew("$test.in", "add(A,B,C)");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:8: error: expected ')' at end of macro call, found ','
+END
+
+# add(a,b)
+spew("$test.in", <<END);
+alloc_cell(A)
+alloc_cell(B)
+add(A,B)
+>A
+END
+capture_ok("bfpp $test.in", <<END);
+[
+  -
+]
+>
+[
+  -
+]
+>
+[
+  -
+]
+>
+[
+  -
+]
+<
+[
+  -
+]
+<
+[
+  ->+>+<<
+]
+>>
+[
+  -<<+>>
+]
+[
+  -
+]
+<
+[
+  -<<+>>
+]
+[
+  -
+]
+<<
+END
+
+# run add(a,b)
+for my $A (0, 1, 2) {
+	for my $B (0, 1, 2) {
+		spew("$test.in", <<END);
+		alloc_cell(A)
+		alloc_cell(B)
+		set(A, $A)
+		set(B, $B)
+		add(A, B)
+		>A
+END
+		my $R = $A + $B;
+		capture_ok("bfpp $test.in | bf -D", <<END);
+Tape:  $R   $B   0   0 
+     ^^^ (ptr=0)
+
+END
+	}
+}
+
+# sub - error no arguments
+spew("$test.in", "sub");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:4: error: expected '(' after macro name 'sub'
+END
+
+# sub - error empty arguments
+spew("$test.in", "sub()");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:6: error: sub expects two arguments
+END
+
+# sub - error too many arguments
+spew("$test.in", "sub(A,B,C)");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:8: error: expected ')' at end of macro call, found ','
+END
+
+# sub(a,b)
+spew("$test.in", <<END);
+alloc_cell(A)
+alloc_cell(B)
+sub(A,B)
+>A
+END
+capture_ok("bfpp $test.in", <<END);
+[
+  -
+]
+>
+[
+  -
+]
+>
+[
+  -
+]
+>
+[
+  -
+]
+<
+[
+  -
+]
+<
+[
+  ->+>+<<
+]
+>>
+[
+  -<<+>>
+]
+[
+  -
+]
+<
+[
+  -<<->>
+]
+[
+  -
+]
+<<
+END
+
+# run sub(a,b)
+for my $A (0, 1, 2) {
+	for my $B (0, 1, 2) {
+		spew("$test.in", <<END);
+		alloc_cell(A)
+		alloc_cell(B)
+		set(A, $A)
+		set(B, $B)
+		sub(A, B)
+		>A
+END
+		my $R = sprintf("%3d", ($A - $B) & 0xFF);
+		capture_ok("bfpp $test.in | bf -D", <<END);
+Tape:$R   $B   0   0 
+     ^^^ (ptr=0)
+
+END
+	}
+}
+
+# eq - error no arguments
+spew("$test.in", "eq");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:3: error: expected '(' after macro name 'eq'
+END
+
+# eq - error empty arguments
+spew("$test.in", "eq()");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:5: error: eq expects two arguments
+END
+
+# eq - error too many arguments
+spew("$test.in", "eq(A,B,C)");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:7: error: expected ')' at end of macro call, found ','
+END
+
+# eq(a,b)
+spew("$test.in", <<END);
+alloc_cell(A)
+alloc_cell(B)
+eq(A,B)
+>A
+END
+capture_ok("bfpp $test.in", <<END);
+[
+  -
+]
+>
+[
+  -
+]
+>
+[
+  -
+]
+>
+[
+  -
+]
+<
+[
+  -
+]
+<
+[
+  ->+>+<<
+]
+>>
+[
+  -<<+>>
+]
+[
+  -
+]
+<
+[
+  -<<->>
+]
+[
+  -
+]
+[
+  -
+]
+>
+[
+  -
+]
+<
+[
+  -
+]
+<<
+[
+  ->>+<<
+]
++>>>+<
+[
+  ->
+  [
+    -<<<->>>
+  ]
+  <
+]
+[
+  -
+]
+>
+[
+  -
+]
+<<<
+END
+
+# run eq(a,b)
+for my $A (0, 1, 2) {
+	for my $B (0, 1, 2) {
+		spew("$test.in", <<END);
+		alloc_cell(A)
+		alloc_cell(B)
+		set(A, $A)
+		set(B, $B)
+		eq(A, B)
+		>A
+END
+		my $R = ($A == $B) ? 1 : 0;
+		capture_ok("bfpp $test.in | bf -D", <<END);
+Tape:  $R   $B   0   0 
+     ^^^ (ptr=0)
+
+END
+	}
+}
+
+# ne - error no arguments
+spew("$test.in", "ne");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:3: error: expected '(' after macro name 'ne'
+END
+
+# ne - error empty arguments
+spew("$test.in", "ne()");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:5: error: ne expects two arguments
+END
+
+# ne - error too many arguments
+spew("$test.in", "ne(A,B,C)");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:7: error: expected ')' at end of macro call, found ','
+END
+
+# ne(a,b)
+spew("$test.in", <<END);
+alloc_cell(A)
+alloc_cell(B)
+ne(A,B)
+>A
+END
+capture_ok("bfpp $test.in", <<END);
+[
+  -
+]
+>
+[
+  -
+]
+>
+[
+  -
+]
+>
+[
+  -
+]
+<
+[
+  -
+]
+<
+[
+  ->+>+<<
+]
+>>
+[
+  -<<+>>
+]
+[
+  -
+]
+<
+[
+  -<<->>
+]
+[
+  -
+]
+[
+  -
+]
+>
+[
+  -
+]
+<
+[
+  -
+]
+<<
+[
+  ->>+<<
+]
++>>>+<
+[
+  ->
+  [
+    -<<<->>>
+  ]
+  <
+]
+[
+  -
+]
+>
+[
+  -
+]
+<
+[
+  -
+]
+>
+[
+  -
+]
+<
+[
+  -
+]
+<<
+[
+  ->>+<<
+]
++>>>+<
+[
+  ->
+  [
+    -<<<->>>
+  ]
+  <
+]
+[
+  -
+]
+>
+[
+  -
+]
+<<<
+END
+
+# run ne(a,b)
+for my $A (0, 1, 2) {
+	for my $B (0, 1, 2) {
+		spew("$test.in", <<END);
+		alloc_cell(A)
+		alloc_cell(B)
+		set(A, $A)
+		set(B, $B)
+		ne(A, B)
+		>A
+END
+		my $R = ($A != $B) ? 1 : 0;
+		capture_ok("bfpp $test.in | bf -D", <<END);
+Tape:  $R   $B   0   0 
+     ^^^ (ptr=0)
+
+END
+	}
+}
+
 unlink_testfiles;
 done_testing;
