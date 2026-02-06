@@ -355,27 +355,12 @@ bool MacroExpander::handle_free_cell(Parser& parser, const Token& tok) {
 }
 
 bool MacroExpander::handle_clear(Parser& parser, const Token& tok) {
-    // clear(<expr>) -> emits: { >expr-value [-] }
-    Macro fake;
-    fake.name = tok.text;
-    fake.params = { "expr" };
-
-    std::vector<std::vector<Token>> args;
-    if (!collect_args(parser, fake, args)) {
-        return true; // error already reported
-    }
-
-    if (args.size() != 1) {
-        g_error_reporter.report_error(tok.loc, "clear expects one argument");
+    std::vector<int> vals;
+    if (!parse_expr_args(parser, tok, { "expr" }, vals)) {
         return true;
     }
+    int value = vals[0];
 
-    // Evaluate the expression argument
-    ArrayTokenSource source(args[0]);
-    ExpressionParser expr(source, /*undefined_as_zero=*/false);
-    int value = expr.parse_expression();
-
-    // Build expansion: { > value [-] }
     TokenScanner scanner;
     std::string mock_filename = "(clear)";
     parser.push_macro_expansion(
@@ -388,31 +373,13 @@ bool MacroExpander::handle_clear(Parser& parser, const Token& tok) {
 }
 
 bool MacroExpander::handle_set(Parser& parser, const Token& tok) {
-    // set(a, b) -> emits: { >a [-] +b }
-    Macro fake;
-    fake.name = tok.text;
-    fake.params = { "a", "b" };
-
-    std::vector<std::vector<Token>> args;
-    if (!collect_args(parser, fake, args)) {
-        return true; // error already reported
-    }
-
-    if (args.size() != 2) {
-        g_error_reporter.report_error(tok.loc, "set expects two arguments");
+    std::vector<int> vals;
+    if (!parse_expr_args(parser, tok, { "a", "b" }, vals)) {
         return true;
     }
+    int a_val = vals[0];
+    int b_val = vals[1];
 
-    // Evaluate both expressions
-    ArrayTokenSource src_a(args[0]);
-    ExpressionParser expr_a(src_a, /*undefined_as_zero=*/false);
-    int a_val = expr_a.parse_expression();
-
-    ArrayTokenSource src_b(args[1]);
-    ExpressionParser expr_b(src_b, /*undefined_as_zero=*/false);
-    int b_val = expr_b.parse_expression();
-
-    // Build expansion: { >a_val [-] +b_val }
     TokenScanner scanner;
     std::string mock_filename = "(set)";
     parser.push_macro_expansion(
@@ -425,32 +392,15 @@ bool MacroExpander::handle_set(Parser& parser, const Token& tok) {
 }
 
 bool MacroExpander::handle_move(Parser& parser, const Token& tok) {
-    // move(a, b) -> emits: { >b [-] >a [ - >b + >a ] }
-    Macro fake;
-    fake.name   = tok.text;
-    fake.params = { "a", "b" };
-
-    std::vector<std::vector<Token>> args;
-    if (!collect_args(parser, fake, args)) {
-        return true; // error already reported
-    }
-
-    if (args.size() != 2) {
-        g_error_reporter.report_error(tok.loc, "move expects two arguments");
+    std::vector<int> vals;
+    if (!parse_expr_args(parser, tok, { "a", "b" }, vals)) {
         return true;
     }
-
-    ArrayTokenSource src_a(args[0]);
-    ExpressionParser expr_a(src_a, /*undefined_as_zero=*/false);
-    int a_val = expr_a.parse_expression();
-
-    ArrayTokenSource src_b(args[1]);
-    ExpressionParser expr_b(src_b, /*undefined_as_zero=*/false);
-    int b_val = expr_b.parse_expression();
+    int a_val = vals[0];
+    int b_val = vals[1];
 
     TokenScanner scanner;
     std::string mock_filename = "(move)";
-    // { >b [-] >a [ - >b + >a ] }
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(
@@ -463,28 +413,12 @@ bool MacroExpander::handle_move(Parser& parser, const Token& tok) {
 }
 
 bool MacroExpander::handle_copy(Parser& parser, const Token& tok) {
-    // copy(a, b) -> { alloc_cell(T) >b [-] >a [ - >b + >T + >a ] >T [ - >a + >T ] free_cell(T) }
-    Macro fake;
-    fake.name   = tok.text;
-    fake.params = { "a", "b" };
-
-    std::vector<std::vector<Token>> args;
-    if (!collect_args(parser, fake, args)) {
-        return true; // error already reported
-    }
-
-    if (args.size() != 2) {
-        g_error_reporter.report_error(tok.loc, "copy expects two arguments");
+    std::vector<int> vals;
+    if (!parse_expr_args(parser, tok, { "a", "b" }, vals)) {
         return true;
     }
-
-    ArrayTokenSource src_a(args[0]);
-    ExpressionParser expr_a(src_a, /*undefined_as_zero=*/false);
-    int a_val = expr_a.parse_expression();
-
-    ArrayTokenSource src_b(args[1]);
-    ExpressionParser expr_b(src_b, /*undefined_as_zero=*/false);
-    int b_val = expr_b.parse_expression();
+    int a_val = vals[0];
+    int b_val = vals[1];
 
     std::string temp_name = make_temp_name();
 
@@ -508,24 +442,11 @@ bool MacroExpander::handle_copy(Parser& parser, const Token& tok) {
 }
 
 bool MacroExpander::handle_not(Parser& parser, const Token& tok) {
-    // not(expr) : sets cell to 1 if expr == 0, else 0
-    Macro fake;
-    fake.name = tok.text;
-    fake.params = { "expr" };
-
-    std::vector<std::vector<Token>> args;
-    if (!collect_args(parser, fake, args)) {
-        return true; // error already reported
-    }
-
-    if (args.size() != 1) {
-        g_error_reporter.report_error(tok.loc, "not expects one argument");
+    std::vector<int> vals;
+    if (!parse_expr_args(parser, tok, { "expr" }, vals)) {
         return true;
     }
-
-    ArrayTokenSource src(args[0]);
-    ExpressionParser expr(src, /*undefined_as_zero=*/false);
-    int X = expr.parse_expression();
+    int X = vals[0];
 
     std::string T = make_temp_name();
     std::string F = make_temp_name();
@@ -563,28 +484,12 @@ bool MacroExpander::handle_not(Parser& parser, const Token& tok) {
 }
 
 bool MacroExpander::handle_and(Parser& parser, const Token& tok) {
-    // and(expr_a, expr_b) : sets expr_a cell to 1 if both expr_a and expr_b are non-zero
-    Macro fake;
-    fake.name = tok.text;
-    fake.params = { "expr_a", "expr_b" };
-
-    std::vector<std::vector<Token>> args;
-    if (!collect_args(parser, fake, args)) {
-        return true; // error already reported
-    }
-
-    if (args.size() != 2) {
-        g_error_reporter.report_error(tok.loc, "and expects two arguments");
+    std::vector<int> vals;
+    if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
         return true;
     }
-
-    ArrayTokenSource src_a(args[0]);
-    ExpressionParser expr_a(src_a, /*undefined_as_zero=*/false);
-    int a_val = expr_a.parse_expression();
-
-    ArrayTokenSource src_b(args[1]);
-    ExpressionParser expr_b(src_b, /*undefined_as_zero=*/false);
-    int b_val = expr_b.parse_expression();
+    int a_val = vals[0];
+    int b_val = vals[1];
 
     std::string temp_a = make_temp_name();
     std::string temp_b = make_temp_name();
@@ -620,28 +525,12 @@ bool MacroExpander::handle_and(Parser& parser, const Token& tok) {
 }
 
 bool MacroExpander::handle_or(Parser& parser, const Token& tok) {
-    // or(expr_a, expr_b) : sets expr_a cell to 1 if either expr_a or expr_b are non-zero
-    Macro fake;
-    fake.name = tok.text;
-    fake.params = { "expr_a", "expr_b" };
-
-    std::vector<std::vector<Token>> args;
-    if (!collect_args(parser, fake, args)) {
-        return true; // error already reported
-    }
-
-    if (args.size() != 2) {
-        g_error_reporter.report_error(tok.loc, "or expects two arguments");
+    std::vector<int> vals;
+    if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
         return true;
     }
-
-    ArrayTokenSource src_a(args[0]);
-    ExpressionParser expr_a(src_a, /*undefined_as_zero=*/false);
-    int a_val = expr_a.parse_expression();
-
-    ArrayTokenSource src_b(args[1]);
-    ExpressionParser expr_b(src_b, /*undefined_as_zero=*/false);
-    int b_val = expr_b.parse_expression();
+    int a_val = vals[0];
+    int b_val = vals[1];
 
     std::string temp_a = make_temp_name();
     std::string temp_b = make_temp_name();
@@ -682,28 +571,12 @@ bool MacroExpander::handle_or(Parser& parser, const Token& tok) {
 }
 
 bool MacroExpander::handle_xor(Parser& parser, const Token& tok) {
-    // xor(expr_a, expr_b) : sets expr_a cell to 1 if exactly one of expr_a or expr_b are non-zero
-    Macro fake;
-    fake.name = tok.text;
-    fake.params = { "expr_a", "expr_b" };
-
-    std::vector<std::vector<Token>> args;
-    if (!collect_args(parser, fake, args)) {
-        return true; // error already reported
-    }
-
-    if (args.size() != 2) {
-        g_error_reporter.report_error(tok.loc, "xor expects two arguments");
+    std::vector<int> vals;
+    if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
         return true;
     }
-
-    ArrayTokenSource src_a(args[0]);
-    ExpressionParser expr_a(src_a, /*undefined_as_zero=*/false);
-    int a_val = expr_a.parse_expression();
-
-    ArrayTokenSource src_b(args[1]);
-    ExpressionParser expr_b(src_b, /*undefined_as_zero=*/false);
-    int b_val = expr_b.parse_expression();
+    int a_val = vals[0];
+    int b_val = vals[1];
 
     std::string temp_1 = make_temp_name();
     std::string temp_2 = make_temp_name();
@@ -736,28 +609,12 @@ bool MacroExpander::handle_xor(Parser& parser, const Token& tok) {
 }
 
 bool MacroExpander::handle_add(Parser& parser, const Token& tok) {
-    // add(expr_a, expr_b) : adds expr_b to expr_a
-    Macro fake;
-    fake.name = tok.text;
-    fake.params = { "expr_a", "expr_b" };
-
-    std::vector<std::vector<Token>> args;
-    if (!collect_args(parser, fake, args)) {
-        return true; // error already reported
-    }
-
-    if (args.size() != 2) {
-        g_error_reporter.report_error(tok.loc, "add expects two arguments");
+    std::vector<int> vals;
+    if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
         return true;
     }
-
-    ArrayTokenSource src_a(args[0]);
-    ExpressionParser expr_a(src_a, /*undefined_as_zero=*/false);
-    int a_val = expr_a.parse_expression();
-
-    ArrayTokenSource src_b(args[1]);
-    ExpressionParser expr_b(src_b, /*undefined_as_zero=*/false);
-    int b_val = expr_b.parse_expression();
+    int a_val = vals[0];
+    int b_val = vals[1];
 
     std::string temp = make_temp_name();
 
@@ -781,28 +638,12 @@ bool MacroExpander::handle_add(Parser& parser, const Token& tok) {
 }
 
 bool MacroExpander::handle_sub(Parser& parser, const Token& tok) {
-    // sub(expr_a, expr_b) : subtracts expr_b from expr_a
-    Macro fake;
-    fake.name = tok.text;
-    fake.params = { "expr_a", "expr_b" };
-
-    std::vector<std::vector<Token>> args;
-    if (!collect_args(parser, fake, args)) {
-        return true; // error already reported
-    }
-
-    if (args.size() != 2) {
-        g_error_reporter.report_error(tok.loc, "sub expects two arguments");
+    std::vector<int> vals;
+    if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
         return true;
     }
-
-    ArrayTokenSource src_a(args[0]);
-    ExpressionParser expr_a(src_a, /*undefined_as_zero=*/false);
-    int a_val = expr_a.parse_expression();
-
-    ArrayTokenSource src_b(args[1]);
-    ExpressionParser expr_b(src_b, /*undefined_as_zero=*/false);
-    int b_val = expr_b.parse_expression();
+    int a_val = vals[0];
+    int b_val = vals[1];
 
     std::string temp = make_temp_name();
 
@@ -826,28 +667,12 @@ bool MacroExpander::handle_sub(Parser& parser, const Token& tok) {
 }
 
 bool MacroExpander::handle_eq(Parser& parser, const Token& tok) {
-    // eq(expr_a, expr_b) : sets expr_a cell to 1 if expr_a and expr_b are equal (both zero or both non-zero)
-    Macro fake;
-    fake.name = tok.text;
-    fake.params = { "expr_a", "expr_b" };
-
-    std::vector<std::vector<Token>> args;
-    if (!collect_args(parser, fake, args)) {
-        return true; // error already reported
-    }
-
-    if (args.size() != 2) {
-        g_error_reporter.report_error(tok.loc, "eq expects two arguments");
+    std::vector<int> vals;
+    if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
         return true;
     }
-
-    ArrayTokenSource src_a(args[0]);
-    ExpressionParser expr_a(src_a, /*undefined_as_zero=*/false);
-    int a_val = expr_a.parse_expression();
-
-    ArrayTokenSource src_b(args[1]);
-    ExpressionParser expr_b(src_b, /*undefined_as_zero=*/false);
-    int b_val = expr_b.parse_expression();
+    int a_val = vals[0];
+    int b_val = vals[1];
 
     TokenScanner scanner;
     std::string mock_filename = "(eq)";
@@ -864,28 +689,12 @@ bool MacroExpander::handle_eq(Parser& parser, const Token& tok) {
 }
 
 bool MacroExpander::handle_ne(Parser& parser, const Token& tok) {
-    // ne(expr_a, expr_b) : sets expr_a cell to 1 if expr_a and expr_b are not equal
-    Macro fake;
-    fake.name = tok.text;
-    fake.params = { "expr_a", "expr_b" };
-
-    std::vector<std::vector<Token>> args;
-    if (!collect_args(parser, fake, args)) {
-        return true; // error already reported
-    }
-
-    if (args.size() != 2) {
-        g_error_reporter.report_error(tok.loc, "ne expects two arguments");
+    std::vector<int> vals;
+    if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
         return true;
     }
-
-    ArrayTokenSource src_a(args[0]);
-    ExpressionParser expr_a(src_a, /*undefined_as_zero=*/false);
-    int a_val = expr_a.parse_expression();
-
-    ArrayTokenSource src_b(args[1]);
-    ExpressionParser expr_b(src_b, /*undefined_as_zero=*/false);
-    int b_val = expr_b.parse_expression();
+    int a_val = vals[0];
+    int b_val = vals[1];
 
     TokenScanner scanner;
     std::string mock_filename = "(ne)";
@@ -902,25 +711,11 @@ bool MacroExpander::handle_ne(Parser& parser, const Token& tok) {
 }
 
 bool MacroExpander::handle_if(Parser& parser, const Token& tok) {
-    // if(cond) / else / endif
-    Macro fake;
-    fake.name = tok.text;
-    fake.params = { "expr" };
-
-    std::vector<std::vector<Token>> args;
-    if (!collect_args(parser, fake, args)) {
-        return true; // error already reported
-    }
-
-    if (args.size() != 1) {
-        g_error_reporter.report_error(tok.loc, "if expects one argument");
+    std::vector<int> vals;
+    if (!parse_expr_args(parser, tok, { "expr" }, vals)) {
         return true;
     }
-
-    // Evaluate the expression argument
-    ArrayTokenSource source(args[0]);
-    ExpressionParser expr(source, /*undefined_as_zero=*/false);
-    int cond = expr.parse_expression();
+    int cond = vals[0];
 
     // create the If-stack entry
     BuiltinStructLevel level;
@@ -1012,25 +807,11 @@ bool MacroExpander::handle_endif(Parser& parser, const Token& tok) {
 }
 
 bool MacroExpander::handle_while(Parser& parser, const Token& tok) {
-    // while(cond) / endwhile
-    Macro fake;
-    fake.name = tok.text;
-    fake.params = { "expr" };
-
-    std::vector<std::vector<Token>> args;
-    if (!collect_args(parser, fake, args)) {
-        return true; // error already reported
-    }
-
-    if (args.size() != 1) {
-        g_error_reporter.report_error(tok.loc, "while expects one argument");
+    std::vector<int> vals;
+    if (!parse_expr_args(parser, tok, { "expr" }, vals)) {
         return true;
     }
-
-    // Evaluate the expression argument
-    ArrayTokenSource source(args[0]);
-    ExpressionParser expr(source, /*undefined_as_zero=*/false);
-    int cond = expr.parse_expression();
+    int cond = vals[0];
 
     // create the While-stack entry
     BuiltinStructLevel level;
@@ -1097,25 +878,11 @@ bool MacroExpander::handle_endwhile(Parser& parser, const Token& tok) {
 }
 
 bool MacroExpander::handle_repeat(Parser& parser, const Token& tok) {
-    // repeat(count) / endrepeat
-    Macro fake;
-    fake.name = tok.text;
-    fake.params = { "expr" };
-
-    std::vector<std::vector<Token>> args;
-    if (!collect_args(parser, fake, args)) {
-        return true; // error already reported
-    }
-
-    if (args.size() != 1) {
-        g_error_reporter.report_error(tok.loc, "repeat expects one argument");
+    std::vector<int> vals;
+    if (!parse_expr_args(parser, tok, { "expr" }, vals)) {
         return true;
     }
-
-    // Evaluate the expression argument
-    ArrayTokenSource source(args[0]);
-    ExpressionParser expr(source, /*undefined_as_zero=*/false);
-    int count = expr.parse_expression();
+    int count = vals[0];
 
     // create the Repeat-stack entry
     BuiltinStructLevel level;
@@ -1157,6 +924,42 @@ bool MacroExpander::handle_endrepeat(Parser& parser, const Token& tok) {
             mock_filename));
     struct_stack_.pop_back();
 
+    return true;
+}
+
+bool MacroExpander::parse_expr_args(Parser& parser,
+                                    const Token& tok,
+                                    const std::vector<std::string>& param_names,
+                                    std::vector<int>& values) {
+    // Save the original macro name before collect_args moves parser.current_
+    const std::string macro_name = tok.text;
+
+    Macro fake;
+    fake.name = macro_name;
+    fake.params = param_names;
+
+    std::vector<std::vector<Token>> args;
+    if (!collect_args(parser, fake, args)) {
+        return false; // error already reported
+    }
+
+    if (args.size() != param_names.size()) {
+        g_error_reporter.report_error(
+            tok.loc,
+            "macro '" + macro_name + "' expects " +
+            std::to_string(param_names.size()) +
+            (param_names.size() == 1 ? " argument" : " arguments")
+        );
+        return false;
+    }
+
+    values.clear();
+    values.reserve(args.size());
+    for (const auto& arg_tokens : args) {
+        ArrayTokenSource source(arg_tokens);
+        ExpressionParser expr(source, /*undefined_as_zero=*/false);
+        values.push_back(expr.parse_expression());
+    }
     return true;
 }
 

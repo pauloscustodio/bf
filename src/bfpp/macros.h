@@ -101,6 +101,11 @@ private:
     bool handle_endwhile(Parser& parser, const Token& tok);
     bool handle_repeat(Parser& parser, const Token& tok);
     bool handle_endrepeat(Parser& parser, const Token& tok);
+
+    bool parse_expr_args(Parser& parser, const Token& tok,
+                         const std::vector<std::string>& param_names,
+                         std::vector<int>& values);
+
     std::vector<Token> substitute_body(const Macro& macro,
                                        const std::vector<std::vector<Token>>& args);
 };

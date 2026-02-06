@@ -1,0 +1,40 @@
+#!/usr/bin/env perl
+
+BEGIN { use lib 't'; require 'testlib.pl'; }
+
+use Modern::Perl;
+
+# #undef error - no symbol
+spew("$test.in", "#undef");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:7: error: expected macro name
+END
+
+# #undef error - reserved word
+spew("$test.in", "#undef if");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:8: error: cannot undefine reserved word 'if'
+END
+
+# #undef error - extra arguments
+spew("$test.in", "#undef A B");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:10: error: unexpected token after #undef: 'B'
+END
+
+# #undef
+spew("$test.in", <<END);
+#define X 2
+#undef X
+#define X 3
++X
+END
+capture_ok("bfpp $test.in", <<END);
+
+
+
++++
+END
+
+unlink_testfiles;
+done_testing;
