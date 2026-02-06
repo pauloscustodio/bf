@@ -12,7 +12,7 @@
 MacroTable g_macro_table;
 
 // Built-ins are now private to MacroExpander
-const MacroExpander::Builtin MacroExpander::kBuiltins[] = {
+const std::unordered_map<std::string, MacroExpander::BuiltinHandler> MacroExpander::kBuiltins = {
     { "alloc_cell", &MacroExpander::handle_alloc_cell },
     { "free_cell",  &MacroExpander::handle_free_cell  },
     { "clear",      &MacroExpander::handle_clear      },
@@ -28,8 +28,8 @@ const MacroExpander::Builtin MacroExpander::kBuiltins[] = {
     { "endif",      &MacroExpander::handle_endif      },
     { "while",      &MacroExpander::handle_while      },
     { "endwhile",   &MacroExpander::handle_endwhile   },
-    { "repeat",     &MacroExpander::handle_repeat      },
-    { "endrepeat",  &MacroExpander::handle_endrepeat   },
+    { "repeat",     &MacroExpander::handle_repeat     },
+    { "endrepeat",  &MacroExpander::handle_endrepeat  },
 };
 
 bool MacroTable::define(const Macro& macro) {
@@ -74,12 +74,10 @@ bool MacroExpander::try_expand(Parser& parser, const Token& token) {
         return false;
     }
 
-    for (const auto& b : kBuiltins) {
-        if (token.text == b.name) {
-            // Builtins consume their own call; leave current_ on the next token.
-            (this->*b.handler)(parser, token);
-            return true;
-        }
+    if (auto it = kBuiltins.find(token.text); it != kBuiltins.end()) {
+        // Builtins consume their own call; leave current_ on the next token.
+        (this->*it->second)(parser, token);
+        return true;
     }
 
     const Macro* macro = table_.lookup(token.text);
@@ -240,12 +238,7 @@ bool MacroExpander::collect_args(Parser& parser,
 }
 
 bool MacroExpander::is_builtin_name(const std::string& name) {
-    for (const auto& b : kBuiltins) {
-        if (name == b.name) {
-            return true;
-        }
-    }
-    return false;
+    return kBuiltins.find(name) != kBuiltins.end();
 }
 
 void MacroExpander::check_struct_stack() const {

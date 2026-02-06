@@ -73,12 +73,8 @@ public:
     void check_struct_stack() const;
 
 private:
-    struct Builtin {
-        const char* name;
-        bool (MacroExpander::*handler)(Parser& parser, const Token& tok);
-    };
-
-    static const Builtin kBuiltins[];
+    using BuiltinHandler = bool (MacroExpander::*)(Parser& parser, const Token& tok);
+    static const std::unordered_map<std::string, BuiltinHandler> kBuiltins;
 
     MacroTable& table_;
     std::unordered_set<std::string> expanding_; // recursion guard
