@@ -65,7 +65,7 @@ END
 # not - execute a test program
 spew("$test.in", "alloc_cell(X) clear(X) not(X)");
 capture_ok("bfpp $test.in | bf -D", <<END);
-Tape:  1   0   0 
+Tape:  1 
      ^^^ (ptr=0)
 
 END
@@ -73,7 +73,7 @@ END
 for my $i (1, 2, 254, 255) {
 	spew("$test.in", "alloc_cell(X) set(X, $i) not(X)");
 	capture_ok("bfpp $test.in | bf -D", <<END);
-Tape:  0   0   0 
+Tape:  0 
      ^^^ (ptr=0)
 
 END

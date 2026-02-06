@@ -196,7 +196,7 @@ endif
 >Y
 END
 capture_ok("bfpp $test.in | bf -D", <<END);
-Tape:  0   0   0   0   0   0 
+Tape:  0   0 
          ^^^ (ptr=1)
 
 END
@@ -211,7 +211,7 @@ endif
 >Y
 END
 capture_ok("bfpp $test.in | bf -D", <<END);
-Tape:123   1   0   0   0   0 
+Tape:123   1 
          ^^^ (ptr=1)
 
 END
@@ -384,7 +384,7 @@ endif
 >Z
 END
 capture_ok("bfpp $test.in | bf -D", <<END);
-Tape:  0   0   1   0   0   0   0 
+Tape:  0   0   1 
              ^^^ (ptr=2)
 
 END
@@ -399,11 +399,11 @@ if(X)
 else
 	>Z +
 endif
->Y
+>Z
 END
 capture_ok("bfpp $test.in | bf -D", <<END);
-Tape:  1   1   0   0   0   0   0 
-         ^^^ (ptr=1)
+Tape:  1   1   0 
+             ^^^ (ptr=2)
 
 END
 

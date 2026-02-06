@@ -41,16 +41,30 @@ void read_code(std::istream& in) {
 }
 
 static void dump_state() {
+    // Find the last non-zero cell
+    size_t last_nz = 0;
+    for (size_t i = tape.size(); i-- > 0; ) {
+        if (tape[i] != 0) {
+            last_nz = i;
+            break;
+        }
+    }
+
+    // Ensure we still show the pointer cell even if it’s beyond last_nz
+    size_t last_to_show = std::max(last_nz, ptr);
+    if (last_to_show >= tape.size()) {
+        last_to_show = tape.size() - 1;
+    }
+
     std::cout << "Tape:";
-    for (size_t i = 0; i < tape.size(); ++i) {
+    for (size_t i = 0; i <= last_to_show; ++i) {
         std::cout << std::setw(3) << static_cast<int>(tape[i]) << ' ';
     }
-    std::cout << "\n     ";                     // align under first cell after "Tape:"
+    std::cout << "\n     ";
     if (ptr > 0) {
-        std::cout << std::string(ptr * 4, ' '); // spaces to cell before ptr
+        std::cout << std::string(ptr * 4, ' ');
     }
-    std::cout << "^^^"                          // arrow points to the cell slot
-              << " (ptr=" << ptr << ")\n\n";
+    std::cout << "^^^" << " (ptr=" << ptr << ")\n\n";
 }
 
 void run_machine(bool trace) {

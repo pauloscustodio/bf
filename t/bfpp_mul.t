@@ -4,49 +4,30 @@ BEGIN { use lib 't'; require 'testlib.pl'; }
 
 use Modern::Perl;
 
-# while - error no arguments
-spew("$test.in", "while");
+# mul - error no arguments
+spew("$test.in", "mul");
 capture_nok("bfpp $test.in", <<END);
-$test.in:1:6: error: expected '(' after macro name 'while'
+$test.in:1:4: error: expected '(' after macro name 'mul'
 END
 
-# while - error empty arguments
-spew("$test.in", "while()");
+# mul - error empty arguments
+spew("$test.in", "mul()");
 capture_nok("bfpp $test.in", <<END);
-$test.in:1:8: error: macro 'while' expects 1 argument
+$test.in:1:6: error: macro 'mul' expects 2 arguments
 END
 
-# while - error too many arguments
-spew("$test.in", "while(A,B");
+# mul - error too many arguments
+spew("$test.in", "mul(A,B,C)");
 capture_nok("bfpp $test.in", <<END);
 $test.in:1:8: error: expected ')' at end of macro call, found ','
 END
 
-# while - error no endwhile
-spew("$test.in", "while(0)");
-capture_nok("bfpp $test.in", <<END);
-$test.in:1:9: error: while without matching endwhile
-(while):1:63: error: unmatched '[' instruction
-(while):1:1: error: unmatched '{' brace
-(while):1:65: error: unmatched '{' brace
-END
-
-# naked endwhile
-spew("$test.in", "endwhile");
-capture_nok("bfpp $test.in", <<END);
-$test.in:1:9: error: endwhile without matching while
-END
-
-# run while ... endwhile
+# mul(a,b)
 spew("$test.in", <<END);
-alloc_cell(X)
-alloc_cell(COND)
-set(COND, 3)
-while(COND)
-	>X +
-	>COND -
-endwhile
->COND
+alloc_cell(A)
+alloc_cell(B)
+mul(A,B)
+>A
 END
 capture_ok("bfpp $test.in", <<END);
 [
@@ -56,10 +37,11 @@ capture_ok("bfpp $test.in", <<END);
 [
   -
 ]
+>
 [
   -
 ]
-+++>
+>
 [
   -
 ]
@@ -71,13 +53,13 @@ capture_ok("bfpp $test.in", <<END);
 [
   -
 ]
-<
+<<<
 [
-  ->+>+<<
+  ->>>+>+<<<<
 ]
->>
+>>>>
 [
-  -<<+>>
+  -<<<<+>>>>
 ]
 [
   -
@@ -145,7 +127,11 @@ capture_ok("bfpp $test.in", <<END);
 ]
 <<
 [
-  <<+>->>
+  <<<->>>>
+  [
+    -
+  ]
+  >
   [
     -
   ]
@@ -153,13 +139,38 @@ capture_ok("bfpp $test.in", <<END);
   [
     -
   ]
-  <
+  <<<
   [
-    ->+>+<<
+    ->>>+>+<<<<
   ]
-  >>
+  >>>>
+  [
+    -<<<<+>>>>
+  ]
+  [
+    -
+  ]
+  <
   [
     -<<+>>
+  ]
+  [
+    -
+  ]
+  [
+    -
+  ]
+  <
+  [
+    -
+  ]
+  <<<
+  [
+    ->>>+>+<<<<
+  ]
+  >>>>
+  [
+    -<<<<+>>>>
   ]
   [
     -
@@ -230,13 +241,39 @@ capture_ok("bfpp $test.in", <<END);
 [
   -
 ]
-<
+<<<
+[
+  -
+]
+>>
+[
+  -<<+>>
+]
+[
+  -
+]
+<<
 END
-capture_ok("bfpp $test.in | bf -D", <<END);
-Tape:  3   0 
+
+# run mul(a,b)
+for my $A (0, 1, 2) {
+	for my $B (0, 1, 2) {
+		spew("$test.in", <<END);
+		alloc_cell(A)
+		alloc_cell(B)
+		set(A, $A)
+		set(B, $B)
+		mul(A, B)
+		>B
+END
+		my $R = $A * $B;
+		capture_ok("bfpp $test.in | bf -D", <<END);
+Tape:  $R   $B 
          ^^^ (ptr=1)
 
 END
+	}
+}
 
 unlink_testfiles;
 done_testing;

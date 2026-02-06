@@ -45,7 +45,7 @@ set(COUNT, 3)
 repeat(COUNT)
 	>X +
 endrepeat
->X
+>COUNT
 END
 capture_ok("bfpp $test.in", <<END);
 [
@@ -62,11 +62,10 @@ capture_ok("bfpp $test.in", <<END);
 [
   <+>-
 ]
-<
 END
 capture_ok("bfpp $test.in | bf -D", <<END);
 Tape:  3   0 
-     ^^^ (ptr=0)
+         ^^^ (ptr=1)
 
 END
 

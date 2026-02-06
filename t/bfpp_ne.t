@@ -140,12 +140,12 @@ for my $A (0, 1, 2) {
 		set(A, $A)
 		set(B, $B)
 		ne(A, B)
-		>A
+		>B
 END
 		my $R = ($A != $B) ? 1 : 0;
 		capture_ok("bfpp $test.in | bf -D", <<END);
-Tape:  $R   $B   0   0 
-     ^^^ (ptr=0)
+Tape:  $R   $B 
+         ^^^ (ptr=1)
 
 END
 	}

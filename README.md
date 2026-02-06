@@ -78,9 +78,19 @@ Built-in macros:
 
 - sub(a, b) : sets a to a-b, wraps around on 8-bit overflow; preserves b
 
+- mul(a, b) : sets a to a\*b, wraps around on 8-bit overflow; preserves b
+
 - eq(a, b) : sets a to 1 if a==b, to 0 otherwise; preserves b
 
 - ne(a, b) : sets a to 1 if a!=b, to 0 otherwise; preserves b
+
+- lt(a, b) : sets a to 1 if a<b, to 0 otherwise; preserves b
+
+- le(a, b) : sets a to 1 if a<=b, to 0 otherwise; preserves b
+
+- gt(a, b) : sets a to 1 if a>b, to 0 otherwise; preserves b
+
+- ge(a, b) : sets a to 1 if a>=b, to 0 otherwise; preserves b
 
 - if(expr) ... else ... endif : if the value of cell at expr is non-zero, execute the code up to the else, else execute the code between else and endif
 

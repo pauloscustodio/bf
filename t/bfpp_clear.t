@@ -36,10 +36,10 @@ capture_ok("bfpp $test.in", <<END);
 END
 
 # clear - execute a test program
-spew("$test.in", "++++>++++< clear(0) clear(1)");
+spew("$test.in", "++++>++++< clear(0) clear(1) >1");
 capture_ok("bfpp $test.in | bf -D", <<END);
 Tape:  0   0 
-     ^^^ (ptr=0)
+         ^^^ (ptr=1)
 
 END
 

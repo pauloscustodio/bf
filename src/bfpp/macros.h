@@ -92,8 +92,13 @@ private:
     bool handle_xor(Parser& parser, const Token& tok);
     bool handle_add(Parser& parser, const Token& tok);
     bool handle_sub(Parser& parser, const Token& tok);
+    bool handle_mul(Parser& parser, const Token& tok);
     bool handle_eq(Parser& parser, const Token& tok);
     bool handle_ne(Parser& parser, const Token& tok);
+    bool handle_lt(Parser& parser, const Token& tok);
+    bool handle_gt(Parser& parser, const Token& tok);
+    bool handle_le(Parser& parser, const Token& tok);
+    bool handle_ge(Parser& parser, const Token& tok);
     bool handle_if(Parser& parser, const Token& tok);
     bool handle_else(Parser& parser, const Token& tok);
     bool handle_endif(Parser& parser, const Token& tok);
