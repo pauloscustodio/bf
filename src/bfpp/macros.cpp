@@ -51,8 +51,12 @@ const std::unordered_map<std::string, MacroExpander::BuiltinHandler> MacroExpand
     { "mod16",        &MacroExpander::handle_mod16        },
     { "eq8",          &MacroExpander::handle_eq8          },
     { "eq16",         &MacroExpander::handle_eq16         },
+    { "seq8",         &MacroExpander::handle_seq8         },
+    { "seq16",        &MacroExpander::handle_seq16        },
     { "ne8",          &MacroExpander::handle_ne8          },
     { "ne16",         &MacroExpander::handle_ne16         },
+    { "sne8",         &MacroExpander::handle_sne8         },
+    { "sne16",        &MacroExpander::handle_sne16        },
     { "lt8",          &MacroExpander::handle_lt8          },
     { "lt16",         &MacroExpander::handle_lt16         },
     { "gt8",          &MacroExpander::handle_gt8          },
@@ -1550,6 +1554,14 @@ bool MacroExpander::handle_eq16(Parser& parser, const Token& tok) {
     return true;
 }
 
+bool MacroExpander::handle_seq8(Parser& parser, const Token& tok) {
+    return handle_eq8(parser, tok);
+}
+
+bool MacroExpander::handle_seq16(Parser& parser, const Token& tok) {
+    return handle_eq16(parser, tok);
+}
+
 bool MacroExpander::handle_ne8(Parser& parser, const Token& tok) {
     std::vector<int> vals;
     if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
@@ -1592,6 +1604,14 @@ bool MacroExpander::handle_ne16(Parser& parser, const Token& tok) {
             mock_filename));
 
     return true;
+}
+
+bool MacroExpander::handle_sne8(Parser& parser, const Token& tok) {
+    return handle_ne8(parser, tok);
+}
+
+bool MacroExpander::handle_sne16(Parser& parser, const Token& tok) {
+    return handle_ne16(parser, tok);
 }
 
 bool MacroExpander::handle_lt8(Parser& parser, const Token& tok) {

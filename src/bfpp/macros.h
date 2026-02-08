@@ -124,8 +124,12 @@ private:
                             bool return_remainder);
     bool handle_eq8(Parser& parser, const Token& tok);
     bool handle_eq16(Parser& parser, const Token& tok);
+    bool handle_seq8(Parser& parser, const Token& tok);
+    bool handle_seq16(Parser& parser, const Token& tok);
     bool handle_ne8(Parser& parser, const Token& tok);
     bool handle_ne16(Parser& parser, const Token& tok);
+    bool handle_sne8(Parser& parser, const Token& tok);
+    bool handle_sne16(Parser& parser, const Token& tok);
     bool handle_lt8(Parser& parser, const Token& tok);
     bool handle_lt16(Parser& parser, const Token& tok);
     bool handle_gt8(Parser& parser, const Token& tok);
