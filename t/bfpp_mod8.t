@@ -4,29 +4,29 @@ BEGIN { use lib 't'; require 'testlib.pl'; }
 
 use Modern::Perl;
 
-# div - error no arguments
-spew("$test.in", "div");
+# mod8 - error no arguments
+spew("$test.in", "mod8");
 capture_nok("bfpp $test.in", <<END);
-$test.in:1:4: error: expected '(' after macro name 'div'
+$test.in:1:5: error: expected '(' after macro name 'mod8'
 END
 
-# div - error empty arguments
-spew("$test.in", "div()");
+# mod8 - error empty arguments
+spew("$test.in", "mod8()");
 capture_nok("bfpp $test.in", <<END);
-$test.in:1:6: error: macro 'div' expects 2 arguments
+$test.in:1:7: error: macro 'mod8' expects 2 arguments
 END
 
-# div - error too many arguments
-spew("$test.in", "div(A,B,C)");
+# mod8 - error too many arguments
+spew("$test.in", "mod8(A,B,C)");
 capture_nok("bfpp $test.in", <<END);
-$test.in:1:8: error: expected ')' at end of macro call, found ','
+$test.in:1:9: error: expected ')' at end of macro call, found ','
 END
 
-# div(a,b)
+# mod8(a,b)
 spew("$test.in", <<END);
-alloc_cell(A)
-alloc_cell(B)
-div(A,B)
+alloc_cell8(A)
+alloc_cell8(B)
+mod8(A,B)
 >A
 END
 capture_ok("bfpp $test.in", <<END);
@@ -4285,11 +4285,11 @@ capture_ok("bfpp $test.in", <<END);
   [
     -
   ]
-  >>
+  >>>
   [
-    -<<+>>
+    -<<<+>>>
   ]
-  >>>>>>>-
+  >>>>>>-
 ]
 [
   -
@@ -4331,9 +4331,9 @@ END
 
 # check division by zero
 spew("$test.in", <<END);
-		alloc_cell(A)
-		alloc_cell(B)
-		div(A, B)
+		alloc_cell8(A)
+		alloc_cell8(B)
+		mod8(A, B)
 END
 capture_ok("bfpp $test.in | bf -D", <<END);
 Tape:  0 
@@ -4341,18 +4341,18 @@ Tape:  0
 
 END
 
-# run div(a,b)
+# run mod8(a,b)
 for my $A (0, 10, 20) {
 	for my $B (1, 2, 3, 4) {
 		spew("$test.in", <<END);
-		alloc_cell(A)
-		alloc_cell(B)
-		set(A, $A)
-		set(B, $B)
-		div(A, B)
+		alloc_cell8(A)
+		alloc_cell8(B)
+		set8(A, $A)
+		set8(B, $B)
+		mod8(A, B)
 		>B
 END
-		my $R = sprintf("%3d", int($A / $B));
+		my $R = sprintf("%3d", $A % $B);
 		capture_ok("bfpp $test.in | bf -D", <<END);
 Tape:$R   $B 
          ^^^ (ptr=1)

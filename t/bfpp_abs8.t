@@ -4,31 +4,26 @@ BEGIN { use lib 't'; require 'testlib.pl'; }
 
 use Modern::Perl;
 
-# le - error no arguments
-spew("$test.in", "le");
+# abs8 - error no arguments
+spew("$test.in", "abs8");
 capture_nok("bfpp $test.in", <<END);
-$test.in:1:3: error: expected '(' after macro name 'le'
+$test.in:1:5: error: expected '(' after macro name 'abs8'
 END
 
-# le - error empty arguments
-spew("$test.in", "le()");
+# abs8 - error empty arguments
+spew("$test.in", "abs8()");
 capture_nok("bfpp $test.in", <<END);
-$test.in:1:5: error: macro 'le' expects 2 arguments
+$test.in:1:7: error: macro 'abs8' expects 1 argument
 END
 
-# le - error too many arguments
-spew("$test.in", "le(A,B,C)");
+# abs8 - error too many arguments
+spew("$test.in", "abs8(A,B");
 capture_nok("bfpp $test.in", <<END);
 $test.in:1:7: error: expected ')' at end of macro call, found ','
 END
 
-# le(a,b)
-spew("$test.in", <<END);
-alloc_cell(A)
-alloc_cell(B)
-le(A,B)
->A
-END
+# abs8 - negate the cell value
+spew("$test.in", "alloc_cell8(X) abs8(X)");
 capture_ok("bfpp $test.in", <<END);
 [
   -
@@ -38,6 +33,32 @@ capture_ok("bfpp $test.in", <<END);
   -
 ]
 >
+[
+  -
+]
+<
+[
+  -
+]
+<
+[
+  ->+>+<<
+]
+>>
+[
+  -<<+>>
+]
+[
+  -
+]
+[
+  -
+]
+[
+  -
+]
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++++++++++++++++++++++>
 [
   -
 ]
@@ -696,13 +717,13 @@ capture_ok("bfpp $test.in", <<END);
 [
   -
 ]
-<<
+<<<
 [
-  ->>+>+<<<
+  ->>>+>+<<<<
 ]
->>>
+>>>>
 [
-  -<<<+>>>
+  -<<<<+>>>>
 ]
 [
   -
@@ -827,13 +848,13 @@ capture_ok("bfpp $test.in", <<END);
 [
   -
 ]
-<<<<<
+<<<<
 [
-  ->>>>>+>>+<<<<<<<
+  ->>>>+>>+<<<<<<
 ]
->>>>>>>
+>>>>>>
 [
-  -<<<<<<<+>>>>>>>
+  -<<<<<<+>>>>>>
 ]
 [
   -
@@ -1095,27 +1116,188 @@ capture_ok("bfpp $test.in", <<END);
 [
   -
 ]
+<<
+[
+  -
+]
+[
+  -
+]
+>
+[
+  -
+]
+>
+[
+  -
+]
+<
+[
+  -
+]
+<<
+[
+  ->>+>+<<<
+]
+>>>
+[
+  -<<<+>>>
+]
+[
+  -
+]
+[
+  -
+]
+>
+[
+  -
+]
+<
+[
+  -
+]
+<
+[
+  ->+<
+]
++>>+<
+[
+  ->
+  [
+    -<<->>
+  ]
+  <
+]
+[
+  -
+]
+>
+[
+  -
+]
+<
+[
+  -
+]
+<<
+[
+  -
+]
+>
+[
+  -<+>>+<
+]
+>
+[
+  -<+>
+]
+[
+  -
+]
+[
+  -
+]
+>
+[
+  -
+]
+<
+[
+  -
+]
+<<
+[
+  ->>+<<
+]
++>>>+<
+[
+  ->
+  [
+    -<<<->>>
+  ]
+  <
+]
+[
+  -
+]
+>
+[
+  -
+]
 <<<
+[
+  >>
+  [
+    -
+  ]
+  >
+  [
+    -
+  ]
+  >
+  [
+    -
+  ]
+  <
+  [
+    -
+  ]
+  <<<<<
+  [
+    ->>>>>+>+<<<<<<
+  ]
+  >>>>>>
+  [
+    -<<<<<<+>>>>>>
+  ]
+  [
+    -
+  ]
+  <
+  [
+    -<->
+  ]
+  [
+    -
+  ]
+  <<<<<
+  [
+    -
+  ]
+  >>>>
+  [
+    -<<<<+>>>>
+  ]
+  [
+    -
+  ]
+  <<-
+]
+[
+  -
+]
+>
+[
+  -
+]
+<<
+[
+  -
+]
+<
 END
 
-# run le(a,b)
-for my $A (0, 1, 2) {
-	for my $B (0, 1, 2) {
-		spew("$test.in", <<END);
-		alloc_cell(A)
-		alloc_cell(B)
-		set(A, $A)
-		set(B, $B)
-		le(A, B)
-		>B
-END
-		my $R = ($A <= $B) ? 1 : 0;
-		capture_ok("bfpp $test.in | bf -D", <<END);
-Tape:  $R   $B 
-         ^^^ (ptr=1)
+# abs8 - execute a test program
+for my $A (-127, -1, 0, 1, 127) {
+	my $A8bit = $A & 0xFF;
+	spew("$test.in", "alloc_cell8(X) set8(X, $A8bit) abs8(X)");
+	my $R = sprintf("%3d", abs($A) & 0xFF);
+	capture_ok("bfpp $test.in | bf -D", <<END);
+Tape:$R 
+     ^^^ (ptr=0)
 
 END
-	}
 }
 
 unlink_testfiles;

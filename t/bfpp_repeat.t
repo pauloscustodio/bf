@@ -39,9 +39,9 @@ END
 
 # run repeat ... endrepeat
 spew("$test.in", <<END);
-alloc_cell(X)
-alloc_cell(COUNT)
-set(COUNT, 3)
+alloc_cell8(X)
+alloc_cell8(COUNT)
+set8(COUNT, 3)
 repeat(COUNT)
 	>X +
 endrepeat

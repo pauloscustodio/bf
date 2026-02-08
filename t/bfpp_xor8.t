@@ -4,29 +4,29 @@ BEGIN { use lib 't'; require 'testlib.pl'; }
 
 use Modern::Perl;
 
-# xor - error no arguments
-spew("$test.in", "xor");
+# xor8 - error no arguments
+spew("$test.in", "xor8");
 capture_nok("bfpp $test.in", <<END);
-$test.in:1:4: error: expected '(' after macro name 'xor'
+$test.in:1:5: error: expected '(' after macro name 'xor8'
 END
 
-# xor - error empty arguments
-spew("$test.in", "xor()");
+# xor8 - error empty arguments
+spew("$test.in", "xor8()");
 capture_nok("bfpp $test.in", <<END);
-$test.in:1:6: error: macro 'xor' expects 2 arguments
+$test.in:1:7: error: macro 'xor8' expects 2 arguments
 END
 
-# xor - error too many arguments
-spew("$test.in", "xor(A,B,C)");
+# xor8 - error too many arguments
+spew("$test.in", "xor8(A,B,C)");
 capture_nok("bfpp $test.in", <<END);
-$test.in:1:8: error: expected ')' at end of macro call, found ','
+$test.in:1:9: error: expected ')' at end of macro call, found ','
 END
 
-# xor(a,b)
+# xor8(a,b)
 spew("$test.in", <<END);
-alloc_cell(A)
-alloc_cell(B)
-xor(A,B)
+alloc_cell8(A)
+alloc_cell8(B)
+xor8(A,B)
 >A
 END
 capture_ok("bfpp $test.in", <<END);
@@ -781,15 +781,15 @@ capture_ok("bfpp $test.in", <<END);
 <<<
 END
 
-# run xor(a,b)
+# run xor8(a,b)
 for my $A (0, 1, 2) {
 	for my $B (0, 1, 2) {
 		spew("$test.in", <<END);
-		alloc_cell(A)
-		alloc_cell(B)
-		set(A, $A)
-		set(B, $B)
-		xor(A, B)
+		alloc_cell8(A)
+		alloc_cell8(B)
+		set8(A, $A)
+		set8(B, $B)
+		xor8(A, B)
 		>B
 END
 		my $R = (!!$A != !!$B) ? 1 : 0;

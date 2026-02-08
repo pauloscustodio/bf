@@ -4,29 +4,29 @@ BEGIN { use lib 't'; require 'testlib.pl'; }
 
 use Modern::Perl;
 
-# mul - error no arguments
-spew("$test.in", "mul");
+# mul8 - error no arguments
+spew("$test.in", "mul8");
 capture_nok("bfpp $test.in", <<END);
-$test.in:1:4: error: expected '(' after macro name 'mul'
+$test.in:1:5: error: expected '(' after macro name 'mul8'
 END
 
-# mul - error empty arguments
-spew("$test.in", "mul()");
+# mul8 - error empty arguments
+spew("$test.in", "mul8()");
 capture_nok("bfpp $test.in", <<END);
-$test.in:1:6: error: macro 'mul' expects 2 arguments
+$test.in:1:7: error: macro 'mul8' expects 2 arguments
 END
 
-# mul - error too many arguments
-spew("$test.in", "mul(A,B,C)");
+# mul8 - error too many arguments
+spew("$test.in", "mul8(A,B,C)");
 capture_nok("bfpp $test.in", <<END);
-$test.in:1:8: error: expected ')' at end of macro call, found ','
+$test.in:1:9: error: expected ')' at end of macro call, found ','
 END
 
-# mul(a,b)
+# mul8(a,b)
 spew("$test.in", <<END);
-alloc_cell(A)
-alloc_cell(B)
-mul(A,B)
+alloc_cell8(A)
+alloc_cell8(B)
+mul8(A,B)
 >A
 END
 capture_ok("bfpp $test.in", <<END);
@@ -7269,15 +7269,15 @@ capture_ok("bfpp $test.in", <<END);
 <<<<<<
 END
 
-# run mul(a,b)
+# run mul8(a,b)
 for my $A (0, 1, 2) {
 	for my $B (0, 1, 2) {
 		spew("$test.in", <<END);
-		alloc_cell(A)
-		alloc_cell(B)
-		set(A, $A)
-		set(B, $B)
-		mul(A, B)
+		alloc_cell8(A)
+		alloc_cell8(B)
+		set8(A, $A)
+		set8(B, $B)
+		mul8(A, B)
 		>B
 END
 		my $R = $A * $B;

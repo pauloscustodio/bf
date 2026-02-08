@@ -26,9 +26,9 @@ END
 spew("$test.in", "if(0)");
 capture_nok("bfpp $test.in", <<END);
 $test.in:1:6: error: if without matching endif
-(if):1:99: error: unmatched '[' instruction
+(if):1:105: error: unmatched '[' instruction
 (if):1:1: error: unmatched '{' brace
-(if):1:101: error: unmatched '{' brace
+(if):1:107: error: unmatched '{' brace
 END
 
 # naked else
@@ -45,9 +45,9 @@ END
 
 # if - endif
 spew("$test.in", <<END);
-alloc_cell(X)
-alloc_cell(Y)
-set(X, 0)
+alloc_cell8(X)
+alloc_cell8(Y)
+set8(X, 0)
 if(X)
 	>Y +
 endif
@@ -187,9 +187,9 @@ END
 
 # run if - endif
 spew("$test.in", <<END);
-alloc_cell(X)
-alloc_cell(Y)
-set(X, 0)
+alloc_cell8(X)
+alloc_cell8(Y)
+set8(X, 0)
 if(X)
 	>Y +
 endif
@@ -202,9 +202,9 @@ Tape:  0   0
 END
 
 spew("$test.in", <<END);
-alloc_cell(X)
-alloc_cell(Y)
-set(X, 123)
+alloc_cell8(X)
+alloc_cell8(Y)
+set8(X, 123)
 if(X)
 	>Y +
 endif
@@ -218,10 +218,10 @@ END
 
 # if - else - endif
 spew("$test.in", <<END);
-alloc_cell(X)
-alloc_cell(Y)
-alloc_cell(Z)
-set(X, 0)
+alloc_cell8(X)
+alloc_cell8(Y)
+alloc_cell8(Z)
+set8(X, 0)
 if(X)
 	>Y +
 else
@@ -372,10 +372,10 @@ END
 
 # run if - else - endif
 spew("$test.in", <<END);
-alloc_cell(X)
-alloc_cell(Y)
-alloc_cell(Z)
-set(X, 0)
+alloc_cell8(X)
+alloc_cell8(Y)
+alloc_cell8(Z)
+set8(X, 0)
 if(X)
 	>Y +
 else
@@ -390,10 +390,10 @@ Tape:  0   0   1
 END
 
 spew("$test.in", <<END);
-alloc_cell(X)
-alloc_cell(Y)
-alloc_cell(Z)
-set(X, 1)
+alloc_cell8(X)
+alloc_cell8(Y)
+alloc_cell8(Z)
+set8(X, 1)
 if(X)
 	>Y +
 else

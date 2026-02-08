@@ -4,29 +4,29 @@ BEGIN { use lib 't'; require 'testlib.pl'; }
 
 use Modern::Perl;
 
-# ge - error no arguments
-spew("$test.in", "ge");
+# gt8 - error no arguments
+spew("$test.in", "gt8");
 capture_nok("bfpp $test.in", <<END);
-$test.in:1:3: error: expected '(' after macro name 'ge'
+$test.in:1:4: error: expected '(' after macro name 'gt8'
 END
 
-# ge - error empty arguments
-spew("$test.in", "ge()");
+# gt8 - error empty arguments
+spew("$test.in", "gt8()");
 capture_nok("bfpp $test.in", <<END);
-$test.in:1:5: error: macro 'ge' expects 2 arguments
+$test.in:1:6: error: macro 'gt8' expects 2 arguments
 END
 
-# ge - error too many arguments
-spew("$test.in", "ge(A,B,C)");
+# gt8 - error too many arguments
+spew("$test.in", "gt8(A,B,C)");
 capture_nok("bfpp $test.in", <<END);
-$test.in:1:7: error: expected ')' at end of macro call, found ','
+$test.in:1:8: error: expected ')' at end of macro call, found ','
 END
 
-# ge(a,b)
+# gt8(a,b)
 spew("$test.in", <<END);
-alloc_cell(A)
-alloc_cell(B)
-ge(A,B)
+alloc_cell8(A)
+alloc_cell8(B)
+gt8(A,B)
 >A
 END
 capture_ok("bfpp $test.in", <<END);
@@ -696,13 +696,13 @@ capture_ok("bfpp $test.in", <<END);
 [
   -
 ]
-<<<
+<<
 [
-  ->>>+>+<<<<
+  ->>+>+<<<
 ]
->>>>
+>>>
 [
-  -<<<<+>>>>
+  -<<<+>>>
 ]
 [
   -
@@ -827,13 +827,13 @@ capture_ok("bfpp $test.in", <<END);
 [
   -
 ]
-<<<<
+<<<<<
 [
-  ->>>>+>>+<<<<<<
+  ->>>>>+>>+<<<<<<<
 ]
->>>>>>
+>>>>>>>
 [
-  -<<<<<<+>>>>>>
+  -<<<<<<<+>>>>>>>
 ]
 [
   -
@@ -1064,52 +1064,21 @@ capture_ok("bfpp $test.in", <<END);
 [
   -
 ]
-<<<
-[
-  -
-]
->
-[
-  -
-]
-<
-[
-  -
-]
-<<
-[
-  ->>+<<
-]
-+>>>+<
-[
-  ->
-  [
-    -<<<->>>
-  ]
-  <
-]
-[
-  -
-]
->
-[
-  -
-]
-<<<
+<<<<<
 END
 
-# run ge(a,b)
+# run gt8(a,b)
 for my $A (0, 1, 2) {
 	for my $B (0, 1, 2) {
 		spew("$test.in", <<END);
-		alloc_cell(A)
-		alloc_cell(B)
-		set(A, $A)
-		set(B, $B)
-		ge(A, B)
+		alloc_cell8(A)
+		alloc_cell8(B)
+		set8(A, $A)
+		set8(B, $B)
+		gt8(A, B)
 		>B
 END
-		my $R = ($A >= $B) ? 1 : 0;
+		my $R = ($A > $B) ? 1 : 0;
 		capture_ok("bfpp $test.in | bf -D", <<END);
 Tape:  $R   $B 
          ^^^ (ptr=1)

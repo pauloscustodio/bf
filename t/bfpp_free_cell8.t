@@ -1,0 +1,78 @@
+#!/usr/bin/env perl
+
+BEGIN { use lib 't'; require 'testlib.pl'; }
+
+use Modern::Perl;
+
+# free_cell8 - error no arguments
+spew("$test.in", "free_cell8");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:11: error: expected '(' after macro name 'free_cell8'
+END
+
+# free_cell8 - error empty arguments
+spew("$test.in", "free_cell8()");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:13: error: macro 'free_cell8' expects one identifier
+END
+
+# free_cell8 - error too many arguments
+spew("$test.in", "free_cell8(A,B)");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:13: error: expected ')' at end of macro call, found ','
+END
+
+# free_cell8 - wrong type of arguments
+spew("$test.in", "free_cell8(1)");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:14: error: macro 'free_cell8' expects one identifier
+END
+
+# free_cell8 - use as reserved word
+spew("$test.in", "#define free_cell8 1");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:9: error: cannot define macro 'free_cell8': reserved word
+END
+
+# free_cell8 - use after free
+spew("$test.in", "alloc_cell8(A) free_cell8(A) >A");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:31: error: macro 'A' is not defined
+END
+
+# free_cell8
+spew("$test.in", <<END);
+alloc_cell8(A) /* A=0 */
+alloc_cell8(B) /* B=1 */
+alloc_cell8(C) /* C=2 */
+free_cell8(B)
+alloc_cell8(X) /* X=1 */
+>A
+>X
+>C
+>A
+END
+capture_ok("bfpp $test.in", <<END);
+[
+  -
+]
+>
+[
+  -
+]
+>
+[
+  -
+]
+<
+[
+  -
+]
+[
+  -
+]
+<
+END
+
+unlink_testfiles;
+done_testing;

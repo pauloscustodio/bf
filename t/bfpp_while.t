@@ -26,9 +26,9 @@ END
 spew("$test.in", "while(0)");
 capture_nok("bfpp $test.in", <<END);
 $test.in:1:9: error: while without matching endwhile
-(while):1:63: error: unmatched '[' instruction
+(while):1:67: error: unmatched '[' instruction
 (while):1:1: error: unmatched '{' brace
-(while):1:65: error: unmatched '{' brace
+(while):1:69: error: unmatched '{' brace
 END
 
 # naked endwhile
@@ -39,9 +39,9 @@ END
 
 # run while ... endwhile
 spew("$test.in", <<END);
-alloc_cell(X)
-alloc_cell(COND)
-set(COND, 3)
+alloc_cell8(X)
+alloc_cell8(COND)
+set8(COND, 3)
 while(COND)
 	>X +
 	>COND -

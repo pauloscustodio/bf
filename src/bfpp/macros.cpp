@@ -13,53 +13,57 @@ MacroTable g_macro_table;
 
 // Built-ins are now private to MacroExpander
 const std::unordered_map<std::string, MacroExpander::BuiltinHandler> MacroExpander::kBuiltins = {
-    { "alloc_cell",   &MacroExpander::handle_alloc_cell   },
+    { "alloc_cell8",  &MacroExpander::handle_alloc_cell8  },
     { "alloc_cell16", &MacroExpander::handle_alloc_cell16 },
-    { "free_cell",    &MacroExpander::handle_free_cell    },
+    { "free_cell8",   &MacroExpander::handle_free_cell8   },
     { "free_cell16",  &MacroExpander::handle_free_cell16  },
-    { "clear",        &MacroExpander::handle_clear        },
+    { "clear8",       &MacroExpander::handle_clear8       },
     { "clear16",      &MacroExpander::handle_clear16      },
-    { "set",          &MacroExpander::handle_set          },
+    { "set8",         &MacroExpander::handle_set8         },
     { "set16",        &MacroExpander::handle_set16        },
-    { "move",         &MacroExpander::handle_move         },
+    { "move8",        &MacroExpander::handle_move8        },
     { "move16",       &MacroExpander::handle_move16       },
-    { "copy",         &MacroExpander::handle_copy         },
+    { "copy8",        &MacroExpander::handle_copy8        },
     { "copy16",       &MacroExpander::handle_copy16       },
-    { "not",          &MacroExpander::handle_not          },
+    { "not8",         &MacroExpander::handle_not8         },
     { "not16",        &MacroExpander::handle_not16        },
-    { "and",          &MacroExpander::handle_and          },
+    { "and8",         &MacroExpander::handle_and8         },
     { "and16",        &MacroExpander::handle_and16        },
-    { "or",           &MacroExpander::handle_or           },
+    { "or8",          &MacroExpander::handle_or8          },
     { "or16",         &MacroExpander::handle_or16         },
-    { "xor",          &MacroExpander::handle_xor          },
+    { "xor8",         &MacroExpander::handle_xor8         },
     { "xor16",        &MacroExpander::handle_xor16        },
-    { "add",          &MacroExpander::handle_add          },
+    { "add8",         &MacroExpander::handle_add8         },
     { "add16",        &MacroExpander::handle_add16        },
-    { "sub",          &MacroExpander::handle_sub          },
+    { "sub8",         &MacroExpander::handle_sub8         },
     { "sub16",        &MacroExpander::handle_sub16        },
-    { "mul",          &MacroExpander::handle_mul          },
-    { "mul16",        &MacroExpander::handle_mul16        },
-    { "div",          &MacroExpander::handle_div          },
-    { "div16",        &MacroExpander::handle_div16        },
-    { "mod",          &MacroExpander::handle_mod          },
-    { "mod16",        &MacroExpander::handle_mod16        },
-    { "sign",         &MacroExpander::handle_sign         },
+    { "neg8",         &MacroExpander::handle_neg8         },
+    { "neg16",        &MacroExpander::handle_neg16        },
+    { "sign8",        &MacroExpander::handle_sign8        },
     { "sign16",       &MacroExpander::handle_sign16       },
-    { "eq",           &MacroExpander::handle_eq           },
+    { "abs8",         &MacroExpander::handle_abs8         },
+    { "abs16",        &MacroExpander::handle_abs16        },
+    { "mul8",         &MacroExpander::handle_mul8         },
+    { "mul16",        &MacroExpander::handle_mul16        },
+    { "div8",         &MacroExpander::handle_div8         },
+    { "div16",        &MacroExpander::handle_div16        },
+    { "mod8",         &MacroExpander::handle_mod8         },
+    { "mod16",        &MacroExpander::handle_mod16        },
+    { "eq8",          &MacroExpander::handle_eq8          },
     { "eq16",         &MacroExpander::handle_eq16         },
-    { "ne",           &MacroExpander::handle_ne           },
+    { "ne8",          &MacroExpander::handle_ne8          },
     { "ne16",         &MacroExpander::handle_ne16         },
-    { "lt",           &MacroExpander::handle_lt           },
+    { "lt8",          &MacroExpander::handle_lt8          },
     { "lt16",         &MacroExpander::handle_lt16         },
-    { "gt",           &MacroExpander::handle_gt           },
+    { "gt8",          &MacroExpander::handle_gt8          },
     { "gt16",         &MacroExpander::handle_gt16         },
-    { "le",           &MacroExpander::handle_le           },
+    { "le8",          &MacroExpander::handle_le8          },
     { "le16",         &MacroExpander::handle_le16         },
-    { "ge",           &MacroExpander::handle_ge           },
+    { "ge8",          &MacroExpander::handle_ge8          },
     { "ge16",         &MacroExpander::handle_ge16         },
-    { "shr",          &MacroExpander::handle_shr          },
+    { "shr8",         &MacroExpander::handle_shr8         },
     { "shr16",        &MacroExpander::handle_shr16        },
-    { "shl",          &MacroExpander::handle_shl          },
+    { "shl8",         &MacroExpander::handle_shl8         },
     { "shl16",        &MacroExpander::handle_shl16        },
     { "if",           &MacroExpander::handle_if           },
     { "else",         &MacroExpander::handle_else         },
@@ -316,7 +320,7 @@ void MacroExpander::check_struct_stack() const {
     }
 }
 
-bool MacroExpander::handle_alloc_cell(Parser& parser, const Token& tok) {
+bool MacroExpander::handle_alloc_cell8(Parser& parser, const Token& tok) {
     std::string macro_name;
     if (!parse_ident_arg(parser, tok, macro_name)) {
         return true; // error already reported
@@ -330,7 +334,7 @@ bool MacroExpander::handle_alloc_cell(Parser& parser, const Token& tok) {
     g_macro_table.define(m);
 
     TokenScanner scanner;
-    std::string mock_filename = "(alloc_cell)";
+    std::string mock_filename = "(alloc_cell8)";
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(
@@ -364,7 +368,7 @@ bool MacroExpander::handle_alloc_cell16(Parser& parser, const Token& tok) {
     return true;
 }
 
-bool MacroExpander::handle_free_cell(Parser& parser, const Token& tok) {
+bool MacroExpander::handle_free_cell8(Parser& parser, const Token& tok) {
     std::string macro_name;
     if (!parse_ident_arg(parser, tok, macro_name)) {
         return true; // error already reported
@@ -372,11 +376,11 @@ bool MacroExpander::handle_free_cell(Parser& parser, const Token& tok) {
 
     const Macro* m = g_macro_table.lookup(macro_name);
     if (!m) {
-        g_error_reporter.report_error(tok.loc, "free_cell: macro '" + macro_name + "' not defined");
+        g_error_reporter.report_error(tok.loc, "free_cell8: macro '" + macro_name + "' not defined");
         return true;
     }
     if (!m->params.empty() || m->body.size() != 1 || m->body[0].type != TokenType::Integer) {
-        g_error_reporter.report_error(tok.loc, "free_cell: '" + macro_name + "' is not an alloc_cell result");
+        g_error_reporter.report_error(tok.loc, "free_cell8: '" + macro_name + "' is not an alloc_cell8 result");
         return true;
     }
 
@@ -385,7 +389,7 @@ bool MacroExpander::handle_free_cell(Parser& parser, const Token& tok) {
     g_macro_table.undef(macro_name);
 
     TokenScanner scanner;
-    std::string mock_filename = "(free_cell)";
+    std::string mock_filename = "(free_cell8)";
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(
@@ -403,11 +407,11 @@ bool MacroExpander::handle_free_cell16(Parser& parser, const Token& tok) {
 
     const Macro* m = g_macro_table.lookup(macro_name);
     if (!m) {
-        g_error_reporter.report_error(tok.loc, "free_cell: macro '" + macro_name + "' not defined");
+        g_error_reporter.report_error(tok.loc, "free_cell16: macro '" + macro_name + "' not defined");
         return true;
     }
     if (!m->params.empty() || m->body.size() != 1 || m->body[0].type != TokenType::Integer) {
-        g_error_reporter.report_error(tok.loc, "free_cell: '" + macro_name + "' is not an alloc_cell result");
+        g_error_reporter.report_error(tok.loc, "free_cell16: '" + macro_name + "' is not an alloc_cell16 result");
         return true;
     }
 
@@ -428,7 +432,7 @@ bool MacroExpander::handle_free_cell16(Parser& parser, const Token& tok) {
     return true;
 }
 
-bool MacroExpander::handle_clear(Parser& parser, const Token& tok) {
+bool MacroExpander::handle_clear8(Parser& parser, const Token& tok) {
     std::vector<int> vals;
     if (!parse_expr_args(parser, tok, { "expr" }, vals)) {
         return true;
@@ -436,7 +440,7 @@ bool MacroExpander::handle_clear(Parser& parser, const Token& tok) {
     int value = vals[0];
 
     TokenScanner scanner;
-    std::string mock_filename = "(clear)";
+    std::string mock_filename = "(clear8)";
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(
@@ -466,7 +470,7 @@ bool MacroExpander::handle_clear16(Parser& parser, const Token& tok) {
     return true;
 }
 
-bool MacroExpander::handle_set(Parser& parser, const Token& tok) {
+bool MacroExpander::handle_set8(Parser& parser, const Token& tok) {
     std::vector<int> vals;
     if (!parse_expr_args(parser, tok, { "a", "b" }, vals)) {
         return true;
@@ -476,7 +480,7 @@ bool MacroExpander::handle_set(Parser& parser, const Token& tok) {
     b &= 0xFF;
 
     TokenScanner scanner;
-    std::string mock_filename = "(set)";
+    std::string mock_filename = "(set8)";
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(
@@ -497,7 +501,7 @@ bool MacroExpander::handle_set16(Parser& parser, const Token& tok) {
     int b_high = (b >> 8) & 0xFF;
 
     TokenScanner scanner;
-    std::string mock_filename = "(set)";
+    std::string mock_filename = "(set8)";
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(
@@ -509,7 +513,7 @@ bool MacroExpander::handle_set16(Parser& parser, const Token& tok) {
     return true;
 }
 
-bool MacroExpander::handle_move(Parser& parser, const Token& tok) {
+bool MacroExpander::handle_move8(Parser& parser, const Token& tok) {
     std::vector<int> vals;
     if (!parse_expr_args(parser, tok, { "a", "b" }, vals)) {
         return true;
@@ -518,7 +522,7 @@ bool MacroExpander::handle_move(Parser& parser, const Token& tok) {
     int b = vals[1];
 
     TokenScanner scanner;
-    std::string mock_filename = "(move)";
+    std::string mock_filename = "(move8)";
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(
@@ -539,17 +543,17 @@ bool MacroExpander::handle_move16(Parser& parser, const Token& tok) {
     int b = vals[1];
 
     TokenScanner scanner;
-    std::string mock_filename = "(move)";
+    std::string mock_filename = "(move16)";
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(
-            "move(" + std::to_string(a) + ", " + std::to_string(b) + ") "
-            "move(" + std::to_string(a + 1) + ", " + std::to_string(b + 1) + ") ",
+            "move8(" + std::to_string(a) + ", " + std::to_string(b) + ") "
+            "move8(" + std::to_string(a + 1) + ", " + std::to_string(b + 1) + ") ",
             mock_filename));
     return true;
 }
 
-bool MacroExpander::handle_copy(Parser& parser, const Token& tok) {
+bool MacroExpander::handle_copy8(Parser& parser, const Token& tok) {
     std::vector<int> vals;
     if (!parse_expr_args(parser, tok, { "a", "b" }, vals)) {
         return true;
@@ -560,11 +564,11 @@ bool MacroExpander::handle_copy(Parser& parser, const Token& tok) {
     std::string t_name = make_temp_name();
 
     TokenScanner scanner;
-    std::string mock_filename = "(copy)";
+    std::string mock_filename = "(copy8)";
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(
-            "{ alloc_cell(" + t_name + ")"
+            "{ alloc_cell8(" + t_name + ")"
             " >" + std::to_string(b) + " [-]"
             " >" + std::to_string(a) +
             " [ - >" + std::to_string(b) +
@@ -573,7 +577,7 @@ bool MacroExpander::handle_copy(Parser& parser, const Token& tok) {
             " >" + t_name +
             " [ - >" + std::to_string(a) +
             " + >" + t_name + " ]"
-            " free_cell(" + t_name + ") }",
+            " free_cell8(" + t_name + ") }",
             mock_filename));
     return true;
 }
@@ -587,17 +591,17 @@ bool MacroExpander::handle_copy16(Parser& parser, const Token& tok) {
     int b = vals[1];
 
     TokenScanner scanner;
-    std::string mock_filename = "(move)";
+    std::string mock_filename = "(copy16)";
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(
-            "copy(" + std::to_string(a) + ", " + std::to_string(b) + ") "
-            "copy(" + std::to_string(a + 1) + ", " + std::to_string(b + 1) + ") ",
+            "copy8(" + std::to_string(a) + ", " + std::to_string(b) + ") "
+            "copy8(" + std::to_string(a + 1) + ", " + std::to_string(b + 1) + ") ",
             mock_filename));
     return true;
 }
 
-bool MacroExpander::handle_not(Parser& parser, const Token& tok) {
+bool MacroExpander::handle_not8(Parser& parser, const Token& tok) {
     std::vector<int> vals;
     if (!parse_expr_args(parser, tok, { "expr" }, vals)) {
         return true;
@@ -608,15 +612,15 @@ bool MacroExpander::handle_not(Parser& parser, const Token& tok) {
     std::string F = make_temp_name();
 
     TokenScanner scanner;
-    std::string mock_filename = "(not)";
+    std::string mock_filename = "(not8)";
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(
             // allocate T and F
-            "{ alloc_cell(" + T + ") "
-            "  alloc_cell(" + F + ") "
+            "{ alloc_cell8(" + T + ") "
+            "  alloc_cell8(" + F + ") "
             // Move X to T destoying X
-            "  move(" + std::to_string(X) + ", " + T + ") "
+            "  move8(" + std::to_string(X) + ", " + T + ") "
             // Initialize result X = 1, flag F = 1
             "  >" + std::to_string(X) + " + "
             "  >" + F + " + "
@@ -632,8 +636,8 @@ bool MacroExpander::handle_not(Parser& parser, const Token& tok) {
             "    >" + T + " "       //   back to T
             "  ] "              // end while
             // Now T = 0, F = 0, X = !original (0 -> 1, >0 -> 0)
-            "  free_cell(" + T + ") "
-            "  free_cell(" + F + ") "
+            "  free_cell8(" + T + ") "
+            "  free_cell8(" + F + ") "
             "}",
             mock_filename));
     return true;
@@ -654,30 +658,30 @@ bool MacroExpander::handle_not16(Parser& parser, const Token& tok) {
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(
-            "{ alloc_cell(" + T1 + ") "
-            "  alloc_cell(" + T2 + ") "
+            "{ alloc_cell8(" + T1 + ") "
+            "  alloc_cell8(" + T2 + ") "
             // T1 = (a_lo == 0)
-            "  copy(" + std::to_string(a) + ", " + T1 + ") "
-            "  not(" + T1 + ") "
+            "  copy8(" + std::to_string(a) + ", " + T1 + ") "
+            "  not8(" + T1 + ") "
             // T2 = (a_hi == 0)
-            "  copy(" + std::to_string(a + 1) + ", " + T2 + ") "
-            "  not(" + T2 + ") "
+            "  copy8(" + std::to_string(a + 1) + ", " + T2 + ") "
+            "  not8(" + T2 + ") "
             // T1 = T1 AND T2
-            "  and(" + T1 + ", " + T2 + ") "
+            "  and8(" + T1 + ", " + T2 + ") "
             // Write result back into a (16-bit)
             "  if(" + T1 + ") "
             "    set16(" + std::to_string(a) + ", 1) "
             "  else "
             "    clear16(" + std::to_string(a) + ") "
             "  endif "
-            "  free_cell(" + T1 + ") "
-            "  free_cell(" + T2 + ") "
+            "  free_cell8(" + T1 + ") "
+            "  free_cell8(" + T2 + ") "
             "}",
             mock_filename));
     return true;
 }
 
-bool MacroExpander::handle_and(Parser& parser, const Token& tok) {
+bool MacroExpander::handle_and8(Parser& parser, const Token& tok) {
     std::vector<int> vals;
     if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
         return true;
@@ -690,29 +694,29 @@ bool MacroExpander::handle_and(Parser& parser, const Token& tok) {
     std::string t_r = make_temp_name();
 
     TokenScanner scanner;
-    std::string mock_filename = "(and)";
+    std::string mock_filename = "(and8)";
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(
-            "{ alloc_cell(" + t_a + ")"
-            "  alloc_cell(" + t_b + ")"
-            "  alloc_cell(" + t_r + ")"
+            "{ alloc_cell8(" + t_a + ")"
+            "  alloc_cell8(" + t_b + ")"
+            "  alloc_cell8(" + t_r + ")"
             // booleanize a to t_a, destroys a
-            "  move(" + std::to_string(a) + ", " + t_a + ") "
-            "  not(" + t_a + ") "
-            "  not(" + t_a + ") "
+            "  move8(" + std::to_string(a) + ", " + t_a + ") "
+            "  not8(" + t_a + ") "
+            "  not8(" + t_a + ") "
             // booleanize b to t_b, keeps b intact
-            "  copy(" + std::to_string(b) + ", " + t_b + ") "
-            "  not(" + t_b + ") "
-            "  not(" + t_b + ") "
+            "  copy8(" + std::to_string(b) + ", " + t_b + ") "
+            "  not8(" + t_b + ") "
+            "  not8(" + t_b + ") "
             // if t_a==1 move t_b to t_r, else t_r = 0
-            "  >" + t_a + " [ - move(" + t_b + ", " + t_r + ") ] "
+            "  >" + t_a + " [ - move8(" + t_b + ", " + t_r + ") ] "
             // move t_r to a
-            "  move(" + t_r + ", " + std::to_string(a) + ") "
+            "  move8(" + t_r + ", " + std::to_string(a) + ") "
             // free temps
-            "  free_cell(" + t_a + ") "
-            "  free_cell(" + t_b + ") "
-            "  free_cell(" + t_r + ") "
+            "  free_cell8(" + t_a + ") "
+            "  free_cell8(" + t_b + ") "
+            "  free_cell8(" + t_r + ") "
             "}",
             mock_filename));
     return true;
@@ -734,31 +738,31 @@ bool MacroExpander::handle_and16(Parser& parser, const Token& tok) {
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(
-            "{ alloc_cell(" + T1 + ") "
-            "  alloc_cell(" + T2 + ") "
+            "{ alloc_cell8(" + T1 + ") "
+            "  alloc_cell8(" + T2 + ") "
             // T1 = (a_lo != 0) OR (a_hi != 0)
-            " copy(" + std::to_string(a) + ", " + T1 + ") "
-            " or(" + T1 + ", " + std::to_string(a + 1) + ") "
+            "  copy8(" + std::to_string(a) + ", " + T1 + ") "
+            "  or8(" + T1 + ", " + std::to_string(a + 1) + ") "
             // T2 = (b_lo != 0) OR (b_hi != 0)
-            " copy(" + std::to_string(b) + ", " + T2 + ") "
-            " or(" + T2 + ", " + std::to_string(b + 1) + ") "
+            "  copy8(" + std::to_string(b) + ", " + T2 + ") "
+            "  or8(" + T2 + ", " + std::to_string(b + 1) + ") "
             // T1 = T1 AND ((b_lo != 0) OR (b_hi != 0))
-            " and(" + T1 + ", " + T2 + ") "
+            "  and8(" + T1 + ", " + T2 + ") "
             // if T1 != 0 set a=1 else a=0
-            " if(" + T1 + ") "
-            "   set16(" + std::to_string(a) + ", 1) "
-            " else "
-            "   clear16(" + std::to_string(a) + ") "
-            " endif "
+            "  if(" + T1 + ") "
+            "    set16(" + std::to_string(a) + ", 1) "
+            "  else "
+            "    clear16(" + std::to_string(a) + ") "
+            "  endif "
             // free temps
-            " free_cell(" + T1 + ") "
-            " free_cell(" + T2 + ") "
+            "  free_cell8(" + T1 + ") "
+            "  free_cell8(" + T2 + ") "
             "}",
             mock_filename));
     return true;
 }
 
-bool MacroExpander::handle_or(Parser& parser, const Token& tok) {
+bool MacroExpander::handle_or8(Parser& parser, const Token& tok) {
     std::vector<int> vals;
     if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
         return true;
@@ -771,33 +775,33 @@ bool MacroExpander::handle_or(Parser& parser, const Token& tok) {
     std::string t_r = make_temp_name();
 
     TokenScanner scanner;
-    std::string mock_filename = "(or)";
+    std::string mock_filename = "(or8)";
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(
-            "{ alloc_cell(" + t_a + ")"
-            "  alloc_cell(" + t_b + ")"
-            "  alloc_cell(" + t_r + ")"
+            "{ alloc_cell8(" + t_a + ")"
+            "  alloc_cell8(" + t_b + ")"
+            "  alloc_cell8(" + t_r + ")"
             // booleanize a to t_a, destroys a
-            "  move(" + std::to_string(a) + ", " + t_a + ") "
-            "  not(" + t_a + ") "
-            "  not(" + t_a + ") "
+            "  move8(" + std::to_string(a) + ", " + t_a + ") "
+            "  not8(" + t_a + ") "
+            "  not8(" + t_a + ") "
             // booleanize b to t_b, keeps b intact
-            "  copy(" + std::to_string(b) + ", " + t_b + ") "
-            "  not(" + t_b + ") "
-            "  not(" + t_b + ") "
+            "  copy8(" + std::to_string(b) + ", " + t_b + ") "
+            "  not8(" + t_b + ") "
+            "  not8(" + t_b + ") "
             // add t_a and t_b to t_r (result = 0, 1 or 2)
             "  >" + t_a + " [ - >" + t_r + " + >" + t_a + " ] "
             "  >" + t_b + " [ - >" + t_r + " + >" + t_b + " ] "
             // booleanize t_r to 0 or 1
-            "  not(" + t_r + ") "
-            "  not(" + t_r + ") "
+            "  not8(" + t_r + ") "
+            "  not8(" + t_r + ") "
             // move t_r to a
-            "  move(" + t_r + ", " + std::to_string(a) + ") "
+            "  move8(" + t_r + ", " + std::to_string(a) + ") "
             // free temps
-            "  free_cell(" + t_a + ") "
-            "  free_cell(" + t_b + ") "
-            "  free_cell(" + t_r + ") "
+            "  free_cell8(" + t_a + ") "
+            "  free_cell8(" + t_b + ") "
+            "  free_cell8(" + t_r + ") "
             "}",
             mock_filename));
 
@@ -819,27 +823,27 @@ bool MacroExpander::handle_or16(Parser& parser, const Token& tok) {
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(
-            "{ alloc_cell(" + T + ") "
+            "{ alloc_cell8(" + T + ") "
             // T = a_lo OR a_hi
-            "  copy(" + std::to_string(a) + ", " + T + ") "
-            "  or(" + T + ", " + std::to_string(a + 1) + ") "
+            "  copy8(" + std::to_string(a) + ", " + T + ") "
+            "  or8(" + T + ", " + std::to_string(a + 1) + ") "
             // T = T OR b_lo
-            "  or(" + T + ", " + std::to_string(b) + ") "
+            "  or8(" + T + ", " + std::to_string(b) + ") "
             // T = T OR b_hi
-            "  or(" + T + ", " + std::to_string(b + 1) + ") "
+            "  or8(" + T + ", " + std::to_string(b + 1) + ") "
             //  ---- write result back into a ----
             "  if(" + T + ") "
             "    set16(" + std::to_string(a) + ", 1) "
             "  else "
             "    clear16(" + std::to_string(a) + ") "
             "  endif "
-            "  free_cell(" + T + ") "
+            "  free_cell8(" + T + ") "
             "}",
             mock_filename));
     return true;
 }
 
-bool MacroExpander::handle_xor(Parser& parser, const Token& tok) {
+bool MacroExpander::handle_xor8(Parser& parser, const Token& tok) {
     std::vector<int> vals;
     if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
         return true;
@@ -851,26 +855,26 @@ bool MacroExpander::handle_xor(Parser& parser, const Token& tok) {
     std::string T2 = make_temp_name();
 
     TokenScanner scanner;
-    std::string mock_filename = "(xor)";
+    std::string mock_filename = "(xor8)";
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(
-            "{ alloc_cell(" + T1 + ")"
-            "  alloc_cell(" + T2 + ")"
+            "{ alloc_cell8(" + T1 + ")"
+            "  alloc_cell8(" + T2 + ")"
             // Compute A_OR_B into T1
-            "  copy(" + std::to_string(a) + ", " + T1 + ") "
-            "  or(" + T1 + ", " + std::to_string(b) + ") "
+            "  copy8(" + std::to_string(a) + ", " + T1 + ") "
+            "  or8(" + T1 + ", " + std::to_string(b) + ") "
             // Compute A_AND_B into T2
-            "  copy(" + std::to_string(a) + ", " + T2 + ") "
-            "  and(" + T2 + ", " + std::to_string(b) + ") "
+            "  copy8(" + std::to_string(a) + ", " + T2 + ") "
+            "  and8(" + T2 + ", " + std::to_string(b) + ") "
             // NOT(T2)
-            "  not(" + T2 + ") "
+            "  not8(" + T2 + ") "
             // XOR = (A OR B) AND NOT(A AND B)
-            "  copy(" + T1 + ", " + std::to_string(a) + ") "
-            "  and(" + std::to_string(a) + ", " + T2 + ") "
+            "  copy8(" + T1 + ", " + std::to_string(a) + ") "
+            "  and8(" + std::to_string(a) + ", " + T2 + ") "
             // free temps
-            "  free_cell(" + T1 + ") "
-            "  free_cell(" + T2 + ") "
+            "  free_cell8(" + T1 + ") "
+            "  free_cell8(" + T2 + ") "
             "}",
             mock_filename));
 
@@ -918,7 +922,7 @@ bool MacroExpander::handle_xor16(Parser& parser, const Token& tok) {
     return true;
 }
 
-bool MacroExpander::handle_add(Parser& parser, const Token& tok) {
+bool MacroExpander::handle_add8(Parser& parser, const Token& tok) {
     std::vector<int> vals;
     if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
         return true;
@@ -929,19 +933,19 @@ bool MacroExpander::handle_add(Parser& parser, const Token& tok) {
     std::string T = make_temp_name();
 
     TokenScanner scanner;
-    std::string mock_filename = "(add)";
+    std::string mock_filename = "(add8)";
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(
             // allocate T variable
-            "{ alloc_cell(" + T + ") "
+            "{ alloc_cell8(" + T + ") "
             // copy b to T
-            "  copy(" + std::to_string(b) + ", " + T + ") "
+            "  copy8(" + std::to_string(b) + ", " + T + ") "
             // add T to a
             "  >" + T +
             " [ - >" + std::to_string(a) + " + >" + T + " ] "
             // free T
-            "  free_cell(" + T + ") "
+            "  free_cell8(" + T + ") "
             "}",
             mock_filename));
     return true;
@@ -963,29 +967,29 @@ bool MacroExpander::handle_add16(Parser& parser, const Token& tok) {
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(
-            "{ alloc_cell(" + t_old + ") "
-            "  alloc_cell(" + t_carry + ") "
+            "{ alloc_cell8(" + t_old + ") "
+            "  alloc_cell8(" + t_carry + ") "
             // ---- Step 1: save old low byte ----
-            "  copy(" + std::to_string(a) + ", " + t_old + ") "
+            "  copy8(" + std::to_string(a) + ", " + t_old + ") "
             // ---- Step 2: add low bytes ----
-            "  add(" + std::to_string(a) + ", " + std::to_string(b) + ") "
+            "  add8(" + std::to_string(a) + ", " + std::to_string(b) + ") "
             // ---- Step 3: detect carry ----
             // T_carry = new a_lo
-            "  copy(" + std::to_string(a) + ", " + t_carry + ") "
+            "  copy8(" + std::to_string(a) + ", " + t_carry + ") "
             // carry = (a_lo < old)
-            "  lt(" + t_carry + ", " + t_old + ") "
+            "  lt8(" + t_carry + ", " + t_old + ") "
             // ---- Step 4: add high bytes ----
-            "  add(" + std::to_string(a + 1) + ", " + std::to_string(b + 1) + ") "
+            "  add8(" + std::to_string(a + 1) + ", " + std::to_string(b + 1) + ") "
             // ---- Step 4: add carry into high byte ----
-            "  add(" + std::to_string(a + 1) + ", " + t_carry + ") "
-            "  free_cell(" + t_old + ") "
-            "  free_cell(" + t_carry + ") "
+            "  add8(" + std::to_string(a + 1) + ", " + t_carry + ") "
+            "  free_cell8(" + t_old + ") "
+            "  free_cell8(" + t_carry + ") "
             "}",
             mock_filename));
     return true;
 }
 
-bool MacroExpander::handle_sub(Parser& parser, const Token& tok) {
+bool MacroExpander::handle_sub8(Parser& parser, const Token& tok) {
     std::vector<int> vals;
     if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
         return true;
@@ -996,19 +1000,19 @@ bool MacroExpander::handle_sub(Parser& parser, const Token& tok) {
     std::string T = make_temp_name();
 
     TokenScanner scanner;
-    std::string mock_filename = "(sub)";
+    std::string mock_filename = "(sub8)";
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(
             // allocate T variable
-            "{ alloc_cell(" + T + ") "
+            "{ alloc_cell8(" + T + ") "
             // copy b to T
-            "  copy(" + std::to_string(b) + ", " + T + ") "
+            "  copy8(" + std::to_string(b) + ", " + T + ") "
             // sub T from a
             "  >" + T +
             " [ - >" + std::to_string(a) + " - >" + T + " ] "
             // free T
-            "  free_cell(" + T + ") "
+            "  free_cell8(" + T + ") "
             "}",
             mock_filename));
     return true;
@@ -1030,29 +1034,77 @@ bool MacroExpander::handle_sub16(Parser& parser, const Token& tok) {
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(
-            "{ alloc_cell(" + t_old + ") "
-            "  alloc_cell(" + t_borrow + ") "
+            "{ alloc_cell8(" + t_old + ") "
+            "  alloc_cell8(" + t_borrow + ") "
             // ---- Step 1: save old low byte ----
-            "  copy(" + std::to_string(a) + ", " + t_old + ") "
+            "  copy8(" + std::to_string(a) + ", " + t_old + ") "
             // ---- Step 2: sub low bytes ----
-            "  sub(" + std::to_string(a) + ", " + std::to_string(b) + ") "
+            "  sub8(" + std::to_string(a) + ", " + std::to_string(b) + ") "
             // ---- Step 3: detect borrow ----
             // T_borrow = new a_lo
-            "  copy(" + std::to_string(a) + ", " + t_borrow + ") "
+            "  copy8(" + std::to_string(a) + ", " + t_borrow + ") "
             // borrow = (a_lo > old)
-            "  gt(" + t_borrow + ", " + t_old + ") "
+            "  gt8(" + t_borrow + ", " + t_old + ") "
             // ---- Step 4: sub high bytes ----
-            "  sub(" + std::to_string(a + 1) + ", " + std::to_string(b + 1) + ") "
+            "  sub8(" + std::to_string(a + 1) + ", " + std::to_string(b + 1) + ") "
             // ---- Step 4: sub borrow into high byte ----
-            "  sub(" + std::to_string(a + 1) + ", " + t_borrow + ") "
-            "  free_cell(" + t_old + ") "
-            "  free_cell(" + t_borrow + ") "
+            "  sub8(" + std::to_string(a + 1) + ", " + t_borrow + ") "
+            "  free_cell8(" + t_old + ") "
+            "  free_cell8(" + t_borrow + ") "
             "}",
             mock_filename));
     return true;
 }
 
-bool MacroExpander::handle_mul(Parser& parser, const Token& tok) {
+bool MacroExpander::handle_neg8(Parser& parser, const Token& tok) {
+    std::vector<int> vals;
+    if (!parse_expr_args(parser, tok, { "expr" }, vals)) {
+        return true;
+    }
+    int a = vals[0];
+
+    std::string T_zero = make_temp_name();
+
+    TokenScanner scanner;
+    std::string mock_filename = "(neg8)";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            // allocate T and F
+            "{ alloc_cell8(" + T_zero + ") "
+            "  sub8(" + T_zero + ", " + std::to_string(a) + ") "
+            "  move8(" + T_zero + ", " + std::to_string(a) + ") "
+            "  free_cell8(" + T_zero + ") "
+            "}",
+            mock_filename));
+    return true;
+}
+
+bool MacroExpander::handle_neg16(Parser& parser, const Token& tok) {
+    std::vector<int> vals;
+    if (!parse_expr_args(parser, tok, { "expr" }, vals)) {
+        return true;
+    }
+    int a = vals[0];
+
+    std::string T_zero = make_temp_name();
+
+    TokenScanner scanner;
+    std::string mock_filename = "(neg16)";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            // allocate T and F
+            "{ alloc_cell16(" + T_zero + ") "
+            "  sub16(" + T_zero + ", " + std::to_string(a) + ") "
+            "  move16(" + T_zero + ", " + std::to_string(a) + ") "
+            "  free_cell16(" + T_zero + ") "
+            "}",
+            mock_filename));
+    return true;
+}
+
+bool MacroExpander::handle_mul8(Parser& parser, const Token& tok) {
     std::vector<int> vals;
     if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
         return true;
@@ -1067,37 +1119,37 @@ bool MacroExpander::handle_mul(Parser& parser, const Token& tok) {
     std::string T_two = make_temp_name();
 
     TokenScanner scanner;
-    std::string mock_filename = "(mul)";
+    std::string mock_filename = "(mul8)";
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(
-            "{ alloc_cell(" + T_res + ") "
-            "  alloc_cell(" + T_b + ") "
-            "  alloc_cell(" + T_tmp + ") "
-            "  alloc_cell(" + T_one + ") >" + T_one + " + "
-            "  alloc_cell(" + T_two + ") >" + T_two + " ++ "
-            "  copy(" + std::to_string(b) + ", " + T_b + ") "
+            "{ alloc_cell8(" + T_res + ") "
+            "  alloc_cell8(" + T_b + ") "
+            "  alloc_cell8(" + T_tmp + ") "
+            "  alloc_cell8(" + T_one + ") >" + T_one + " + "
+            "  alloc_cell8(" + T_two + ") >" + T_two + " ++ "
+            "  copy8(" + std::to_string(b) + ", " + T_b + ") "
             "  while(" + T_b + ") "
             //   if (b is odd)
-            "    copy(" + T_b + ", " + T_tmp + ") "
-            "    mod(" + T_tmp + ", " + T_two + ") "
+            "    copy8(" + T_b + ", " + T_tmp + ") "
+            "    mod8(" + T_tmp + ", " + T_two + ") "
             "    if(" + T_tmp + ") "
             //     add a to result
-            "      add(" + T_res + ", " + std::to_string(a) + ") "
+            "      add8(" + T_res + ", " + std::to_string(a) + ") "
             "    endif "
             //   b = b // 2
-            "    shr(" + T_b + ", " + T_one + ") "
+            "    shr8(" + T_b + ", " + T_one + ") "
             //   a = a * 2
-            "    shl(" + std::to_string(a) + ", " + T_one + ") "
+            "    shl8(" + std::to_string(a) + ", " + T_one + ") "
             "  endwhile "
             // move result back to a
-            "  move(" + T_res + ", " + std::to_string(a) + ") "
+            "  move8(" + T_res + ", " + std::to_string(a) + ") "
             // free T
-            "  free_cell(" + T_res + ") "
-            "  free_cell(" + T_b + ") "
-            "  free_cell(" + T_tmp + ") "
-            "  free_cell(" + T_one + ") "
-            "  free_cell(" + T_two + ") "
+            "  free_cell8(" + T_res + ") "
+            "  free_cell8(" + T_b + ") "
+            "  free_cell8(" + T_tmp + ") "
+            "  free_cell8(" + T_one + ") "
+            "  free_cell8(" + T_two + ") "
             "}",
             mock_filename));
     return true;
@@ -1166,24 +1218,24 @@ bool MacroExpander::handle_mul16(Parser& parser, const Token& tok) {
     return true;
 }
 
-bool MacroExpander::handle_div(Parser& parser, const Token& tok) {
-    return handle_div_mod(parser, tok, /*return_remainder=*/false);
+bool MacroExpander::handle_div8(Parser& parser, const Token& tok) {
+    return handle_div8_mod8(parser, tok, /*return_remainder=*/false);
 }
 
 bool MacroExpander::handle_div16(Parser& parser, const Token& tok) {
     return handle_div16_mod16(parser, tok, /*return_remainder=*/false);
 }
 
-bool MacroExpander::handle_mod(Parser& parser, const Token& tok) {
-    return handle_div_mod(parser, tok, /*return_remainder=*/true);
+bool MacroExpander::handle_mod8(Parser& parser, const Token& tok) {
+    return handle_div8_mod8(parser, tok, /*return_remainder=*/true);
 }
 
 bool MacroExpander::handle_mod16(Parser& parser, const Token& tok) {
     return handle_div16_mod16(parser, tok, /*return_remainder=*/true);
 }
 
-bool MacroExpander::handle_div_mod(Parser& parser, const Token& tok,
-                                   bool return_remainder) {
+bool MacroExpander::handle_div8_mod8(Parser& parser, const Token& tok,
+                                     bool return_remainder) {
     std::vector<int> vals;
     if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
         return true;
@@ -1200,45 +1252,45 @@ bool MacroExpander::handle_div_mod(Parser& parser, const Token& tok,
     std::string T_eight = make_temp_name();
 
     const std::string move_target = return_remainder ? T_rem : T_quot;
-    const std::string mock_filename = return_remainder ? "(mod)" : "(div)";
+    const std::string mock_filename = return_remainder ? "(mod8)" : "(div8)";
 
     TokenScanner scanner;
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(
-            "{ alloc_cell(" + T_quot + ") "
-            "  alloc_cell(" + T_rem + ") "
-            "  alloc_cell(" + T_bit + ") "
-            "  alloc_cell(" + T_tmp + ") "
-            "  alloc_cell(" + T_one + ") >" + T_one + " + "
-            "  alloc_cell(" + T_seven + ") >" + T_seven + " +7 "
-            "  alloc_cell(" + T_eight + ") >" + T_eight + " +8 "
+            "{ alloc_cell8(" + T_quot + ") "
+            "  alloc_cell8(" + T_rem + ") "
+            "  alloc_cell8(" + T_bit + ") "
+            "  alloc_cell8(" + T_tmp + ") "
+            "  alloc_cell8(" + T_one + ") >" + T_one + " + "
+            "  alloc_cell8(" + T_seven + ") >" + T_seven + " +7 "
+            "  alloc_cell8(" + T_eight + ") >" + T_eight + " +8 "
             "  if(" + std::to_string(b) + ") "
             "    repeat(" + T_eight + ") "
-            "      copy(" + std::to_string(a) + ", " + T_bit + ") "
-            "      shr(" + T_bit + ", " + T_seven + ") "
-            "      shl(" + std::to_string(a) + ", " + T_one + ") "
-            "      shl(" + T_rem + ", " + T_one + ") "
-            "      add(" + T_rem + ", " + T_bit + ") "
-            "      copy(" + T_rem + ", " + T_tmp + ") "
-            "      ge(" + T_tmp + ", " + std::to_string(b) + ") "
+            "      copy8(" + std::to_string(a) + ", " + T_bit + ") "
+            "      shr8(" + T_bit + ", " + T_seven + ") "
+            "      shl8(" + std::to_string(a) + ", " + T_one + ") "
+            "      shl8(" + T_rem + ", " + T_one + ") "
+            "      add8(" + T_rem + ", " + T_bit + ") "
+            "      copy8(" + T_rem + ", " + T_tmp + ") "
+            "      ge8(" + T_tmp + ", " + std::to_string(b) + ") "
             "      if(" + T_tmp + ") "
-            "        sub(" + T_rem + ", " + std::to_string(b) + ") "
-            "        shl(" + T_quot + ", " + T_one + ") "
-            "        add(" + T_quot + ", " + T_one + ") "
+            "        sub8(" + T_rem + ", " + std::to_string(b) + ") "
+            "        shl8(" + T_quot + ", " + T_one + ") "
+            "        add8(" + T_quot + ", " + T_one + ") "
             "      else "
-            "        shl(" + T_quot + ", " + T_one + ") "
+            "        shl8(" + T_quot + ", " + T_one + ") "
             "      endif "
             "    endrepeat "
-            "    move(" + move_target + ", " + std::to_string(a) + ") "
+            "    move8(" + move_target + ", " + std::to_string(a) + ") "
             "  endif "
-            "  free_cell(" + T_quot + ") "
-            "  free_cell(" + T_rem + ") "
-            "  free_cell(" + T_bit + ") "
-            "  free_cell(" + T_tmp + ") "
-            "  free_cell(" + T_one + ") "
-            "  free_cell(" + T_seven + ") "
-            "  free_cell(" + T_eight + ") "
+            "  free_cell8(" + T_quot + ") "
+            "  free_cell8(" + T_rem + ") "
+            "  free_cell8(" + T_bit + ") "
+            "  free_cell8(" + T_tmp + ") "
+            "  free_cell8(" + T_one + ") "
+            "  free_cell8(" + T_seven + ") "
+            "  free_cell8(" + T_eight + ") "
             "}",
             mock_filename));
     return true;
@@ -1328,7 +1380,7 @@ bool MacroExpander::handle_div16_mod16(Parser& parser, const Token& tok,
     return true;
 }
 
-bool MacroExpander::handle_sign(Parser& parser, const Token& tok) {
+bool MacroExpander::handle_sign8(Parser& parser, const Token& tok) {
     std::vector<int> vals;
     if (!parse_expr_args(parser, tok, { "expr" }, vals)) {
         return true;
@@ -1338,16 +1390,16 @@ bool MacroExpander::handle_sign(Parser& parser, const Token& tok) {
     std::string T_128 = make_temp_name();
 
     TokenScanner scanner;
-    std::string mock_filename = "(sign)";
+    std::string mock_filename = "(sign8)";
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(
             // allocate temps
-            "{ alloc_cell(" + T_128 + ") "
+            "{ alloc_cell8(" + T_128 + ") "
             // compute sign = (x >= 128)
-            "  set(" + T_128 + ", 128) "
-            "  ge(" + std::to_string(x) + ", " + T_128 + ") "
-            "  free_cell(" + T_128 + ") "
+            "  set8(" + T_128 + ", 128) "
+            "  ge8(" + std::to_string(x) + ", " + T_128 + ") "
+            "  free_cell8(" + T_128 + ") "
             "}",
             mock_filename));
     return true;
@@ -1378,7 +1430,65 @@ bool MacroExpander::handle_sign16(Parser& parser, const Token& tok) {
     return true;
 }
 
-bool MacroExpander::handle_eq(Parser& parser, const Token& tok) {
+bool MacroExpander::handle_abs8(Parser& parser, const Token& tok) {
+    std::vector<int> vals;
+    if (!parse_expr_args(parser, tok, { "expr" }, vals)) {
+        return true;
+    }
+    int x = vals[0];
+
+    std::string T_cond = make_temp_name();
+
+    TokenScanner scanner;
+    std::string mock_filename = "(abs8)";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            // allocate temps
+            "{ alloc_cell8(" + T_cond + ") "
+            // compute sign
+            "  copy8(" + std::to_string(x) + ", " + T_cond + ") "
+            "  sign8(" + T_cond + ") "
+            // if negative, negate x
+            "  if(" + T_cond + ") "
+            "    neg8(" + std::to_string(x) + ") "
+            "  endif "
+            "  free_cell8(" + T_cond + ") "
+            "}",
+            mock_filename));
+    return true;
+}
+
+bool MacroExpander::handle_abs16(Parser& parser, const Token& tok) {
+    std::vector<int> vals;
+    if (!parse_expr_args(parser, tok, { "expr" }, vals)) {
+        return true;
+    }
+    int x = vals[0];
+
+    std::string T_cond = make_temp_name();
+
+    TokenScanner scanner;
+    std::string mock_filename = "(abs16)";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            // allocate temps
+            "{ alloc_cell16(" + T_cond + ") "
+            // compute sign
+            "  copy16(" + std::to_string(x) + ", " + T_cond + ") "
+            "  sign16(" + T_cond + ") "
+            // if negative, negate x
+            "  if(" + T_cond + ") "
+            "    neg16(" + std::to_string(x) + ") "
+            "  endif "
+            "  free_cell16(" + T_cond + ") "
+            "}",
+            mock_filename));
+    return true;
+}
+
+bool MacroExpander::handle_eq8(Parser& parser, const Token& tok) {
     std::vector<int> vals;
     if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
         return true;
@@ -1387,14 +1497,14 @@ bool MacroExpander::handle_eq(Parser& parser, const Token& tok) {
     int b = vals[1];
 
     TokenScanner scanner;
-    std::string mock_filename = "(eq)";
+    std::string mock_filename = "(eq8)";
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(
             // a -= b
-            "sub(" + std::to_string(a) + ", " + std::to_string(b) + ") "
+            "sub8(" + std::to_string(a) + ", " + std::to_string(b) + ") "
             // not(a): 0 (equal) -> 1, non-zero (not equal) -> 0
-            "not(" + std::to_string(a) + ") ",
+            "not8(" + std::to_string(a) + ") ",
             mock_filename));
 
     return true;
@@ -1416,31 +1526,31 @@ bool MacroExpander::handle_eq16(Parser& parser, const Token& tok) {
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(
-            "{ alloc_cell(" + T1 + ") "
-            "  alloc_cell(" + T2 + ") "
+            "{ alloc_cell8(" + T1 + ") "
+            "  alloc_cell8(" + T2 + ") "
             // T1 = (a_lo == b_lo)
-            "  copy(" + std::to_string(a) + ", " + T1 + ") "
-            "  eq(" + T1 + ", " + std::to_string(b) + ") "
+            "  copy8(" + std::to_string(a) + ", " + T1 + ") "
+            "  eq8(" + T1 + ", " + std::to_string(b) + ") "
             // T2 = (a_hi == b_hi)
-            "  copy(" + std::to_string(a + 1) + ", " + T2 + ") "
-            "  eq(" + T2 + ", " + std::to_string(b + 1) + ") "
+            "  copy8(" + std::to_string(a + 1) + ", " + T2 + ") "
+            "  eq8(" + T2 + ", " + std::to_string(b + 1) + ") "
             // T1 = T1 AND T2
-            "  and(" + T1 + ", " + T2 + ") "
+            "  and8(" + T1 + ", " + T2 + ") "
             // copy the result back into a (16-bit)
             "  if(" + T1 + ") "
             "    set16(" + std::to_string(a) + ", 1) "
             "  else "
             "    clear16(" + std::to_string(a) + ") "
             "  endif "
-            "  free_cell(" + T1 + ") "
-            "  free_cell(" + T2 + ") "
+            "  free_cell8(" + T1 + ") "
+            "  free_cell8(" + T2 + ") "
             "}",
             mock_filename));
 
     return true;
 }
 
-bool MacroExpander::handle_ne(Parser& parser, const Token& tok) {
+bool MacroExpander::handle_ne8(Parser& parser, const Token& tok) {
     std::vector<int> vals;
     if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
         return true;
@@ -1449,14 +1559,14 @@ bool MacroExpander::handle_ne(Parser& parser, const Token& tok) {
     int b = vals[1];
 
     TokenScanner scanner;
-    std::string mock_filename = "(ne)";
+    std::string mock_filename = "(ne8)";
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(
             // a == b
-            "eq(" + std::to_string(a) + ", " + std::to_string(b) + ") "
+            "eq8(" + std::to_string(a) + ", " + std::to_string(b) + ") "
             // not(a)
-            "not(" + std::to_string(a) + ") ",
+            "not8(" + std::to_string(a) + ") ",
             mock_filename));
 
     return true;
@@ -1484,7 +1594,7 @@ bool MacroExpander::handle_ne16(Parser& parser, const Token& tok) {
     return true;
 }
 
-bool MacroExpander::handle_lt(Parser& parser, const Token& tok) {
+bool MacroExpander::handle_lt8(Parser& parser, const Token& tok) {
     std::vector<int> vals;
     if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
         return true;
@@ -1498,40 +1608,40 @@ bool MacroExpander::handle_lt(Parser& parser, const Token& tok) {
     std::string temp_lt = make_temp_name();
 
     TokenScanner scanner;
-    std::string mock_filename = "(lt)";
+    std::string mock_filename = "(lt8)";
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(
             // alloc temp variables
-            "{ alloc_cell(" + t_a + ") "
-            "  alloc_cell(" + t_b + ") "
-            "  alloc_cell(" + t_a_and_b + ") "
-            "  alloc_cell(" + temp_lt + ") "
+            "{ alloc_cell8(" + t_a + ") "
+            "  alloc_cell8(" + t_b + ") "
+            "  alloc_cell8(" + t_a_and_b + ") "
+            "  alloc_cell8(" + temp_lt + ") "
             // copy a to t_a and b to t_b
-            "  copy(" + std::to_string(a) + ", " + t_a + ") "
-            "  copy(" + std::to_string(b) + ", " + t_b + ") "
+            "  copy8(" + std::to_string(a) + ", " + t_a + ") "
+            "  copy8(" + std::to_string(b) + ", " + t_b + ") "
             // while t_a > 0 and t_b > 0, decrement both
-            "  copy(" + t_a + ", " + t_a_and_b + ") "
-            "  and(" + t_a_and_b + ", " + t_b + ") "
+            "  copy8(" + t_a + ", " + t_a_and_b + ") "
+            "  and8(" + t_a_and_b + ", " + t_b + ") "
             "  while(" + t_a_and_b + ") "
             "    >" + t_a + " - "
             "    >" + t_b + " - "
-            "    copy(" + t_a + ", " + t_a_and_b + ") "
-            "    and(" + t_a_and_b + ", " + t_b + ") "
+            "    copy8(" + t_a + ", " + t_a_and_b + ") "
+            "    and8(" + t_a_and_b + ", " + t_b + ") "
             "  endwhile "
             // if t_a == 0 and t_b > 0, then a < b
-            "  clear(" + std::to_string(a) + ") "
-            "  copy(" + t_a + ", " + temp_lt + ") "
-            "  not(" + temp_lt + ") "
-            "  and(" + temp_lt + ", " + t_b + ") "
+            "  clear8(" + std::to_string(a) + ") "
+            "  copy8(" + t_a + ", " + temp_lt + ") "
+            "  not8(" + temp_lt + ") "
+            "  and8(" + temp_lt + ", " + t_b + ") "
             "  if(" + temp_lt + ") "
             "    >" + std::to_string(a) + " + "
             "  endif "
             // free temp variables
-            "  free_cell(" + t_a + ") "
-            "  free_cell(" + t_b + ") "
-            "  free_cell(" + t_a_and_b + ") "
-            "  free_cell(" + temp_lt + ") "
+            "  free_cell8(" + t_a + ") "
+            "  free_cell8(" + t_b + ") "
+            "  free_cell8(" + t_a_and_b + ") "
+            "  free_cell8(" + temp_lt + ") "
             "}",
             mock_filename));
 
@@ -1554,19 +1664,19 @@ bool MacroExpander::handle_lt16(Parser& parser, const Token& tok) {
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(
-            "{ alloc_cell(" + T1 + ") "
-            "  alloc_cell(" + T2 + ") "
+            "{ alloc_cell8(" + T1 + ") "
+            "  alloc_cell8(" + T2 + ") "
             // T1 = (a_hi < b_hi)
-            "  copy(" + std::to_string(a + 1) + ", " + T1 + ") "
-            "  lt(" + T1 + ", " + std::to_string(b + 1) + ") "
+            "  copy8(" + std::to_string(a + 1) + ", " + T1 + ") "
+            "  lt8(" + T1 + ", " + std::to_string(b + 1) + ") "
             // T2 = (a_hi == b_hi)
-            "  copy(" + std::to_string(a + 1) + ", " + T2 + ") "
-            "  eq(" + T2 + ", " + std::to_string(b + 1) + ") "
+            "  copy8(" + std::to_string(a + 1) + ", " + T2 + ") "
+            "  eq8(" + T2 + ", " + std::to_string(b + 1) + ") "
             // If high bytes equal, refine result with low-byte comparison
             "  if(" + T2 + ") "
             // T1 = (a_lo < b_lo)
-            "    copy(" + std::to_string(a) + ", " + T1 + ") "
-            "    lt(" + T1 + ", " + std::to_string(b) + ") "
+            "    copy8(" + std::to_string(a) + ", " + T1 + ") "
+            "    lt8(" + T1 + ", " + std::to_string(b) + ") "
             "  endif "
             // copy the result back into a (16-bit)
             "  if(" + T1 + ") "
@@ -1574,15 +1684,15 @@ bool MacroExpander::handle_lt16(Parser& parser, const Token& tok) {
             "  else "
             "    clear16(" + std::to_string(a) + ") "
             "  endif "
-            "  free_cell(" + T1 + ") "
-            "  free_cell(" + T2 + ") "
+            "  free_cell8(" + T1 + ") "
+            "  free_cell8(" + T2 + ") "
             "}",
             mock_filename));
 
     return true;
 }
 
-bool MacroExpander::handle_gt(Parser& parser, const Token& tok) {
+bool MacroExpander::handle_gt8(Parser& parser, const Token& tok) {
     std::vector<int> vals;
     if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
         return true;
@@ -1596,40 +1706,40 @@ bool MacroExpander::handle_gt(Parser& parser, const Token& tok) {
     std::string t_gt = make_temp_name();
 
     TokenScanner scanner;
-    std::string mock_filename = "(gt)";
+    std::string mock_filename = "(gt8)";
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(
             // alloc temp variables
-            "{ alloc_cell(" + t_a + ") "
-            "  alloc_cell(" + t_b + ") "
-            "  alloc_cell(" + t_a_and_b + ") "
-            "  alloc_cell(" + t_gt + ") "
+            "{ alloc_cell8(" + t_a + ") "
+            "  alloc_cell8(" + t_b + ") "
+            "  alloc_cell8(" + t_a_and_b + ") "
+            "  alloc_cell8(" + t_gt + ") "
             // copy a to t_a and b to t_b
-            "  copy(" + std::to_string(a) + ", " + t_a + ") "
-            "  copy(" + std::to_string(b) + ", " + t_b + ") "
+            "  copy8(" + std::to_string(a) + ", " + t_a + ") "
+            "  copy8(" + std::to_string(b) + ", " + t_b + ") "
             // while t_a > 0 and t_b > 0, decrement both
-            "  copy(" + t_a + ", " + t_a_and_b + ") "
-            "  and(" + t_a_and_b + ", " + t_b + ") "
+            "  copy8(" + t_a + ", " + t_a_and_b + ") "
+            "  and8(" + t_a_and_b + ", " + t_b + ") "
             "  while(" + t_a_and_b + ") "
             "    >" + t_a + " - "
             "    >" + t_b + " - "
-            "    copy(" + t_a + ", " + t_a_and_b + ") "
-            "    and(" + t_a_and_b + ", " + t_b + ") "
+            "    copy8(" + t_a + ", " + t_a_and_b + ") "
+            "    and8(" + t_a_and_b + ", " + t_b + ") "
             "  endwhile "
             // if t_b == 0 and t_a > 0, then a > b
-            "  clear(" + std::to_string(a) + ") "
-            "  copy(" + t_b + ", " + t_gt + ") "
-            "  not(" + t_gt + ") "
-            "  and(" + t_gt + ", " + t_a + ") "
+            "  clear8(" + std::to_string(a) + ") "
+            "  copy8(" + t_b + ", " + t_gt + ") "
+            "  not8(" + t_gt + ") "
+            "  and8(" + t_gt + ", " + t_a + ") "
             "  if(" + t_gt + ") "
             "    >" + std::to_string(a) + " + "
             "  endif "
             // free temp variables
-            "  free_cell(" + t_a + ") "
-            "  free_cell(" + t_b + ") "
-            "  free_cell(" + t_a_and_b + ") "
-            "  free_cell(" + t_gt + ") "
+            "  free_cell8(" + t_a + ") "
+            "  free_cell8(" + t_b + ") "
+            "  free_cell8(" + t_a_and_b + ") "
+            "  free_cell8(" + t_gt + ") "
             "}",
             mock_filename));
 
@@ -1652,19 +1762,19 @@ bool MacroExpander::handle_gt16(Parser& parser, const Token& tok) {
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(
-            "{ alloc_cell(" + T1 + ") "
-            "  alloc_cell(" + T2 + ") "
+            "{ alloc_cell8(" + T1 + ") "
+            "  alloc_cell8(" + T2 + ") "
             // T1 = (a_hi > b_hi)
-            "  copy(" + std::to_string(a + 1) + ", " + T1 + ") "
-            "  gt(" + T1 + ", " + std::to_string(b + 1) + ") "
+            "  copy8(" + std::to_string(a + 1) + ", " + T1 + ") "
+            "  gt8(" + T1 + ", " + std::to_string(b + 1) + ") "
             // T2 = (a_hi == b_hi)
-            "  copy(" + std::to_string(a + 1) + ", " + T2 + ") "
-            "  eq(" + T2 + ", " + std::to_string(b + 1) + ") "
+            "  copy8(" + std::to_string(a + 1) + ", " + T2 + ") "
+            "  eq8(" + T2 + ", " + std::to_string(b + 1) + ") "
             // If high bytes equal, refine result with low-byte comparison
             "  if(" + T2 + ") "
             // T1 = (a_lo > b_lo)
-            "    copy(" + std::to_string(a) + ", " + T1 + ") "
-            "    gt(" + T1 + ", " + std::to_string(b) + ") "
+            "    copy8(" + std::to_string(a) + ", " + T1 + ") "
+            "    gt8(" + T1 + ", " + std::to_string(b) + ") "
             "  endif "
             // copy the result back into a (16-bit)
             "  if(" + T1 + ") "
@@ -1672,15 +1782,15 @@ bool MacroExpander::handle_gt16(Parser& parser, const Token& tok) {
             "  else "
             "    clear16(" + std::to_string(a) + ") "
             "  endif "
-            "  free_cell(" + T1 + ") "
-            "  free_cell(" + T2 + ") "
+            "  free_cell8(" + T1 + ") "
+            "  free_cell8(" + T2 + ") "
             "}",
             mock_filename));
 
     return true;
 }
 
-bool MacroExpander::handle_le(Parser& parser, const Token& tok) {
+bool MacroExpander::handle_le8(Parser& parser, const Token& tok) {
     std::vector<int> vals;
     if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
         return true;
@@ -1689,13 +1799,13 @@ bool MacroExpander::handle_le(Parser& parser, const Token& tok) {
     int b = vals[1];
 
     TokenScanner scanner;
-    std::string mock_filename = "(le)";
+    std::string mock_filename = "(le8)";
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(
             // (a <= b) is !(a > b)
-            "gt(" + std::to_string(a) + ", " + std::to_string(b) + ") "
-            "not(" + std::to_string(a) + ") ",
+            "gt8(" + std::to_string(a) + ", " + std::to_string(b) + ") "
+            "not8(" + std::to_string(a) + ") ",
             mock_filename));
 
     return true;
@@ -1722,7 +1832,7 @@ bool MacroExpander::handle_le16(Parser& parser, const Token& tok) {
     return true;
 }
 
-bool MacroExpander::handle_ge(Parser& parser, const Token& tok) {
+bool MacroExpander::handle_ge8(Parser& parser, const Token& tok) {
     std::vector<int> vals;
     if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
         return true;
@@ -1731,13 +1841,13 @@ bool MacroExpander::handle_ge(Parser& parser, const Token& tok) {
     int b = vals[1];
 
     TokenScanner scanner;
-    std::string mock_filename = "(ge)";
+    std::string mock_filename = "(ge8)";
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(
             // (a >= b) is !(a < b)
-            "lt(" + std::to_string(a) + ", " + std::to_string(b) + ") "
-            "not(" + std::to_string(a) + ") ",
+            "lt8(" + std::to_string(a) + ", " + std::to_string(b) + ") "
+            "not8(" + std::to_string(a) + ") ",
             mock_filename));
 
     return true;
@@ -1764,7 +1874,7 @@ bool MacroExpander::handle_ge16(Parser& parser, const Token& tok) {
     return true;
 }
 
-bool MacroExpander::handle_shr(Parser& parser, const Token& tok) {
+bool MacroExpander::handle_shr8(Parser& parser, const Token& tok) {
     std::vector<int> vals;
     if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
         return true;
@@ -1779,36 +1889,36 @@ bool MacroExpander::handle_shr(Parser& parser, const Token& tok) {
     std::string T_count = make_temp_name();
 
     TokenScanner scanner;
-    std::string mock_filename = "(shr)";
+    std::string mock_filename = "(shr8)";
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(
-            "{ alloc_cell(" + T_half + ") "
-            "  alloc_cell(" + T_cmp + ") "
-            "  alloc_cell(" + T_one + ") >" + T_one + " + "
-            "  alloc_cell(" + T_two + ") >" + T_two + " ++ "
-            "  alloc_cell(" + T_count + ") "
+            "{ alloc_cell8(" + T_half + ") "
+            "  alloc_cell8(" + T_cmp + ") "
+            "  alloc_cell8(" + T_one + ") >" + T_one + " + "
+            "  alloc_cell8(" + T_two + ") >" + T_two + " ++ "
+            "  alloc_cell8(" + T_count + ") "
             // copy shift count to T_count
-            "  copy(" + std::to_string(b) + ", " + T_count + ") "
+            "  copy8(" + std::to_string(b) + ", " + T_count + ") "
             "  repeat(" + T_count + ") "
             //   while (a >= 2), shift right
-            "    copy(" + std::to_string(a) + ", " + T_cmp + ") "
-            "    ge(" + T_cmp + ", " + T_two + ") "
+            "    copy8(" + std::to_string(a) + ", " + T_cmp + ") "
+            "    ge8(" + T_cmp + ", " + T_two + ") "
             "    while(" + T_cmp + ") "
-            "      sub(" + std::to_string(a) + ", " + T_two + ") " // a -= 2
-            "      add(" + T_half + ", " + T_one + ") " // half += 1
+            "      sub8(" + std::to_string(a) + ", " + T_two + ") " // a -= 2
+            "      add8(" + T_half + ", " + T_one + ") " // half += 1
             //     recompute condition for next iteration
-            "      copy(" + std::to_string(a) + ", " + T_cmp + ") "
-            "      ge(" + T_cmp + ", " + T_two + ") "
+            "      copy8(" + std::to_string(a) + ", " + T_cmp + ") "
+            "      ge8(" + T_cmp + ", " + T_two + ") "
             "    endwhile "
             //   set the result
-            "    move(" + T_half + ", " + std::to_string(a) + ") "
+            "    move8(" + T_half + ", " + std::to_string(a) + ") "
             "  endrepeat "
-            "  free_cell(" + T_half + ") "
-            "  free_cell(" + T_cmp + ") "
-            "  free_cell(" + T_one + ") "
-            "  free_cell(" + T_two + ") "
-            "  free_cell(" + T_count + ") "
+            "  free_cell8(" + T_half + ") "
+            "  free_cell8(" + T_cmp + ") "
+            "  free_cell8(" + T_one + ") "
+            "  free_cell8(" + T_two + ") "
+            "  free_cell8(" + T_count + ") "
             "}",
             mock_filename));
 
@@ -1866,7 +1976,7 @@ bool MacroExpander::handle_shr16(Parser& parser, const Token& tok) {
     return true;
 }
 
-bool MacroExpander::handle_shl(Parser& parser, const Token& tok) {
+bool MacroExpander::handle_shl8(Parser& parser, const Token& tok) {
     std::vector<int> vals;
     if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
         return true;
@@ -1878,21 +1988,21 @@ bool MacroExpander::handle_shl(Parser& parser, const Token& tok) {
     std::string T_count = make_temp_name();
 
     TokenScanner scanner;
-    std::string mock_filename = "(shl)";
+    std::string mock_filename = "(shl8)";
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(
-            "{ alloc_cell(" + T_val + ") "
-            "  alloc_cell(" + T_count + ") "
+            "{ alloc_cell8(" + T_val + ") "
+            "  alloc_cell8(" + T_count + ") "
             // copy shift count to T_count
-            "  copy(" + std::to_string(b) + ", " + T_count + ") "
+            "  copy8(" + std::to_string(b) + ", " + T_count + ") "
             "  repeat(" + T_count + ") "
             //   duplicate a
-            "    copy(" + std::to_string(a) + ", " + T_val + ") "
-            "    add(" + std::to_string(a) + ", " + T_val + ") "
+            "    copy8(" + std::to_string(a) + ", " + T_val + ") "
+            "    add8(" + std::to_string(a) + ", " + T_val + ") "
             "  endrepeat "
-            "  free_cell(" + T_val + ") "
-            "  free_cell(" + T_count + ") "
+            "  free_cell8(" + T_val + ") "
+            "  free_cell8(" + T_count + ") "
             "}",
             mock_filename));
 
@@ -1952,14 +2062,14 @@ bool MacroExpander::handle_if(Parser& parser, const Token& tok) {
         mock_filename,
         scanner.scan_string(
             // allocate temp variables
-            "{ alloc_cell(" + level.temp_if + ") "
-            "  alloc_cell(" + level.temp_else + ") "
+            "{ alloc_cell8(" + level.temp_if + ") "
+            "  alloc_cell8(" + level.temp_else + ") "
             // copy cond to temp_else and negate it
-            "  copy(" + std::to_string(cond) + ", " + level.temp_else + ") "
-            "  not(" + level.temp_else + ")"
+            "  copy8(" + std::to_string(cond) + ", " + level.temp_else + ") "
+            "  not8(" + level.temp_else + ")"
             // copy temp_else to temp_if and negate it
-            "  copy(" + level.temp_else + ", " + level.temp_if + ") "
-            "  not(" + level.temp_if + ") "
+            "  copy8(" + level.temp_else + ", " + level.temp_if + ") "
+            "  not8(" + level.temp_if + ") "
             // enter the IF branch if temp_if == 1
             "  >" + level.temp_if + " "
             "  [ {",
@@ -2019,8 +2129,8 @@ bool MacroExpander::handle_endif(Parser& parser, const Token& tok) {
             // close previous IF/ELSE branch
             "  } - ] "
             // release temp variables
-            "  free_cell(" + level.temp_if + ") "
-            "  free_cell(" + level.temp_else + ") "
+            "  free_cell8(" + level.temp_if + ") "
+            "  free_cell8(" + level.temp_else + ") "
             "}",
             mock_filename));
 
@@ -2048,12 +2158,12 @@ bool MacroExpander::handle_while(Parser& parser, const Token& tok) {
         mock_filename,
         scanner.scan_string(
             // allocate temp variable
-            "{ alloc_cell(" + level.temp_if + ") "
+            "{ alloc_cell8(" + level.temp_if + ") "
             // copy cond to temp_if and negate it twice
-            "  copy(" + std::to_string(level.cond) + ", "
+            "  copy8(" + std::to_string(level.cond) + ", "
             + level.temp_if + ") "
-            "  not(" + level.temp_if + ")"
-            "  not(" + level.temp_if + ")"
+            "  not8(" + level.temp_if + ")"
+            "  not8(" + level.temp_if + ")"
             // enter the WHILE branch if temp_if == 1
             "  >" + level.temp_if + " "
             "  [ {",
@@ -2083,15 +2193,15 @@ bool MacroExpander::handle_endwhile(Parser& parser, const Token& tok) {
             // close WHILE brace
             "  } "
             // copy cond to temp_if and negate it twice
-            "  copy(" + std::to_string(level.cond) + ", "
+            "  copy8(" + std::to_string(level.cond) + ", "
             + level.temp_if + ") "
-            "  not(" + level.temp_if + ")"
-            "  not(" + level.temp_if + ")"
+            "  not8(" + level.temp_if + ")"
+            "  not8(" + level.temp_if + ")"
             // re-enter the WHILE branch if temp_if == 1
             "  >" + level.temp_if + " "
             "  ] "
             // release temp variable
-            "  free_cell(" + level.temp_if + ") "
+            "  free_cell8(" + level.temp_if + ") "
             "}",
             mock_filename));
     struct_stack_.pop_back();

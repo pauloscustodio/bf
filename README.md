@@ -35,17 +35,17 @@ usage: bfpp [-o output_file] [-I include_path] [-D name=value] [-v] [input_file]
 - `#if / #elsif / #else / #endif` : conditional assembly on expressions.
 
 ### Built-in macros (8-bit; `xx16` variants treat two cells little-endian)
-- Allocation: `alloc_cell(NAME)`, `alloc_cell16(NAME)`, `free_cell(NAME)`, `free_cell16(NAME)`. (+ `xx16`).
-- Cell ops: `clear(a)`, `clear16(a)`, `set(a, v)`, `set16(a, v)`, `move(a, b)`, `move16(a, b)`, `copy(a, b)`, `copy16(a, b)`. (+ `xx16`).
-- Logic: `not(a)`, `and(a, b)`, `or(a, b)`, `xor(a, b)`, `shr(a, b)`, `shl(a, b)` (and `xx16` forms).
-- Arithmetic: `add/sub/mul/div/mod(a, b)`, `sign/abs(a)` (+ `xx16`).
-- Comparisons: `eq/ne/lt/le/gt/ge(a, b)` (+ `xx16`).
+- Allocation: `alloc_cell8(NAME)`, `free_cell8(NAME)`. (+ `xx16`).
+- Cell ops: `clear8(a)`, `set8(a, v)`, `move8(a, b)`, `copy8(a, b)`. (+ `xx16`).
+- Logic: `not8(a)`, `and8(a, b)`, `or8(a, b)`, `xor8(a, b)`, `shr8(a, b)`, `shl8(a, b)` (and `xx16` forms).
+- Arithmetic: `add8/sub8/mul8/div8/mod8(a, b)`, `neg8/sign8/abs8(a)` (+ `xx16`).
+- Comparisons: `eq8/ne8/lt8/le8/gt8/ge8(a, b)` (+ `xx16`).
 - Control: `if(expr) ... else ... endif`, `while(expr) ... endwhile`, `repeat(count) ... endrepeat`.
 
 Notes:
 - Allocation reserves cells from 0 upward and zeroes them.
 - `move` zeroes the source; `copy` preserves it.
-- Division/mod are integer; arithmetic wraps at 8-bit (or 16-bit for `xx16`).
+- Division/modulo are integer; arithmetic wraps at 8-bit (or 16-bit for `xx16`).
 
 ## Building
 

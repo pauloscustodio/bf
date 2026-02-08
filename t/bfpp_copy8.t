@@ -1,0 +1,56 @@
+#!/usr/bin/env perl
+
+BEGIN { use lib 't'; require 'testlib.pl'; }
+
+use Modern::Perl;
+
+# copy8 - error no arguments
+spew("$test.in", "copy8");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:6: error: expected '(' after macro name 'copy8'
+END
+
+# copy8 - error empty arguments
+spew("$test.in", "copy8()");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:8: error: macro 'copy8' expects 2 arguments
+END
+
+# copy8 - error too many arguments
+spew("$test.in", "copy8(A,B,C)");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:10: error: expected ')' at end of macro call, found ','
+END
+
+# copy8 - copy contents between cells
+spew("$test.in", ">++++ copy8(1,2)");
+capture_ok("bfpp $test.in", <<END);
+>++++<
+[
+  -
+]
+>>
+[
+  -
+]
+<
+[
+  ->+<<+>
+]
+<
+[
+  ->+<
+]
+[
+  -
+]
+>
+END
+capture_ok("bfpp $test.in | bf -D", <<END);
+Tape:  0   4   4 
+         ^^^ (ptr=1)
+
+END
+
+unlink_testfiles;
+done_testing;

@@ -4,29 +4,29 @@ BEGIN { use lib 't'; require 'testlib.pl'; }
 
 use Modern::Perl;
 
-# ne - error no arguments
-spew("$test.in", "ne");
+# eq8 - error no arguments
+spew("$test.in", "eq8");
 capture_nok("bfpp $test.in", <<END);
-$test.in:1:3: error: expected '(' after macro name 'ne'
+$test.in:1:4: error: expected '(' after macro name 'eq8'
 END
 
-# ne - error empty arguments
-spew("$test.in", "ne()");
+# eq8 - error empty arguments
+spew("$test.in", "eq8()");
 capture_nok("bfpp $test.in", <<END);
-$test.in:1:5: error: macro 'ne' expects 2 arguments
+$test.in:1:6: error: macro 'eq8' expects 2 arguments
 END
 
-# ne - error too many arguments
-spew("$test.in", "ne(A,B,C)");
+# eq8 - error too many arguments
+spew("$test.in", "eq8(A,B,C)");
 capture_nok("bfpp $test.in", <<END);
-$test.in:1:7: error: expected ')' at end of macro call, found ','
+$test.in:1:8: error: expected ')' at end of macro call, found ','
 END
 
-# ne(a,b)
+# eq8(a,b)
 spew("$test.in", <<END);
-alloc_cell(A)
-alloc_cell(B)
-ne(A,B)
+alloc_cell8(A)
+alloc_cell8(B)
+eq8(A,B)
 >A
 END
 capture_ok("bfpp $test.in", <<END);
@@ -97,52 +97,21 @@ capture_ok("bfpp $test.in", <<END);
 [
   -
 ]
-<
-[
-  -
-]
->
-[
-  -
-]
-<
-[
-  -
-]
-<<
-[
-  ->>+<<
-]
-+>>>+<
-[
-  ->
-  [
-    -<<<->>>
-  ]
-  <
-]
-[
-  -
-]
->
-[
-  -
-]
 <<<
 END
 
-# run ne(a,b)
+# run eq8(a,b)
 for my $A (0, 1, 2) {
 	for my $B (0, 1, 2) {
 		spew("$test.in", <<END);
-		alloc_cell(A)
-		alloc_cell(B)
-		set(A, $A)
-		set(B, $B)
-		ne(A, B)
+		alloc_cell8(A)
+		alloc_cell8(B)
+		set8(A, $A)
+		set8(B, $B)
+		eq8(A, B)
 		>B
 END
-		my $R = ($A != $B) ? 1 : 0;
+		my $R = ($A == $B) ? 1 : 0;
 		capture_ok("bfpp $test.in | bf -D", <<END);
 Tape:  $R   $B 
          ^^^ (ptr=1)
