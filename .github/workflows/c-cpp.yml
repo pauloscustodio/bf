@@ -19,6 +19,6 @@ jobs:
     - name: Install perl prerequisites
       run: cpanm --local-lib=~/perl5 Text::Diff
     - name: make
-      run: make
+      run: eval $(perl -I ~/perl5/lib/perl5/ -Mlocal::lib); make
     - name: make test
-      run: make test
+      run: eval $(perl -I ~/perl5/lib/perl5/ -Mlocal::lib); make test
