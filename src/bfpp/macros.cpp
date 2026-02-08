@@ -43,6 +43,8 @@ const std::unordered_map<std::string, MacroExpander::BuiltinHandler> MacroExpand
     { "div16",        &MacroExpander::handle_div16        },
     { "mod",          &MacroExpander::handle_mod          },
     { "mod16",        &MacroExpander::handle_mod16        },
+    { "sign",         &MacroExpander::handle_sign         },
+    { "sign16",       &MacroExpander::handle_sign16       },
     { "eq",           &MacroExpander::handle_eq           },
     { "eq16",         &MacroExpander::handle_eq16         },
     { "ne",           &MacroExpander::handle_ne           },
@@ -471,6 +473,7 @@ bool MacroExpander::handle_set(Parser& parser, const Token& tok) {
     }
     int a = vals[0];
     int b = vals[1];
+    b &= 0xFF;
 
     TokenScanner scanner;
     std::string mock_filename = "(set)";
@@ -1320,6 +1323,56 @@ bool MacroExpander::handle_div16_mod16(Parser& parser, const Token& tok,
             "  free_cell16(" + T_tmp + ") "
             "  free_cell16(" + T_cond + ") "
             "  free_cell16(" + T_one + ") "
+            "}",
+            mock_filename));
+    return true;
+}
+
+bool MacroExpander::handle_sign(Parser& parser, const Token& tok) {
+    std::vector<int> vals;
+    if (!parse_expr_args(parser, tok, { "expr" }, vals)) {
+        return true;
+    }
+    int x = vals[0];
+
+    std::string T_128 = make_temp_name();
+
+    TokenScanner scanner;
+    std::string mock_filename = "(sign)";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            // allocate temps
+            "{ alloc_cell(" + T_128 + ") "
+            // compute sign = (x >= 128)
+            "  set(" + T_128 + ", 128) "
+            "  ge(" + std::to_string(x) + ", " + T_128 + ") "
+            "  free_cell(" + T_128 + ") "
+            "}",
+            mock_filename));
+    return true;
+}
+
+bool MacroExpander::handle_sign16(Parser& parser, const Token& tok) {
+    std::vector<int> vals;
+    if (!parse_expr_args(parser, tok, { "expr" }, vals)) {
+        return true;
+    }
+    int x = vals[0];
+
+    std::string T_32768 = make_temp_name();
+
+    TokenScanner scanner;
+    std::string mock_filename = "(sign16)";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            // allocate temps
+            "{ alloc_cell16(" + T_32768 + ") "
+            // compute sign = (x >= 32768)
+            "  set16(" + T_32768 + ", 32768) "
+            "  ge16(" + std::to_string(x) + ", " + T_32768 + ") "
+            "  free_cell16(" + T_32768 + ") "
             "}",
             mock_filename));
     return true;

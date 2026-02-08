@@ -35,10 +35,10 @@ usage: bfpp [-o output_file] [-I include_path] [-D name=value] [-v] [input_file]
 - `#if / #elsif / #else / #endif` : conditional assembly on expressions.
 
 ### Built-in macros (8-bit; `xx16` variants treat two cells little-endian)
-- Allocation: `alloc_cell(NAME)`, `alloc_cell16(NAME)`, `free_cell(NAME)`, `free_cell16(NAME)`.
-- Cell ops: `clear(a)`, `clear16(a)`, `set(a, v)`, `set16(a, v)`, `move(a, b)`, `move16(a, b)`, `copy(a, b)`, `copy16(a, b)`.
+- Allocation: `alloc_cell(NAME)`, `alloc_cell16(NAME)`, `free_cell(NAME)`, `free_cell16(NAME)`. (+ `xx16`).
+- Cell ops: `clear(a)`, `clear16(a)`, `set(a, v)`, `set16(a, v)`, `move(a, b)`, `move16(a, b)`, `copy(a, b)`, `copy16(a, b)`. (+ `xx16`).
 - Logic: `not(a)`, `and(a, b)`, `or(a, b)`, `xor(a, b)`, `shr(a, b)`, `shl(a, b)` (and `xx16` forms).
-- Arithmetic: `add/sub/mul/div/mod(a, b)` (+ `xx16`).
+- Arithmetic: `add/sub/mul/div/mod(a, b)`, `sign/abs(a)` (+ `xx16`).
 - Comparisons: `eq/ne/lt/le/gt/ge(a, b)` (+ `xx16`).
 - Control: `if(expr) ... else ... endif`, `while(expr) ... endwhile`, `repeat(count) ... endrepeat`.
 

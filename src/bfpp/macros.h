@@ -114,6 +114,8 @@ private:
     bool handle_mod16(Parser& parser, const Token& tok);
     bool handle_div_mod(Parser& parser, const Token& tok, bool return_remainder);
     bool handle_div16_mod16(Parser& parser, const Token& tok, bool return_remainder);
+    bool handle_sign(Parser& parser, const Token& tok);
+    bool handle_sign16(Parser& parser, const Token& tok);
     bool handle_eq(Parser& parser, const Token& tok);
     bool handle_eq16(Parser& parser, const Token& tok);
     bool handle_ne(Parser& parser, const Token& tok);
