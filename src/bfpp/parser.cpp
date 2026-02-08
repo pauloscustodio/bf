@@ -86,6 +86,18 @@ BFOutput& Parser::output() {
     return output_;
 }
 
+void Parser::set_stack_base(int base) {
+    output_.set_stack_base(base);
+}
+
+int Parser::heap_size() const {
+    return output_.heap_size();
+}
+
+int Parser::max_stack_depth() const {
+    return output_.max_stack_depth();
+}
+
 void Parser::optimize_tape_movements() {
     output_.optimize_tape_movements();
 }

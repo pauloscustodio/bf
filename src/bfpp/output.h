@@ -14,6 +14,9 @@
 
 class BFOutput {
 public:
+    static inline const int kInitialStackBase = 1000;
+    static inline const int kMinHeapToStackDistance = 30;
+
     BFOutput() = default;
 
     void put(const Token& tok);
@@ -25,12 +28,24 @@ public:
     int alloc_cells(int count);
     void free_cells(int addr);
 
+    // allocate cells on the stack, stack grows downwards
+    int alloc_stack(int count);
+    void free_stack(int count);
+
     // optimize tape movements by combining consecutive < and >
     void optimize_tape_movements();
 
+    void reset();
+    void set_stack_base(int base);
+    int heap_size() const;
+    int max_stack_depth() const;
+
 private:
     int tape_ptr_ = 0;
-    int reserved_ptr_ = 0;
+    int heap_size_ = 0;
+    int stack_base_ = kInitialStackBase;
+    int stack_top_ = kInitialStackBase;
+    int min_stack_top_ = kInitialStackBase;
     std::vector<SourceLocation> loop_stack_;
     std::vector<Token> output_;
 

@@ -47,6 +47,9 @@ public:
                               const std::vector<Token>& tokens);
     MacroExpander& macro_expander();
     BFOutput& output();
+    void set_stack_base(int base);
+    int heap_size() const;
+    int max_stack_depth() const;
 
 private:
     Lexer lexer_;

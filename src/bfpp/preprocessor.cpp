@@ -26,3 +26,15 @@ bool Preprocessor::push_file(const std::string& filename, const SourceLocation& 
 void Preprocessor::push_stream(std::istream& stream, const std::string& virtual_name) {
     g_file_stack.push_stream(stream, virtual_name);
 }
+
+void Preprocessor::set_stack_base(int base) {
+    parser_.set_stack_base(base);
+}
+
+int Preprocessor::heap_size() const {
+    return parser_.heap_size();
+}
+
+int Preprocessor::max_stack_depth() const {
+    return parser_.max_stack_depth();
+}

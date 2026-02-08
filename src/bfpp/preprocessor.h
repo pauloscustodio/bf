@@ -15,13 +15,18 @@ class Preprocessor {
 public:
     Preprocessor();
 
-    // Entry point: run the preprocessing pipeline and return the output.
+    // Run with current configuration
     bool run(std::string& output);
 
     // Input setup
     bool push_file(const std::string& filename);
     bool push_file(const std::string& filename, const SourceLocation& loc);
     void push_stream(std::istream& stream, const std::string& virtual_name);
+
+    // Config / metrics
+    void set_stack_base(int base);
+    int heap_size() const;
+    int max_stack_depth() const;
 
 private:
     CommentStripper stripper_;

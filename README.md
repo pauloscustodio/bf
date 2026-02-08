@@ -5,11 +5,8 @@ Brainfuck tools: a tiny interpreter (`bf`) and a macro preprocessor (`bfpp`) tha
 ## bf - interpreter
 
 usage: bf [-t] [-D] [input_file]
-
 - -t : Trace execution to stdout
-
 - -D : Dump final status of the machine to stdout
-
 - input_file : parse input file instead of stdin
 
 Reads `input_file` or stdin, processes only canonical BF chars (`<>+-.,[]`). Tape grows right; pointer underflow is an error.
@@ -18,15 +15,12 @@ Reads `input_file` or stdin, processes only canonical BF chars (`<>+-.,[]`). Tap
 
 Expands an extended BF dialect to plain BF.
 
-usage: bfpp [-o output_file] [-I include_path] [-D name=value] [input_file]
-
+usage: bfpp [-o output_file] [-I include_path] [-D name=value] [-v] [input_file]
 - -o output_file : outputs BF code to given file instead of stdout
-
 - -I include_path : add directory to search path for source and include files
-
 - -D name=value : defines numeric macro to be used in the code
-
 - input_file : parse input file instead of stdin
+- v : show memory usage statistics
 
 ### Extended syntax
 - `>N` / `<N` : absolute move to tape cell `N` (0-based).

@@ -161,7 +161,7 @@ int BFOutput::tape_ptr() const {
 
 int BFOutput::alloc_cells(int count) {
     if (count <= 0) {
-        return reserved_ptr_; // no-op, but defined behavior
+        return heap_size_; // no-op, but defined behavior
     }
 
     // First-fit search in free list
@@ -185,8 +185,8 @@ int BFOutput::alloc_cells(int count) {
     }
 
     // No free block: extend high watermark
-    int alloc_start = reserved_ptr_;
-    reserved_ptr_ += count;
+    int alloc_start = heap_size_;
+    heap_size_ += count;
     alloc_map_[alloc_start] = count;
     return alloc_start;
 }
@@ -224,20 +224,26 @@ void BFOutput::add_free_block(int start, int len) {
     }
     free_list_.swap(merged);
 
-    // Optionally shrink reserved_ptr_ if the topmost range reaches the end
+    // Note: we cannot shrink heap size
+    // because bfpp needs to know the maximum heap size used
+    // to know where to place the stack
+#if 0
+    // Optionally shrink heap_size_ if the topmost range reaches the end
     if (!free_list_.empty()) {
         auto& last = free_list_.back();
         int last_end = last.first + last.second;
-        if (last_end == reserved_ptr_) {
-            // pull reserved_ptr_ down
-            reserved_ptr_ = last.first;
+        if (last_end == heap_size_) {
+            // pull heap_size_ down
+            heap_size_ = last.first;
             free_list_.pop_back();
         }
     }
+#endif
 }
 
 void BFOutput::optimize_tape_movements() {
     std::vector<Token> optimized;
+    optimized.reserve(output_.size());
     int net_move = 0;
     for (const Token& t : output_) {
         if (t.type == TokenType::BFInstr) {
@@ -294,4 +300,58 @@ void BFOutput::free_cells(int addr) {
     int len = it->second;
     alloc_map_.erase(it);
     add_free_block(addr, len);
+}
+
+int BFOutput::alloc_stack(int count) {
+    if (count <= 0) {
+        return stack_top_; // no-op, but defined behavior
+    }
+    if (stack_top_ - count < heap_size_ + kMinHeapToStackDistance) {
+        g_error_reporter.report_error(
+            SourceLocation(),
+            "stack overflow: not enough space between heap and stack for allocation of " + std::to_string(count) + " cells"
+        );
+        return stack_top_; // return current top as fallback
+    }
+
+    stack_top_ -= count;
+    min_stack_top_ = std::min(min_stack_top_, stack_top_);
+    return stack_top_;
+}
+
+void BFOutput::free_stack(int count) {
+    if (count <= 0) {
+        return; // no-op, but defined behavior
+    }
+    if (stack_top_ + count > stack_base_) {
+        g_error_reporter.report_error(
+            SourceLocation(),
+            "stack underflow: attempt to free more stack cells than allocated"
+        );
+        return;
+    }
+
+    stack_top_ += count;
+}
+
+void BFOutput::reset() {
+    output_.clear();
+    loop_stack_.clear();
+    free_list_.clear();
+    alloc_map_.clear();
+    tape_ptr_ = 0;
+    heap_size_ = 0;
+    stack_base_ = stack_top_ = min_stack_top_ = kInitialStackBase;
+}
+
+void BFOutput::set_stack_base(int base) {
+    stack_base_ = stack_top_ = min_stack_top_ = base;
+}
+
+int BFOutput::heap_size() const {
+    return heap_size_;
+}
+
+int BFOutput::max_stack_depth() const {
+    return stack_base_ - min_stack_top_;
 }

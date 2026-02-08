@@ -24,6 +24,7 @@ class MacroTable {
 public:
     MacroTable() = default;
 
+    void clear();
     bool define(const Macro& macro);
     void undef(const std::string& name);
     const Macro* lookup(const std::string& name) const;
@@ -150,3 +151,4 @@ private:
 
 bool is_reserved_keyword(const std::string& name);
 std::string make_temp_name();
+void reset_temp_names();

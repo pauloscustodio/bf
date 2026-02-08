@@ -68,6 +68,10 @@ const std::unordered_map<std::string, MacroExpander::BuiltinHandler> MacroExpand
     { "endrepeat",    &MacroExpander::handle_endrepeat    },
 };
 
+void MacroTable::clear() {
+    table_.clear();
+}
+
 bool MacroTable::define(const Macro& macro) {
     auto it = table_.find(macro.name);
     if (it != table_.end()) {
@@ -2194,8 +2198,13 @@ bool is_reserved_keyword(const std::string& name) {
            MacroExpander::is_builtin_name(name);
 }
 
+// temporary names generated for macro expansions
+static int g_temp_counter = 0;
+
 std::string make_temp_name() {
-    static int s_t_counter = 0;
-    std::string t_name = "_T" + std::to_string(++s_t_counter);
-    return t_name;
+    return "_T" + std::to_string(++g_temp_counter);
+}
+
+void reset_temp_names() {
+    g_temp_counter = 0;
 }

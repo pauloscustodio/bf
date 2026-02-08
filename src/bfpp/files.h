@@ -51,6 +51,7 @@ public:
     FileStack() = default;
     virtual ~FileStack();
 
+    void reset();
     void add_include_path(const std::string& path);
 
     bool push_file(const std::string& filename);

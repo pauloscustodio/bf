@@ -6,7 +6,7 @@ use Modern::Perl;
 
 # question mark shows usage
 capture_nok("bfpp -?", <<END);
-usage: bfpp [-o output_file] [-I include_path] [-D name=value] [input_file]
+usage: bfpp [-o output_file] [-I include_path] [-D name=value] [-v] [input_file]
 END
 
 # use as a filter

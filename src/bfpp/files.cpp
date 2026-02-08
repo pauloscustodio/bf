@@ -100,6 +100,12 @@ FileStack::~FileStack() {
     }
 }
 
+void FileStack::reset() {
+    while (!stack_.empty()) {
+        pop_file();
+    }
+}
+
 void FileStack::add_include_path(const std::string& path) {
     file_include_path_.push_back(path);
 }
