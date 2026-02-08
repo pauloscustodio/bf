@@ -73,7 +73,8 @@ public:
     void check_struct_stack() const;
 
 private:
-    using BuiltinHandler = bool (MacroExpander::*)(Parser& parser, const Token& tok);
+    using BuiltinHandler = bool (MacroExpander::*)(Parser& parser,
+                           const Token& tok);
     static const std::unordered_map<std::string, BuiltinHandler> kBuiltins;
 
     MacroTable& table_;
@@ -81,26 +82,53 @@ private:
     std::vector<BuiltinStructLevel> struct_stack_;
 
     bool handle_alloc_cell(Parser& parser, const Token& tok);
+    bool handle_alloc_cell16(Parser& parser, const Token& tok);
     bool handle_free_cell(Parser& parser, const Token& tok);
+    bool handle_free_cell16(Parser& parser, const Token& tok);
     bool handle_clear(Parser& parser, const Token& tok);
+    bool handle_clear16(Parser& parser, const Token& tok);
     bool handle_set(Parser& parser, const Token& tok);
+    bool handle_set16(Parser& parser, const Token& tok);
     bool handle_move(Parser& parser, const Token& tok);
+    bool handle_move16(Parser& parser, const Token& tok);
     bool handle_copy(Parser& parser, const Token& tok);
+    bool handle_copy16(Parser& parser, const Token& tok);
     bool handle_not(Parser& parser, const Token& tok);
+    bool handle_not16(Parser& parser, const Token& tok);
     bool handle_and(Parser& parser, const Token& tok);
+    bool handle_and16(Parser& parser, const Token& tok);
     bool handle_or(Parser& parser, const Token& tok);
+    bool handle_or16(Parser& parser, const Token& tok);
     bool handle_xor(Parser& parser, const Token& tok);
+    bool handle_xor16(Parser& parser, const Token& tok);
     bool handle_add(Parser& parser, const Token& tok);
+    bool handle_add16(Parser& parser, const Token& tok);
     bool handle_sub(Parser& parser, const Token& tok);
+    bool handle_sub16(Parser& parser, const Token& tok);
     bool handle_mul(Parser& parser, const Token& tok);
+    bool handle_mul16(Parser& parser, const Token& tok);
     bool handle_div(Parser& parser, const Token& tok);
+    bool handle_div16(Parser& parser, const Token& tok);
     bool handle_mod(Parser& parser, const Token& tok);
+    bool handle_mod16(Parser& parser, const Token& tok);
+    bool handle_div_mod(Parser& parser, const Token& tok, bool return_remainder);
+    bool handle_div16_mod16(Parser& parser, const Token& tok, bool return_remainder);
     bool handle_eq(Parser& parser, const Token& tok);
+    bool handle_eq16(Parser& parser, const Token& tok);
     bool handle_ne(Parser& parser, const Token& tok);
+    bool handle_ne16(Parser& parser, const Token& tok);
     bool handle_lt(Parser& parser, const Token& tok);
+    bool handle_lt16(Parser& parser, const Token& tok);
     bool handle_gt(Parser& parser, const Token& tok);
+    bool handle_gt16(Parser& parser, const Token& tok);
     bool handle_le(Parser& parser, const Token& tok);
+    bool handle_le16(Parser& parser, const Token& tok);
     bool handle_ge(Parser& parser, const Token& tok);
+    bool handle_ge16(Parser& parser, const Token& tok);
+    bool handle_shr(Parser& parser, const Token& tok);
+    bool handle_shr16(Parser& parser, const Token& tok);
+    bool handle_shl(Parser& parser, const Token& tok);
+    bool handle_shl16(Parser& parser, const Token& tok);
     bool handle_if(Parser& parser, const Token& tok);
     bool handle_else(Parser& parser, const Token& tok);
     bool handle_endif(Parser& parser, const Token& tok);
@@ -109,9 +137,12 @@ private:
     bool handle_repeat(Parser& parser, const Token& tok);
     bool handle_endrepeat(Parser& parser, const Token& tok);
 
-    bool parse_expr_args(Parser& parser, const Token& tok,
+    bool parse_expr_args(Parser& parser,
+                         const Token& tok,
                          const std::vector<std::string>& param_names,
                          std::vector<int>& values);
+    bool parse_ident_arg(Parser& parser, const Token& tok,
+                         std::string& ident_out);
 
     std::vector<Token> substitute_body(const Macro& macro,
                                        const std::vector<std::vector<Token>>& args);

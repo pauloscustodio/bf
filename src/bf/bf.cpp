@@ -50,7 +50,7 @@ static void dump_state() {
         }
     }
 
-    // Ensure we still show the pointer cell even if it’s beyond last_nz
+    // Ensure we still show the pointer cell even if it's beyond last_nz
     size_t last_to_show = std::max(last_nz, ptr);
     if (last_to_show >= tape.size()) {
         last_to_show = tape.size() - 1;

@@ -23,13 +23,9 @@ $test.in:1:9: error: expected ')' at end of macro call, found ','
 END
 
 # copy - copy contents between cells
-spew("$test.in", "set(1,4) copy(1,2) copy(1,3)");
+spew("$test.in", ">++++ copy(1,2)");
 capture_ok("bfpp $test.in", <<END);
->
-[
-  -
-]
-++++<
+>++++<
 [
   -
 ]
@@ -48,29 +44,8 @@ capture_ok("bfpp $test.in", <<END);
 [
   -
 ]
-[
-  -
-]
->>>
-[
-  -
-]
-<<
-[
-  ->>+<<<+>
-]
-<
-[
-  ->+<
-]
-[
-  -
-]
+>
 END
-
-# copy - execute a test program
-# Note: cell 0 is the temp used by copy
-spew("$test.in", ">++++ copy(1,2)");
 capture_ok("bfpp $test.in | bf -D", <<END);
 Tape:  0   4   4 
          ^^^ (ptr=1)

@@ -1,0 +1,63 @@
+#!/usr/bin/env perl
+
+BEGIN { use lib 't'; require 'testlib.pl'; }
+
+use Modern::Perl;
+
+# move16 - error no arguments
+spew("$test.in", "move16");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:7: error: expected '(' after macro name 'move16'
+END
+
+# move16 - error empty arguments
+spew("$test.in", "move16()");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:9: error: macro 'move16' expects 2 arguments
+END
+
+# move16 - error too many arguments
+spew("$test.in", "move16(A,B,C)");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:11: error: expected ')' at end of macro call, found ','
+END
+
+# move16 - move16 contents between cells
+spew("$test.in", "set16(0,511) move16(0,2)");
+capture_ok("bfpp $test.in", <<END);
+[
+  -
+]
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++++++++++++++++>
+[
+  -
+]
++>
+[
+  -
+]
+<<
+[
+  ->>+<<
+]
+>>>
+[
+  -
+]
+<<
+[
+  ->>+<<
+]
+<
+END
+capture_ok("bfpp $test.in | bf -D", <<END);
+Tape:  0   0 255   1 
+     ^^^ (ptr=0)
+
+END
+
+unlink_testfiles;
+done_testing;

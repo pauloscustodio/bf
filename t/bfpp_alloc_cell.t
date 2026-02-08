@@ -13,7 +13,7 @@ END
 # alloc_cell - error empty arguments
 spew("$test.in", "alloc_cell()");
 capture_nok("bfpp $test.in", <<END);
-$test.in:1:13: error: alloc_cell expects one identifier
+$test.in:1:13: error: macro 'alloc_cell' expects one identifier
 END
 
 # alloc_cell - error too many arguments
@@ -25,7 +25,7 @@ END
 # alloc_cell - wrong type of arguments
 spew("$test.in", "alloc_cell(1)");
 capture_nok("bfpp $test.in", <<END);
-$test.in:1:14: error: alloc_cell expects one identifier
+$test.in:1:14: error: macro 'alloc_cell' expects one identifier
 END
 
 # alloc_cell - use as reserved word
@@ -38,9 +38,9 @@ END
 spew("$test.in", <<END);
 alloc_cell(A) /* A=0 */
 alloc_cell(B) /* B=1 */
->A
+>A +
+>B ++
 >B
->A
 END
 capture_ok("bfpp $test.in", <<END);
 [
@@ -50,7 +50,12 @@ capture_ok("bfpp $test.in", <<END);
 [
   -
 ]
-<
+<+>++
+END
+capture_ok("bfpp $test.in | bf -D", <<END);
+Tape:  1   2 
+         ^^^ (ptr=1)
+
 END
 
 unlink_testfiles;

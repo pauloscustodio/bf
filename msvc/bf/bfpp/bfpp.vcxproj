@@ -42,6 +42,7 @@
     <ClInclude Include="..\..\..\src\bfpp\utils.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\..\README.md" />
     <None Include="..\..\..\t\bfpp.t" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

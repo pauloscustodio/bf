@@ -1,6 +1,8 @@
-# bf
+# bf & bfpp
 
-Brainfuck interpreter
+Brainfuck tools: a tiny interpreter (`bf`) and a macro preprocessor (`bfpp`) that emits plain BF.
+
+## bf - interpreter
 
 usage: bf [-t] [-D] [input_file]
 
@@ -10,9 +12,11 @@ usage: bf [-t] [-D] [input_file]
 
 - input_file : parse input file instead of stdin
 
-# bfpp
+Reads `input_file` or stdin, processes only canonical BF chars (`<>+-.,[]`). Tape grows right; pointer underflow is an error.
 
-Brainfuck preprocessor - expands macros and outputs plain BF code.
+## bfpp - preprocessor
+
+Expands an extended BF dialect to plain BF.
 
 usage: bfpp [-o output_file] [-I include_path] [-D name=value] [input_file]
 
@@ -24,80 +28,39 @@ usage: bfpp [-o output_file] [-I include_path] [-D name=value] [input_file]
 
 - input_file : parse input file instead of stdin
 
-Extended BF code translated to plain BF code:
+### Extended syntax
+- `>N` / `<N` : absolute move to tape cell `N` (0-based).
+- `+N` / `-N` : increment/decrement current cell by `N`.
+- `+(expr)` / `-(expr)` / `>(expr)` / `<(expr)` : evaluate `expr` (identifiers/macros allowed).
+- `+'c'` : increment by ASCII of character `c`.
+- `{ ... }` : save/restore tape position (emits moves to return).
+- `#include "file"` : include file.
+- `#define NAME value` : object-like macro.
+- `#define NAME(p,...) value` : function-like macro.
+- `#undef NAME`
+- `#if / #elsif / #else / #endif` : conditional assembly on expressions.
 
-- [<>] number : move the tape to the given abolute tape location, starting at zero
+### Built-in macros (8-bit; `xx16` variants treat two cells little-endian)
+- Allocation: `alloc_cell(NAME)`, `alloc_cell16(NAME)`, `free_cell(NAME)`, `free_cell16(NAME)`.
+- Cell ops: `clear(a)`, `clear16(a)`, `set(a, v)`, `set16(a, v)`, `move(a, b)`, `move16(a, b)`, `copy(a, b)`, `copy16(a, b)`.
+- Logic: `not(a)`, `and(a, b)`, `or(a, b)`, `xor(a, b)`, `shr(a, b)`, `shl(a, b)` (and `xx16` forms).
+- Arithmetic: `add/sub/mul/div/mod(a, b)` (+ `xx16`).
+- Comparisons: `eq/ne/lt/le/gt/ge(a, b)` (+ `xx16`).
+- Control: `if(expr) ... else ... endif`, `while(expr) ... endwhile`, `repeat(count) ... endrepeat`.
 
-- [-+] number : decrement/increment the current cell by the given number of times
+Notes:
+- Allocation reserves cells from 0 upward and zeroes them.
+- `move` zeroes the source; `copy` preserves it.
+- Division/mod are integer; arithmetic wraps at 8-bit (or 16-bit for `xx16`).
 
-- [<>-+] name : expands the named macro and evaluates the resulting integer expression; the macro may refer to other macros that are expanded recursively
+## Building
 
-- [<>-+] '(' expr ')' : evaluate the given integer expression with all the valid C operators; the expression may refer to macros that are expanded recursively
+Makefile project targeting C++17. Typical flow:
 
-- +'c' : increment the cell by the ASCII code of the quoted character
+```
+git clone <repo_url>
+cd <repo_dir>
+make
+```
 
-- '{' : remember the current tape postion
-
-- '}' : emit > or < instructions to return to the tape position remebered by {
-
-Directives:
-
-- #include "file" : searches for file in the include path and inserts it in the input stream
-
-- #define name value : define object like macro
-
-- #define name(param,...) value : define function like macro
-
-- #undef name : undefine macro
-
-- #if expr / #elsif expr / ... / #else / #endif : conditionally select one branch of code
-
-Built-in macros:
-
-- alloc_cell(NAME) : reserves one cell on the tape, creates a macro NAME with it's address; cells are reserved from 0 upwards; clears the resrved cell
-
-- free_cell(NAME) : frees a cell reserved by alloc_cell() and removes the macro NAME; clears the freed cell;
-
-- clear(expr) : clears the cell pointed by the expression
-
-- set(expr1, expr2) : sets the cell pointed by expr1 to the value of expr2
-
-- move(expr1, expr2) : move the value of cell at expr1 to cell at expr2, cell at expr1 is zeroed
-
-- copy(expr1, expr2) : copy the value of cell at expr1 to cell at expr2, uses a temporary allocated from the start of the tape and releases it
-
-- not(expr) : sets cell pointed by expr to 0 if >0, or to 1 if 0
-
-- and(a, b) : sets cell pointed by a to 1 if both cells pointed by a and b are non-zero, else sets a to 0; preserves b
-
-- or(a, b) : sets cell pointed by a to 1 if any of the cells pointed by a and b are non-zero, else sets a to 0; preserves b
-
-- xor(a, b) : sets cell pointed by a to 1 if any of the cells pointed by a and b are non-zero, but not both, else sets a to 0; preserves b
-
-- add(a, b) : sets a to a+b, wraps around on 8-bit overflow; preserves b
-
-- sub(a, b) : sets a to a-b, wraps around on 8-bit overflow; preserves b
-
-- mul(a, b) : sets a to a\*b, wraps around on 8-bit overflow; preserves b
-
-- div(a, b) : sets a to int(a/b); preserves b
-
-- mod(a, b) : sets a to a%b; preserves b
-
-- eq(a, b) : sets a to 1 if a==b, to 0 otherwise; preserves b
-
-- ne(a, b) : sets a to 1 if a!=b, to 0 otherwise; preserves b
-
-- lt(a, b) : sets a to 1 if a<b, to 0 otherwise; preserves b
-
-- le(a, b) : sets a to 1 if a<=b, to 0 otherwise; preserves b
-
-- gt(a, b) : sets a to 1 if a>b, to 0 otherwise; preserves b
-
-- ge(a, b) : sets a to 1 if a>=b, to 0 otherwise; preserves b
-
-- if(expr) ... else ... endif : if the value of cell at expr is non-zero, execute the code up to the else, else execute the code between else and endif
-
-- while(expr) ... endwhile : repeat the loop while the value of the cell at expr is non-zero
-
-- repeat(count) ... endrepeat : repeats block while count != 0, decrements count to zero
+This produces `bf` and `bfpp` executables in the project directory. You can run them as described above.

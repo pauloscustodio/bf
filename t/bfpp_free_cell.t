@@ -13,7 +13,7 @@ END
 # free_cell - error empty arguments
 spew("$test.in", "free_cell()");
 capture_nok("bfpp $test.in", <<END);
-$test.in:1:12: error: free_cell expects one identifier
+$test.in:1:12: error: macro 'free_cell' expects one identifier
 END
 
 # free_cell - error too many arguments
@@ -25,7 +25,7 @@ END
 # free_cell - wrong type of arguments
 spew("$test.in", "free_cell(1)");
 capture_nok("bfpp $test.in", <<END);
-$test.in:1:13: error: free_cell expects one identifier
+$test.in:1:13: error: macro 'free_cell' expects one identifier
 END
 
 # free_cell - use as reserved word

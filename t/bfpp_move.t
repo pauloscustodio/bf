@@ -23,9 +23,9 @@ $test.in:1:9: error: expected ')' at end of macro call, found ','
 END
 
 # move - move contents between cells
-spew("$test.in", "move(0,1) move(1,0)");
+spew("$test.in", "++++ move(0,1)");
 capture_ok("bfpp $test.in", <<END);
->
+++++>
 [
   -
 ]
@@ -33,18 +33,7 @@ capture_ok("bfpp $test.in", <<END);
 [
   ->+<
 ]
-[
-  -
-]
->
-[
-  -<+>
-]
-<
 END
-
-# move - execute a test program
-spew("$test.in", "++++ move(0,1)");
 capture_ok("bfpp $test.in | bf -D", <<END);
 Tape:  0   4 
      ^^^ (ptr=0)

@@ -82,5 +82,8 @@
     <None Include="..\..\..\t\bfpp.t">
       <Filter>Resource Files\t</Filter>
     </None>
+    <None Include="..\..\..\README.md">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>
