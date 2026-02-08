@@ -70,8 +70,29 @@ static void dump_state() {
 void run_machine(bool trace) {
     pc = ptr = 0;
     tape.clear();
-    loop_stack = std::stack<size_t>();
     tape.push_back(0); // initialize tape with one cell
+
+    // Precompute jump table for matching [ and ]
+    std::vector<size_t> jump(code.size(), static_cast<size_t>(-1));
+    std::vector<size_t> stack;
+    stack.reserve(code.size());
+    for (size_t i = 0; i < code.size(); ++i) {
+        if (code[i] == '[') {
+            stack.push_back(i);
+        }
+        else if (code[i] == ']') {
+            if (stack.empty()) {
+                error("Unmatched ']'");
+            }
+            size_t open = stack.back();
+            stack.pop_back();
+            jump[open] = i;
+            jump[i] = open;
+        }
+    }
+    if (!stack.empty()) {
+        error("Unmatched '['");
+    }
 
     while (pc < code.size()) {
         if (trace) {
@@ -105,32 +126,13 @@ void run_machine(bool trace) {
             break;
         case '[':
             if (tape[ptr] == 0) {
-                size_t open_brackets = 1;
-                while (open_brackets > 0) {
-                    if (++pc >= code.size()) {
-                        error("Unmatched '['");
-                    }
-                    if (code[pc] == '[') {
-                        open_brackets++;
-                    }
-                    else if (code[pc] == ']') {
-                        open_brackets--;
-                    }
-                }
-            }
-            else {
-                loop_stack.push(pc);
+                pc = jump[pc]; // jump to matching ']'
             }
             break;
         case ']':
-            if (loop_stack.empty()) {
-                error("Unmatched ']'");
-            }
             if (tape[ptr] != 0) {
-                pc = loop_stack.top();
-            }
-            else {
-                loop_stack.pop();
+                pc = jump[pc]; // jump back to matching '['
+                continue;      // do not pc++ below
             }
             break;
         }
