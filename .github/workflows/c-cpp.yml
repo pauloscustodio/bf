@@ -13,11 +13,9 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Update apt 
-      run: |
-        sudo apt update
+      run: sudo apt update
     - name: Install apt dependencies
-      run: |
-        sudo apt install -y cpanminus libmodern-perl-perl liblocal-lib-perl libpath-tiny-perl 
+      run: sudo apt install -y cpanminus libmodern-perl-perl liblocal-lib-perl libcapture-tiny-perl libpath-tiny-perl 
     - name: make
       run: make
     - name: make test
