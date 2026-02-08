@@ -16,6 +16,8 @@ jobs:
       run: sudo apt update
     - name: Install apt dependencies
       run: sudo apt install -y cpanminus libmodern-perl-perl liblocal-lib-perl libcapture-tiny-perl libpath-tiny-perl 
+    - name: Install perl prerequisites
+      run: cpanm --local-lib=~/perl5 Text::Diff
     - name: make
       run: make
     - name: make test
