@@ -55,6 +55,16 @@ Makefile project targeting C++17. Typical flow:
 git clone <repo_url>
 cd <repo_dir>
 make
+make test
 ```
 
 This produces `bf` and `bfpp` executables in the project directory. You can run them as described above.
+
+## Example
+
+Here's a simple example using `bfpp` to create a BF program that prints "Hello, World!":
+
+```
+./bf hello.bf
+./bfpp hello.bfpp | ./bf
+```
