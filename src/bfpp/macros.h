@@ -104,8 +104,12 @@ private:
     bool handle_xor16(Parser& parser, const Token& tok);
     bool handle_add8(Parser& parser, const Token& tok);
     bool handle_add16(Parser& parser, const Token& tok);
+    bool handle_sadd8(Parser& parser, const Token& tok);
+    bool handle_sadd16(Parser& parser, const Token& tok);
     bool handle_sub8(Parser& parser, const Token& tok);
     bool handle_sub16(Parser& parser, const Token& tok);
+    bool handle_ssub8(Parser& parser, const Token& tok);
+    bool handle_ssub16(Parser& parser, const Token& tok);
     bool handle_neg8(Parser& parser, const Token& tok);
     bool handle_neg16(Parser& parser, const Token& tok);
     bool handle_sign8(Parser& parser, const Token& tok);
@@ -114,6 +118,8 @@ private:
     bool handle_abs16(Parser& parser, const Token& tok);
     bool handle_mul8(Parser& parser, const Token& tok);
     bool handle_mul16(Parser& parser, const Token& tok);
+    bool handle_smul8(Parser& parser, const Token& tok);
+    bool handle_smul16(Parser& parser, const Token& tok);
     bool handle_div8(Parser& parser, const Token& tok);
     bool handle_div16(Parser& parser, const Token& tok);
     bool handle_mod8(Parser& parser, const Token& tok);

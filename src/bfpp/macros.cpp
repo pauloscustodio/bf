@@ -35,8 +35,12 @@ const std::unordered_map<std::string, MacroExpander::BuiltinHandler> MacroExpand
     { "xor16",        &MacroExpander::handle_xor16        },
     { "add8",         &MacroExpander::handle_add8         },
     { "add16",        &MacroExpander::handle_add16        },
+    { "sadd8",        &MacroExpander::handle_sadd8        },
+    { "sadd16",       &MacroExpander::handle_sadd16       },
     { "sub8",         &MacroExpander::handle_sub8         },
     { "sub16",        &MacroExpander::handle_sub16        },
+    { "ssub8",        &MacroExpander::handle_ssub8        },
+    { "ssub16",       &MacroExpander::handle_ssub16       },
     { "neg8",         &MacroExpander::handle_neg8         },
     { "neg16",        &MacroExpander::handle_neg16        },
     { "sign8",        &MacroExpander::handle_sign8        },
@@ -45,6 +49,8 @@ const std::unordered_map<std::string, MacroExpander::BuiltinHandler> MacroExpand
     { "abs16",        &MacroExpander::handle_abs16        },
     { "mul8",         &MacroExpander::handle_mul8         },
     { "mul16",        &MacroExpander::handle_mul16        },
+    { "smul8",        &MacroExpander::handle_smul8        },
+    { "smul16",       &MacroExpander::handle_smul16       },
     { "div8",         &MacroExpander::handle_div8         },
     { "div16",        &MacroExpander::handle_div16        },
     { "mod8",         &MacroExpander::handle_mod8         },
@@ -1001,6 +1007,14 @@ bool MacroExpander::handle_add16(Parser& parser, const Token& tok) {
     return true;
 }
 
+bool MacroExpander::handle_sadd8(Parser& parser, const Token& tok) {
+    return handle_add8(parser, tok);
+}
+
+bool MacroExpander::handle_sadd16(Parser& parser, const Token& tok) {
+    return handle_add16(parser, tok);
+}
+
 bool MacroExpander::handle_sub8(Parser& parser, const Token& tok) {
     std::vector<int> vals;
     if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
@@ -1066,6 +1080,14 @@ bool MacroExpander::handle_sub16(Parser& parser, const Token& tok) {
             "}",
             mock_filename));
     return true;
+}
+
+bool MacroExpander::handle_ssub8(Parser& parser, const Token& tok) {
+    return handle_sub8(parser, tok);
+}
+
+bool MacroExpander::handle_ssub16(Parser& parser, const Token& tok) {
+    return handle_sub16(parser, tok);
 }
 
 bool MacroExpander::handle_neg8(Parser& parser, const Token& tok) {
@@ -1225,6 +1247,110 @@ bool MacroExpander::handle_mul16(Parser& parser, const Token& tok) {
             "  free_cell16(" + T_tmp + ") "
             "  free_cell16(" + T_one + ") "
             "  free_cell16(" + T_two + ") "
+            "}",
+            mock_filename));
+    return true;
+}
+
+bool MacroExpander::handle_smul8(Parser& parser, const Token& tok) {
+    std::vector<int> vals;
+    if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
+        return true;
+    }
+    int a = vals[0];
+    int b = vals[1];
+
+    std::string T_sign_a = make_temp_name();
+    std::string T_sign_b = make_temp_name();
+    std::string T_final_sign = make_temp_name();
+    std::string T_b_copy = make_temp_name();
+
+    TokenScanner scanner;
+    std::string mock_filename = "(smul8)";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            "{ alloc_cell8(" + T_sign_a + ") "
+            "  alloc_cell8(" + T_sign_b + ") "
+            "  alloc_cell8(" + T_final_sign + ") "
+            "  alloc_cell8(" + T_b_copy + ") "
+            // extract sign(a)
+            "  copy8(" + std::to_string(a) + ", " + T_sign_a + ") "
+            "  sign8(" + T_sign_a + ") "
+            // extract sign(b)
+            "  copy8(" + std::to_string(b) + ", " + T_sign_b + ") "
+            "  sign8(" + T_sign_b + ") "
+            // final_sign = sign(a) XOR sign(b)
+            "  copy8(" + T_sign_a + ", " + T_final_sign + ") "
+            "  xor8(" + T_final_sign + ", " + T_sign_b + ") "
+            // abs(a) -> a
+            "  abs8(" + std::to_string(a) + ") "
+            // copy b to T_b_copy and abs(T_b_copy) -> T_b_copy
+            "  copy8(" + std::to_string(b) + ", " + T_b_copy + ") "
+            "  abs8(" + T_b_copy + ") "
+            // unsigned multiply abs(a) and abs(b), store result in a
+            "  mul8(" + std::to_string(a) + ", " + T_b_copy + ") "
+            // if final_sign is negative, negate a
+            "  if(" + T_final_sign + ") "
+            "    neg8(" + std::to_string(a) + ") "
+            "  endif "
+            // free temps
+            "  free_cell8(" + T_sign_a + ") "
+            "  free_cell8(" + T_sign_b + ") "
+            "  free_cell8(" + T_final_sign + ") "
+            "  free_cell8(" + T_b_copy + ") "
+            "}",
+            mock_filename));
+    return true;
+}
+
+bool MacroExpander::handle_smul16(Parser& parser, const Token& tok) {
+    std::vector<int> vals;
+    if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
+        return true;
+    }
+    int a = vals[0];
+    int b = vals[1];
+
+    std::string T_sign_a = make_temp_name();
+    std::string T_sign_b = make_temp_name();
+    std::string T_final_sign = make_temp_name();
+    std::string T_b_copy = make_temp_name();
+
+    TokenScanner scanner;
+    std::string mock_filename = "(smul16)";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            "{ alloc_cell16(" + T_sign_a + ") "
+            "  alloc_cell16(" + T_sign_b + ") "
+            "  alloc_cell16(" + T_final_sign + ") "
+            "  alloc_cell16(" + T_b_copy + ") "
+            // extract sign(a)
+            "  copy16(" + std::to_string(a) + ", " + T_sign_a + ") "
+            "  sign16(" + T_sign_a + ") "
+            // extract sign(b)
+            "  copy16(" + std::to_string(b) + ", " + T_sign_b + ") "
+            "  sign16(" + T_sign_b + ") "
+            // final_sign = sign(a) XOR sign(b)
+            "  copy16(" + T_sign_a + ", " + T_final_sign + ") "
+            "  xor16(" + T_final_sign + ", " + T_sign_b + ") "
+            // abs(a) -> a
+            "  abs16(" + std::to_string(a) + ") "
+            // copy b to T_b_copy and abs(T_b_copy) -> T_b_copy
+            "  copy16(" + std::to_string(b) + ", " + T_b_copy + ") "
+            "  abs16(" + T_b_copy + ") "
+            // unsigned multiply abs(a) and abs(b), store result in a
+            "  mul16(" + std::to_string(a) + ", " + T_b_copy + ") "
+            // if final_sign is negative, negate a
+            "  if(" + T_final_sign + ") "
+            "    neg16(" + std::to_string(a) + ") "
+            "  endif "
+            // free temps
+            "  free_cell16(" + T_sign_a + ") "
+            "  free_cell16(" + T_sign_b + ") "
+            "  free_cell16(" + T_final_sign + ") "
+            "  free_cell16(" + T_b_copy + ") "
             "}",
             mock_filename));
     return true;

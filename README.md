@@ -38,7 +38,7 @@ usage: bfpp [-o output_file] [-I include_path] [-D name=value] [-v] [input_file]
 - Allocation: `alloc_cell8(NAME)`, `free_cell8(NAME)`. (+ `xx16`).
 - Cell ops: `clear8(a)`, `set8(a, v)`, `move8(a, b)`, `copy8(a, b)`. (+ `xx16`).
 - Logic: `not8(a)`, `and8(a, b)`, `or8(a, b)`, `xor8(a, b)`, `shr8(a, b)`, `shl8(a, b)` (and `xx16` forms).
-- Arithmetic: `add8/sub8/mul8/div8/mod8(a, b)`, `neg8/sign8/abs8(a)` (+ `xx16`).
+- Arithmetic: `add8/sadd8/sub8/ssub8/mul8/smul8/div8/mod8(a, b)`, `neg8/sign8/abs8(a)` (+ `xx16`).
 - Comparisons: `eq8/seq8/ne8/sne8/lt8/slt8/le8/sle8/gt8/sgt8/ge8/sge8(a, b)` (+ `xx16`).
 - Control: `if(expr) ... else ... endif`, `while(expr) ... endwhile`, `repeat(count) ... endrepeat`.
 
