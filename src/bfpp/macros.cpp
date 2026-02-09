@@ -59,12 +59,20 @@ const std::unordered_map<std::string, MacroExpander::BuiltinHandler> MacroExpand
     { "sne16",        &MacroExpander::handle_sne16        },
     { "lt8",          &MacroExpander::handle_lt8          },
     { "lt16",         &MacroExpander::handle_lt16         },
+    { "slt8",         &MacroExpander::handle_slt8         },
+    { "slt16",        &MacroExpander::handle_slt16        },
     { "gt8",          &MacroExpander::handle_gt8          },
     { "gt16",         &MacroExpander::handle_gt16         },
+    { "sgt8",         &MacroExpander::handle_sgt8         },
+    { "sgt16",        &MacroExpander::handle_sgt16        },
     { "le8",          &MacroExpander::handle_le8          },
     { "le16",         &MacroExpander::handle_le16         },
+    { "sle8",         &MacroExpander::handle_sle8         },
+    { "sle16",        &MacroExpander::handle_sle16        },
     { "ge8",          &MacroExpander::handle_ge8          },
     { "ge16",         &MacroExpander::handle_ge16         },
+    { "sge8",         &MacroExpander::handle_sge8         },
+    { "sge16",        &MacroExpander::handle_sge16        },
     { "shr8",         &MacroExpander::handle_shr8         },
     { "shr16",        &MacroExpander::handle_shr16        },
     { "shl8",         &MacroExpander::handle_shl8         },
@@ -1712,6 +1720,96 @@ bool MacroExpander::handle_lt16(Parser& parser, const Token& tok) {
     return true;
 }
 
+bool MacroExpander::handle_slt8(Parser& parser, const Token& tok) {
+    std::vector<int> vals;
+    if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
+        return true;
+    }
+    int a = vals[0];
+    int b = vals[1];
+
+    std::string t_sa = make_temp_name();
+    std::string t_sb = make_temp_name();
+    std::string t_tmp = make_temp_name();
+
+    TokenScanner scanner;
+    std::string mock_filename = "(slt8)";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            // alloc temp variables
+            "{ alloc_cell8(" + t_sa + ") "
+            "  alloc_cell8(" + t_sb + ") "
+            "  alloc_cell8(" + t_tmp + ") "
+            // extract sign bits
+            "  copy8(" + std::to_string(a) + ", " + t_sa + ") "
+            "  sign8(" + t_sa + ") "
+            "  copy8(" + std::to_string(b) + ", " + t_sb + ") "
+            "  sign8(" + t_sb + ") "
+            // if signs differ, the negative one is smaller
+            "  copy8(" + t_sa + ", " + t_tmp + ") "
+            "  xor8(" + t_tmp + ", " + t_sb + ") "
+            "  if(" + t_tmp + ") "
+            "    copy8(" + t_sa + ", " + std::to_string(a) + ") "
+            "  else "
+            // if signs are the same, use unsigned comparison
+            "    lt8(" + std::to_string(a) + ", " + std::to_string(b) + ") "
+            "  endif "
+            // free temp variables
+            "  free_cell8(" + t_sa + ") "
+            "  free_cell8(" + t_sb + ") "
+            "  free_cell8(" + t_tmp + ") "
+            "}",
+            mock_filename));
+
+    return true;
+}
+
+bool MacroExpander::handle_slt16(Parser& parser, const Token& tok) {
+    std::vector<int> vals;
+    if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
+        return true;
+    }
+    int a = vals[0];
+    int b = vals[1];
+
+    std::string t_sa = make_temp_name();
+    std::string t_sb = make_temp_name();
+    std::string t_tmp = make_temp_name();
+
+    TokenScanner scanner;
+    std::string mock_filename = "(slt16)";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            // alloc temp variables
+            "{ alloc_cell16(" + t_sa + ") "
+            "  alloc_cell16(" + t_sb + ") "
+            "  alloc_cell16(" + t_tmp + ") "
+            // extract sign bits
+            "  copy16(" + std::to_string(a) + ", " + t_sa + ") "
+            "  sign16(" + t_sa + ") "
+            "  copy16(" + std::to_string(b) + ", " + t_sb + ") "
+            "  sign16(" + t_sb + ") "
+            // if signs differ, the negative one is smaller
+            "  copy16(" + t_sa + ", " + t_tmp + ") "
+            "  xor16(" + t_tmp + ", " + t_sb + ") "
+            "  if(" + t_tmp + ") "
+            "    copy16(" + t_sa + ", " + std::to_string(a) + ") "
+            "  else "
+            // if signs are the same, use unsigned comparison
+            "    lt16(" + std::to_string(a) + ", " + std::to_string(b) + ") "
+            "  endif "
+            // free temp variables
+            "  free_cell16(" + t_sa + ") "
+            "  free_cell16(" + t_sb + ") "
+            "  free_cell16(" + t_tmp + ") "
+            "}",
+            mock_filename));
+
+    return true;
+}
+
 bool MacroExpander::handle_gt8(Parser& parser, const Token& tok) {
     std::vector<int> vals;
     if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
@@ -1810,6 +1908,96 @@ bool MacroExpander::handle_gt16(Parser& parser, const Token& tok) {
     return true;
 }
 
+bool MacroExpander::handle_sgt8(Parser& parser, const Token& tok) {
+    std::vector<int> vals;
+    if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
+        return true;
+    }
+    int a = vals[0];
+    int b = vals[1];
+
+    std::string t_sa = make_temp_name();
+    std::string t_sb = make_temp_name();
+    std::string t_tmp = make_temp_name();
+
+    TokenScanner scanner;
+    std::string mock_filename = "(sgt8)";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            // alloc temp variables
+            "{ alloc_cell8(" + t_sa + ") "
+            "  alloc_cell8(" + t_sb + ") "
+            "  alloc_cell8(" + t_tmp + ") "
+            // extract sign bits
+            "  copy8(" + std::to_string(a) + ", " + t_sa + ") "
+            "  sign8(" + t_sa + ") "
+            "  copy8(" + std::to_string(b) + ", " + t_sb + ") "
+            "  sign8(" + t_sb + ") "
+            // if signs differ, the negative one is smaller
+            "  copy8(" + t_sa + ", " + t_tmp + ") "
+            "  xor8(" + t_tmp + ", " + t_sb + ") "
+            "  if(" + t_tmp + ") "
+            "    copy8(" + t_sb + ", " + std::to_string(a) + ") "
+            "  else "
+            // if signs are the same, use unsigned comparison
+            "    gt8(" + std::to_string(a) + ", " + std::to_string(b) + ") "
+            "  endif "
+            // free temp variables
+            "  free_cell8(" + t_sa + ") "
+            "  free_cell8(" + t_sb + ") "
+            "  free_cell8(" + t_tmp + ") "
+            "}",
+            mock_filename));
+
+    return true;
+}
+
+bool MacroExpander::handle_sgt16(Parser& parser, const Token& tok) {
+    std::vector<int> vals;
+    if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
+        return true;
+    }
+    int a = vals[0];
+    int b = vals[1];
+
+    std::string t_sa = make_temp_name();
+    std::string t_sb = make_temp_name();
+    std::string t_tmp = make_temp_name();
+
+    TokenScanner scanner;
+    std::string mock_filename = "(sgt16)";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            // alloc temp variables
+            "{ alloc_cell16(" + t_sa + ") "
+            "  alloc_cell16(" + t_sb + ") "
+            "  alloc_cell16(" + t_tmp + ") "
+            // extract sign bits
+            "  copy16(" + std::to_string(a) + ", " + t_sa + ") "
+            "  sign16(" + t_sa + ") "
+            "  copy16(" + std::to_string(b) + ", " + t_sb + ") "
+            "  sign16(" + t_sb + ") "
+            // if signs differ, the negative one is smaller
+            "  copy16(" + t_sa + ", " + t_tmp + ") "
+            "  xor16(" + t_tmp + ", " + t_sb + ") "
+            "  if(" + t_tmp + ") "
+            "    copy16(" + t_sb + ", " + std::to_string(a) + ") "
+            "  else "
+            // if signs are the same, use unsigned comparison
+            "    gt16(" + std::to_string(a) + ", " + std::to_string(b) + ") "
+            "  endif "
+            // free temp variables
+            "  free_cell16(" + t_sa + ") "
+            "  free_cell16(" + t_sb + ") "
+            "  free_cell16(" + t_tmp + ") "
+            "}",
+            mock_filename));
+
+    return true;
+}
+
 bool MacroExpander::handle_le8(Parser& parser, const Token& tok) {
     std::vector<int> vals;
     if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
@@ -1852,6 +2040,96 @@ bool MacroExpander::handle_le16(Parser& parser, const Token& tok) {
     return true;
 }
 
+bool MacroExpander::handle_sle8(Parser& parser, const Token& tok) {
+    std::vector<int> vals;
+    if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
+        return true;
+    }
+    int a = vals[0];
+    int b = vals[1];
+
+    std::string t_sa = make_temp_name();
+    std::string t_sb = make_temp_name();
+    std::string t_tmp = make_temp_name();
+
+    TokenScanner scanner;
+    std::string mock_filename = "(sle8)";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            // alloc temp variables
+            "{ alloc_cell8(" + t_sa + ") "
+            "  alloc_cell8(" + t_sb + ") "
+            "  alloc_cell8(" + t_tmp + ") "
+            // extract sign bits
+            "  copy8(" + std::to_string(a) + ", " + t_sa + ") "
+            "  sign8(" + t_sa + ") "
+            "  copy8(" + std::to_string(b) + ", " + t_sb + ") "
+            "  sign8(" + t_sb + ") "
+            // if signs differ, the negative one is smaller
+            "  copy8(" + t_sa + ", " + t_tmp + ") "
+            "  xor8(" + t_tmp + ", " + t_sb + ") "
+            "  if(" + t_tmp + ") "
+            "    copy8(" + t_sa + ", " + std::to_string(a) + ") "
+            "  else "
+            // if signs are the same, use unsigned comparison
+            "    le8(" + std::to_string(a) + ", " + std::to_string(b) + ") "
+            "  endif "
+            // free temp variables
+            "  free_cell8(" + t_sa + ") "
+            "  free_cell8(" + t_sb + ") "
+            "  free_cell8(" + t_tmp + ") "
+            "}",
+            mock_filename));
+
+    return true;
+}
+
+bool MacroExpander::handle_sle16(Parser& parser, const Token& tok) {
+    std::vector<int> vals;
+    if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
+        return true;
+    }
+    int a = vals[0];
+    int b = vals[1];
+
+    std::string t_sa = make_temp_name();
+    std::string t_sb = make_temp_name();
+    std::string t_tmp = make_temp_name();
+
+    TokenScanner scanner;
+    std::string mock_filename = "(sle16)";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            // alloc temp variables
+            "{ alloc_cell16(" + t_sa + ") "
+            "  alloc_cell16(" + t_sb + ") "
+            "  alloc_cell16(" + t_tmp + ") "
+            // extract sign bits
+            "  copy16(" + std::to_string(a) + ", " + t_sa + ") "
+            "  sign16(" + t_sa + ") "
+            "  copy16(" + std::to_string(b) + ", " + t_sb + ") "
+            "  sign16(" + t_sb + ") "
+            // if signs differ, the negative one is smaller
+            "  copy16(" + t_sa + ", " + t_tmp + ") "
+            "  xor16(" + t_tmp + ", " + t_sb + ") "
+            "  if(" + t_tmp + ") "
+            "    copy16(" + t_sa + ", " + std::to_string(a) + ") "
+            "  else "
+            // if signs are the same, use unsigned comparison
+            "    le16(" + std::to_string(a) + ", " + std::to_string(b) + ") "
+            "  endif "
+            // free temp variables
+            "  free_cell16(" + t_sa + ") "
+            "  free_cell16(" + t_sb + ") "
+            "  free_cell16(" + t_tmp + ") "
+            "}",
+            mock_filename));
+
+    return true;
+}
+
 bool MacroExpander::handle_ge8(Parser& parser, const Token& tok) {
     std::vector<int> vals;
     if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
@@ -1889,6 +2167,96 @@ bool MacroExpander::handle_ge16(Parser& parser, const Token& tok) {
             // (a >= b) is !(a < b)
             "lt16(" + std::to_string(a) + ", " + std::to_string(b) + ") "
             "not16(" + std::to_string(a) + ") ",
+            mock_filename));
+
+    return true;
+}
+
+bool MacroExpander::handle_sge8(Parser& parser, const Token& tok) {
+    std::vector<int> vals;
+    if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
+        return true;
+    }
+    int a = vals[0];
+    int b = vals[1];
+
+    std::string t_sa = make_temp_name();
+    std::string t_sb = make_temp_name();
+    std::string t_tmp = make_temp_name();
+
+    TokenScanner scanner;
+    std::string mock_filename = "(sge8)";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            // alloc temp variables
+            "{ alloc_cell8(" + t_sa + ") "
+            "  alloc_cell8(" + t_sb + ") "
+            "  alloc_cell8(" + t_tmp + ") "
+            // extract sign bits
+            "  copy8(" + std::to_string(a) + ", " + t_sa + ") "
+            "  sign8(" + t_sa + ") "
+            "  copy8(" + std::to_string(b) + ", " + t_sb + ") "
+            "  sign8(" + t_sb + ") "
+            // if signs differ, the negative one is smaller
+            "  copy8(" + t_sa + ", " + t_tmp + ") "
+            "  xor8(" + t_tmp + ", " + t_sb + ") "
+            "  if(" + t_tmp + ") "
+            "    copy8(" + t_sb + ", " + std::to_string(a) + ") "
+            "  else "
+            // if signs are the same, use unsigned comparison
+            "    ge8(" + std::to_string(a) + ", " + std::to_string(b) + ") "
+            "  endif "
+            // free temp variables
+            "  free_cell8(" + t_sa + ") "
+            "  free_cell8(" + t_sb + ") "
+            "  free_cell8(" + t_tmp + ") "
+            "}",
+            mock_filename));
+
+    return true;
+}
+
+bool MacroExpander::handle_sge16(Parser& parser, const Token& tok) {
+    std::vector<int> vals;
+    if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
+        return true;
+    }
+    int a = vals[0];
+    int b = vals[1];
+
+    std::string t_sa = make_temp_name();
+    std::string t_sb = make_temp_name();
+    std::string t_tmp = make_temp_name();
+
+    TokenScanner scanner;
+    std::string mock_filename = "(sge16)";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            // alloc temp variables
+            "{ alloc_cell16(" + t_sa + ") "
+            "  alloc_cell16(" + t_sb + ") "
+            "  alloc_cell16(" + t_tmp + ") "
+            // extract sign bits
+            "  copy16(" + std::to_string(a) + ", " + t_sa + ") "
+            "  sign16(" + t_sa + ") "
+            "  copy16(" + std::to_string(b) + ", " + t_sb + ") "
+            "  sign16(" + t_sb + ") "
+            // if signs differ, the negative one is smaller
+            "  copy16(" + t_sa + ", " + t_tmp + ") "
+            "  xor16(" + t_tmp + ", " + t_sb + ") "
+            "  if(" + t_tmp + ") "
+            "    copy16(" + t_sb + ", " + std::to_string(a) + ") "
+            "  else "
+            // if signs are the same, use unsigned comparison
+            "    ge16(" + std::to_string(a) + ", " + std::to_string(b) + ") "
+            "  endif "
+            // free temp variables
+            "  free_cell16(" + t_sa + ") "
+            "  free_cell16(" + t_sb + ") "
+            "  free_cell16(" + t_tmp + ") "
+            "}",
             mock_filename));
 
     return true;
