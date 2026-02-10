@@ -35,6 +35,6 @@ clean:
 		$(foreach dir,src/bf src/bfpp,$(wildcard $(dir)/*.orig))
 
 test: bf$(_EXE) bfpp$(_EXE)
-	perl -S prove $(wildcard t/*.t)
+	perl -S prove -j9 --state=slow,save $(wildcard t/*.t)
 
 -include $(DEPENDS)

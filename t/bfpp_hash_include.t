@@ -18,13 +18,13 @@ END
 spew("$test.inc", "");
 spew("$test.in", "#include \"$test.inc\" 123");
 capture_nok("bfpp $test.in", <<END);
-$test.in:1:41: error: unexpected token after #include: '123'
+$test.in:1:43: error: unexpected token after #include: '123'
 END
 
 unlink("$test.inc");
 spew("$test.in", "#include \"$test.inc\"");
 capture_nok("bfpp $test.in", <<END);
-$test.in:1:40: error: cannot open file '$test.inc'
+$test.in:1:42: error: cannot open file '$test.inc'
 END
 
 # test #include files

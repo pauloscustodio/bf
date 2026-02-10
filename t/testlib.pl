@@ -12,7 +12,7 @@ $ENV{PATH} = join($Config{path_sep},
 			$ENV{PATH});
 
 use vars '$test', '$null';
-$test = "test_".(($0 =~ s/\.t$//r) =~ s/[\.\/\\]/_/gr);
+$test = "test_".($0 =~ s/[\.\/\\]/_/gr);
 $null = ($^O eq 'MSWin32') ? 'nul' : '/dev/null';
 
 unlink_testfiles();
