@@ -1,0 +1,76 @@
+#!/usr/bin/env perl
+
+BEGIN { use lib 't'; require 'testlib.pl'; }
+
+use Modern::Perl;
+
+# pop8 - error no arguments
+spew("$test.in", "pop8");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:5: error: expected '(' after macro name 'pop8'
+END
+
+# pop8 - error empty arguments
+spew("$test.in", "pop8()");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:7: error: macro 'pop8' expects 1 argument
+END
+
+# pop8 - error too many arguments
+spew("$test.in", "pop8(A,B)");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:7: error: expected ')' at end of macro call, found ','
+END
+
+# pop8 - copies cell pair to stack, decrements stack pointer
+spew("$test.in", <<END);
+	alloc_cell8(A)
+	alloc_cell8(B)
+	push8i(127)
+	push8i(63)
+	pop8(A)
+	pop8(B)
+END
+capture_ok("bfpp $test.in", <<END);
+[
+  -
+]
+>
+[
+  -
+]
+>>>
+[
+  -
+]
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++++++++++++++++++++++++++++++++++++++++++++++++<<
+[
+  -
+]
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++<<
+[
+  -
+]
+>>
+[
+  -<<+>>
+]
+<
+[
+  -
+]
+>>>
+[
+  -<<<+>>>
+]
+<<<<
+END
+capture_ok("bfpp $test.in | bf -D", <<END);
+Tape: 63 127 
+     ^^^ (ptr=0)
+
+END
+
+unlink_testfiles;
+done_testing;

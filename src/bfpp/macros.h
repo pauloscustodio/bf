@@ -171,6 +171,12 @@ private:
     bool handle_endwhile(Parser& parser, const Token& tok);
     bool handle_repeat(Parser& parser, const Token& tok);
     bool handle_endrepeat(Parser& parser, const Token& tok);
+    bool handle_push8(Parser& parser, const Token& tok);
+    bool handle_push16(Parser& parser, const Token& tok);
+    bool handle_push8i(Parser& parser, const Token& tok);
+    bool handle_push16i(Parser& parser, const Token& tok);
+    bool handle_pop8(Parser& parser, const Token& tok);
+    bool handle_pop16(Parser& parser, const Token& tok);
 
     bool parse_expr_args(Parser& parser,
                          const Token& tok,

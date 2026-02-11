@@ -187,7 +187,7 @@ int main(int argc, char* argv[]) {
     if (!run_pass(/*stack_base=*/ -1, pass1, heap1, depth1)) {
         return EXIT_FAILURE;
     }
-    int stack_base = heap1 + BFOutput::kMinHeapToStackDistance + depth1;
+    int stack_base = heap1 + depth1;
 
     // Pass 2
     std::string pass2;

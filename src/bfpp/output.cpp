@@ -304,26 +304,26 @@ void BFOutput::free_cells(int addr) {
 
 int BFOutput::alloc_stack(int count) {
     if (count <= 0) {
-        return stack_top_; // no-op, but defined behavior
+        return stack_ptr_; // no-op, but defined behavior
     }
-    if (stack_top_ - count < heap_size_ + kMinHeapToStackDistance) {
+    if (stack_ptr_ - count < heap_size_) {
         g_error_reporter.report_error(
             SourceLocation(),
             "stack overflow: not enough space between heap and stack for allocation of " + std::to_string(count) + " cells"
         );
-        return stack_top_; // return current top as fallback
+        return stack_ptr_; // return current top as fallback
     }
 
-    stack_top_ -= count;
-    min_stack_top_ = std::min(min_stack_top_, stack_top_);
-    return stack_top_;
+    stack_ptr_ -= count;
+    min_stack_ptr_ = std::min(min_stack_ptr_, stack_ptr_);
+    return stack_ptr_;
 }
 
 void BFOutput::free_stack(int count) {
     if (count <= 0) {
         return; // no-op, but defined behavior
     }
-    if (stack_top_ + count > stack_base_) {
+    if (stack_ptr_ + count > stack_base_) {
         g_error_reporter.report_error(
             SourceLocation(),
             "stack underflow: attempt to free more stack cells than allocated"
@@ -331,7 +331,11 @@ void BFOutput::free_stack(int count) {
         return;
     }
 
-    stack_top_ += count;
+    stack_ptr_ += count;
+}
+
+int BFOutput::stack_ptr() const {
+    return stack_ptr_;
 }
 
 void BFOutput::reset() {
@@ -341,11 +345,11 @@ void BFOutput::reset() {
     alloc_map_.clear();
     tape_ptr_ = 0;
     heap_size_ = 0;
-    stack_base_ = stack_top_ = min_stack_top_ = kInitialStackBase;
+    stack_base_ = stack_ptr_ = min_stack_ptr_ = kInitialStackBase;
 }
 
 void BFOutput::set_stack_base(int base) {
-    stack_base_ = stack_top_ = min_stack_top_ = base;
+    stack_base_ = stack_ptr_ = min_stack_ptr_ = base;
 }
 
 int BFOutput::heap_size() const {
@@ -353,5 +357,5 @@ int BFOutput::heap_size() const {
 }
 
 int BFOutput::max_stack_depth() const {
-    return stack_base_ - min_stack_top_;
+    return stack_base_ - min_stack_ptr_;
 }

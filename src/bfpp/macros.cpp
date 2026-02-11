@@ -94,6 +94,12 @@ const std::unordered_map<std::string, MacroExpander::BuiltinHandler> MacroExpand
     { "endwhile",     &MacroExpander::handle_endwhile     },
     { "repeat",       &MacroExpander::handle_repeat       },
     { "endrepeat",    &MacroExpander::handle_endrepeat    },
+    { "push8",        &MacroExpander::handle_push8        },
+    { "push16",       &MacroExpander::handle_push16       },
+    { "push8i",       &MacroExpander::handle_push8i       },
+    { "push16i",      &MacroExpander::handle_push16i      },
+    { "pop8",         &MacroExpander::handle_pop8         },
+    { "pop16",        &MacroExpander::handle_pop16        },
 };
 
 void MacroTable::clear() {
@@ -2912,6 +2918,116 @@ bool MacroExpander::handle_endrepeat(Parser& parser, const Token& tok) {
             mock_filename));
     struct_stack_.pop_back();
 
+    return true;
+}
+
+bool MacroExpander::handle_push8(Parser& parser, const Token& tok) {
+    std::vector<int> vals;
+    if (!parse_expr_args(parser, tok, { "source_cell" }, vals)) {
+        return true;
+    }
+    int source = vals[0];
+    int target = parser.output().alloc_stack(2);
+
+    TokenScanner scanner;
+    std::string mock_filename = "(push8)";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            "copy8(" + std::to_string(source) + ", " + std::to_string(target) + ") ",
+            mock_filename));
+    return true;
+}
+
+bool MacroExpander::handle_push16(Parser& parser, const Token& tok) {
+    std::vector<int> vals;
+    if (!parse_expr_args(parser, tok, { "source_cell" }, vals)) {
+        return true;
+    }
+    int source = vals[0];
+    int target = parser.output().alloc_stack(2);
+
+    TokenScanner scanner;
+    std::string mock_filename = "(push16)";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            "copy16(" + std::to_string(source) + ", " + std::to_string(target) + ") ",
+            mock_filename));
+    return true;
+}
+
+bool MacroExpander::handle_push8i(Parser& parser, const Token& tok) {
+    std::vector<int> vals;
+    if (!parse_expr_args(parser, tok, { "value" }, vals)) {
+        return true;
+    }
+    int value = vals[0];
+    int target = parser.output().alloc_stack(2);
+
+    TokenScanner scanner;
+    std::string mock_filename = "(push8i)";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            "set8(" + std::to_string(target) + ", " + std::to_string(value) + ") ",
+            mock_filename));
+    return true;
+}
+
+bool MacroExpander::handle_push16i(Parser& parser, const Token& tok) {
+    std::vector<int> vals;
+    if (!parse_expr_args(parser, tok, { "value" }, vals)) {
+        return true;
+    }
+    int value = vals[0];
+    int target = parser.output().alloc_stack(2);
+
+    TokenScanner scanner;
+    std::string mock_filename = "(push16i)";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            "set16(" + std::to_string(target) + ", " + std::to_string(value) + ") ",
+            mock_filename));
+    return true;
+}
+
+bool MacroExpander::handle_pop8(Parser& parser, const Token& tok) {
+    std::vector<int> vals;
+    if (!parse_expr_args(parser, tok, { "target_cell" }, vals)) {
+        return true;
+    }
+    int target = vals[0];
+    int source = parser.output().stack_ptr();
+    parser.output().free_stack(2);
+
+    TokenScanner scanner;
+    std::string mock_filename = "(pop8)";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            "move8(" + std::to_string(source) + ", " + std::to_string(target) + ") ",
+            mock_filename));
+    return true;
+}
+
+bool MacroExpander::handle_pop16(Parser& parser, const Token& tok) {
+    std::vector<int> vals;
+    if (!parse_expr_args(parser, tok, { "target_cell" }, vals)) {
+        return true;
+    }
+    int target = vals[0];
+    int source = parser.output().stack_ptr();
+    parser.output().free_stack(2);
+
+    TokenScanner scanner;
+    std::string mock_filename = "(pop16)";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            "move16(" + std::to_string(source) + ", " + std::to_string(target) + ") ",
+            mock_filename));
     return true;
 }
 

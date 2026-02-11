@@ -41,6 +41,7 @@ usage: bfpp [-o output_file] [-I include_path] [-D name=value] [-v] [input_file]
 - Arithmetic: `add8/sadd8/sub8/ssub8/mul8/smul8/div8/mod8(a, b)`, `neg8/sign8/abs8(a)` (+ `xx16`).
 - Comparisons: `eq8/seq8/ne8/sne8/lt8/slt8/le8/sle8/gt8/sgt8/ge8/sge8(a, b)` (+ `xx16`).
 - Control: `if(expr) ... else ... endif`, `while(expr) ... endwhile`, `repeat(count) ... endrepeat`.
+- Stack: `push8(source_cell)`, `push8i(immediate_value)`, `pop8(target_cell)` (+ `xx16`).
 
 Notes:
 - Allocation reserves cells from 0 upward and zeroes them.
