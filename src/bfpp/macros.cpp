@@ -53,8 +53,12 @@ const std::unordered_map<std::string, MacroExpander::BuiltinHandler> MacroExpand
     { "smul16",       &MacroExpander::handle_smul16       },
     { "div8",         &MacroExpander::handle_div8         },
     { "div16",        &MacroExpander::handle_div16        },
+    { "sdiv8",        &MacroExpander::handle_sdiv8        },
+    { "sdiv16",       &MacroExpander::handle_sdiv16       },
     { "mod8",         &MacroExpander::handle_mod8         },
     { "mod16",        &MacroExpander::handle_mod16        },
+    { "smod8",        &MacroExpander::handle_smod8        },
+    { "smod16",       &MacroExpander::handle_smod16       },
     { "eq8",          &MacroExpander::handle_eq8          },
     { "eq16",         &MacroExpander::handle_eq16         },
     { "seq8",         &MacroExpander::handle_seq8         },
@@ -1364,12 +1368,28 @@ bool MacroExpander::handle_div16(Parser& parser, const Token& tok) {
     return handle_div16_mod16(parser, tok, /*return_remainder=*/false);
 }
 
+bool MacroExpander::handle_sdiv8(Parser& parser, const Token& tok) {
+    return handle_sdiv8_smod8(parser, tok, /*return_remainder=*/false);
+}
+
+bool MacroExpander::handle_sdiv16(Parser& parser, const Token& tok) {
+    return handle_sdiv16_smod16(parser, tok, /*return_remainder=*/false);
+}
+
 bool MacroExpander::handle_mod8(Parser& parser, const Token& tok) {
     return handle_div8_mod8(parser, tok, /*return_remainder=*/true);
 }
 
 bool MacroExpander::handle_mod16(Parser& parser, const Token& tok) {
     return handle_div16_mod16(parser, tok, /*return_remainder=*/true);
+}
+
+bool MacroExpander::handle_smod8(Parser& parser, const Token& tok) {
+    return handle_sdiv8_smod8(parser, tok, /*return_remainder=*/true);
+}
+
+bool MacroExpander::handle_smod16(Parser& parser, const Token& tok) {
+    return handle_sdiv16_smod16(parser, tok, /*return_remainder=*/true);
 }
 
 bool MacroExpander::handle_div8_mod8(Parser& parser, const Token& tok,
@@ -1513,6 +1533,128 @@ bool MacroExpander::handle_div16_mod16(Parser& parser, const Token& tok,
             "  free_cell16(" + T_tmp + ") "
             "  free_cell16(" + T_cond + ") "
             "  free_cell16(" + T_one + ") "
+            "}",
+            mock_filename));
+    return true;
+}
+
+bool MacroExpander::handle_sdiv8_smod8(Parser& parser, const Token& tok,
+                                       bool return_remainder) {
+    std::vector<int> vals;
+    if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
+        return true;
+    }
+    int a = vals[0];
+    int b = vals[1];
+
+    std::string t_sa = make_temp_name();
+    std::string t_sb = make_temp_name();
+    std::string t_final_sign = make_temp_name();
+    std::string t_b_abs = make_temp_name();
+
+    const std::string mock_filename = return_remainder ? "(smod8)" : "(sdiv8)";
+    const std::string final_sign =
+        return_remainder ?
+        // final_sign = sa
+        "  copy8(" + t_sa + ", " + t_final_sign + ") "
+        :
+        // final_sign = sa XOR sb
+        "  copy8(" + t_sa + ", " + t_final_sign + ") "
+        "  xor8(" + t_final_sign + ", " + t_sb + ") "
+        ;
+    const std::string operation = return_remainder ? "mod8" : "div8";
+
+    TokenScanner scanner;
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            "{ alloc_cell8(" + t_sa + ") "
+            "  alloc_cell8(" + t_sb + ") "
+            "  alloc_cell8(" + t_final_sign + ") "
+            "  alloc_cell8(" + t_b_abs + ") "
+            // sa = sign(a)
+            "  copy8(" + std::to_string(a) + ", " + t_sa + ") "
+            "  sign8(" + t_sa + ") "
+            // sb = sign(b)
+            "  copy8(" + std::to_string(b) + ", " + t_sb + ") "
+            "  sign8(" + t_sb + ") " +
+            // compute final_sign and move it into t_final_sign
+            final_sign +
+            // abs(a), abs(b)
+            "  abs8(" + std::to_string(a) + ") "
+            "  copy8(" + std::to_string(b) + ", " + t_b_abs + ") "
+            "  abs8(" + t_b_abs + ") "
+            // do div/mod operation on abs values, store result in a
+            "  " + operation + "(" + std::to_string(a) + ", " + t_b_abs + ") "
+            // apply sign to result if necessary
+            "  if(" + t_final_sign + ") "
+            "    neg8(" + std::to_string(a) + ") "
+            "  endif "
+            "  free_cell8(" + t_sa + ") "
+            "  free_cell8(" + t_sb + ") "
+            "  free_cell8(" + t_final_sign + ") "
+            "  free_cell8(" + t_b_abs + ") "
+            "}",
+            mock_filename));
+    return true;
+}
+
+bool MacroExpander::handle_sdiv16_smod16(Parser& parser, const Token& tok,
+        bool return_remainder) {
+    std::vector<int> vals;
+    if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
+        return true;
+    }
+    int a = vals[0];
+    int b = vals[1];
+
+    std::string t_sa = make_temp_name();
+    std::string t_sb = make_temp_name();
+    std::string t_final_sign = make_temp_name();
+    std::string t_b_abs = make_temp_name();
+
+    const std::string mock_filename = return_remainder ? "(smod16)" : "(sdiv16)";
+    const std::string final_sign =
+        return_remainder ?
+        // final_sign = sa
+        "  copy16(" + t_sa + ", " + t_final_sign + ") "
+        :
+        // final_sign = sa XOR sb
+        "  copy16(" + t_sa + ", " + t_final_sign + ") "
+        "  xor16(" + t_final_sign + ", " + t_sb + ") "
+        ;
+    const std::string operation = return_remainder ? "mod16" : "div16";
+
+    TokenScanner scanner;
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            "{ alloc_cell16(" + t_sa + ") "
+            "  alloc_cell16(" + t_sb + ") "
+            "  alloc_cell16(" + t_final_sign + ") "
+            "  alloc_cell16(" + t_b_abs + ") "
+            // sa = sign(a)
+            "  copy16(" + std::to_string(a) + ", " + t_sa + ") "
+            "  sign16(" + t_sa + ") "
+            // sb = sign(b)
+            "  copy16(" + std::to_string(b) + ", " + t_sb + ") "
+            "  sign16(" + t_sb + ") " +
+            // compute final_sign and move it into t_final_sign
+            final_sign +
+            // abs(a), abs(b)
+            "  abs16(" + std::to_string(a) + ") "
+            "  copy16(" + std::to_string(b) + ", " + t_b_abs + ") "
+            "  abs16(" + t_b_abs + ") "
+            // do div/mod operation on abs values, store result in a
+            "  " + operation + "(" + std::to_string(a) + ", " + t_b_abs + ") "
+            // apply sign to result if necessary
+            "  if(" + t_final_sign + ") "
+            "    neg16(" + std::to_string(a) + ") "
+            "  endif "
+            "  free_cell16(" + t_sa + ") "
+            "  free_cell16(" + t_sb + ") "
+            "  free_cell16(" + t_final_sign + ") "
+            "  free_cell16(" + t_b_abs + ") "
             "}",
             mock_filename));
     return true;

@@ -122,12 +122,20 @@ private:
     bool handle_smul16(Parser& parser, const Token& tok);
     bool handle_div8(Parser& parser, const Token& tok);
     bool handle_div16(Parser& parser, const Token& tok);
+    bool handle_sdiv8(Parser& parser, const Token& tok);
+    bool handle_sdiv16(Parser& parser, const Token& tok);
     bool handle_mod8(Parser& parser, const Token& tok);
     bool handle_mod16(Parser& parser, const Token& tok);
+    bool handle_smod8(Parser& parser, const Token& tok);
+    bool handle_smod16(Parser& parser, const Token& tok);
     bool handle_div8_mod8(Parser& parser, const Token& tok,
                           bool return_remainder);
     bool handle_div16_mod16(Parser& parser, const Token& tok,
                             bool return_remainder);
+    bool handle_sdiv8_smod8(Parser& parser, const Token& tok,
+                            bool return_remainder);
+    bool handle_sdiv16_smod16(Parser& parser, const Token& tok,
+                              bool return_remainder);
     bool handle_eq8(Parser& parser, const Token& tok);
     bool handle_eq16(Parser& parser, const Token& tok);
     bool handle_seq8(Parser& parser, const Token& tok);
