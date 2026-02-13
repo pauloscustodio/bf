@@ -8,6 +8,10 @@
 #include "errors.h"
 #include <algorithm>
 
+int StackFrame::size() const {
+    return 2 * (num_args16 + num_locals16 + num_temps16);
+}
+
 void BFOutput::put(const Token& tok) {
     if (tok.type != TokenType::BFInstr) {
         g_error_reporter.report_error(
@@ -146,11 +150,17 @@ std::string BFOutput::to_string() const {
     return result;
 }
 
-void BFOutput::check_loops() const {
+void BFOutput::check_structures() const {
     for (auto& it : loop_stack_) {
         g_error_reporter.report_error(
             it,
             "unmatched '[' instruction"
+        );
+    }
+    for (auto& it : frame_stack_) {
+        g_error_reporter.report_error(
+            it.loc,
+            "unmatched enter_frame instruction"
         );
     }
 }
@@ -338,8 +348,132 @@ int BFOutput::stack_ptr() const {
     return stack_ptr_;
 }
 
+void BFOutput::enter_frame(const Token& tok, int args16, int locals16) {
+    if (args16 < 0 || locals16 < 0) {
+        return; // no-op, but defined behavior
+    }
+
+    // reserve arg0 for return value
+    if (args16 == 0) {
+        alloc_stack(2);
+        args16++;
+    }
+
+    // create frame
+    StackFrame frame;
+    frame.loc = tok.loc;
+    frame.start_stack_ptr = stack_ptr_;
+    frame.num_args16 = args16;
+    frame.num_locals16 = locals16;
+    frame.num_temps16 = 0;
+    frame_stack_.push_back(frame);
+
+    // space to reserve on stack: whole frame less args16, these are
+    // already on the stack when enter_frame() is called
+    int reserve_size = frame.size() - 2 * frame.num_args16;
+    alloc_stack(reserve_size);
+}
+
+void BFOutput::leave_frame(const Token& tok) {
+    if (frame_stack_.empty()) {
+        g_error_reporter.report_error(
+            tok.loc,
+            "unmatched leave_frame instruction"
+        );
+        return;
+    }
+
+    // drop frame, keep arg0 on the stack - return value
+    StackFrame frame = frame_stack_.back();
+    frame_stack_.pop_back();
+
+    int free_size = frame.size() - 2 * (frame.num_args16 - 1);
+    free_stack(free_size);
+}
+
+void BFOutput::frame_alloc_temp(const Token& tok, int temp16) {
+    if (frame_stack_.empty()) {
+        g_error_reporter.report_error(
+            tok.loc,
+            "alloc_temp instruction outside frame"
+        );
+        return;
+    }
+
+    StackFrame& frame = frame_stack_.back();
+    frame.num_temps16 += temp16;
+    alloc_stack(2 * temp16);
+}
+
+int BFOutput::frame_arg_address(const Token& tok, int n) {
+    if (frame_stack_.empty()) {
+        g_error_reporter.report_error(
+            tok.loc,
+            "arg_address instruction outside frame"
+        );
+        return -1;
+    }
+
+    StackFrame& frame = frame_stack_.back();
+    if (n < 0 || n >= frame.num_args16) {
+        g_error_reporter.report_error(
+            tok.loc,
+            "arg_address overflow"
+        );
+        return -1;
+    }
+
+    int addr = frame.start_stack_ptr + 2 * (frame.num_args16 - n - 1);
+    return addr;
+}
+
+int BFOutput::frame_local_address(const Token& tok, int n) {
+    if (frame_stack_.empty()) {
+        g_error_reporter.report_error(
+            tok.loc,
+            "local_address instruction outside frame"
+        );
+        return -1;
+    }
+
+    StackFrame& frame = frame_stack_.back();
+    if (n < 0 || n >= frame.num_locals16) {
+        g_error_reporter.report_error(
+            tok.loc,
+            "local_address overflow"
+        );
+        return -1;
+    }
+
+    int addr = frame.start_stack_ptr - 2 * (n + 1);
+    return addr;
+}
+
+int BFOutput::frame_temp_address(const Token& tok, int n) {
+    if (frame_stack_.empty()) {
+        g_error_reporter.report_error(
+            tok.loc,
+            "temp_address instruction outside frame"
+        );
+        return -1;
+    }
+
+    StackFrame& frame = frame_stack_.back();
+    if (n < 0 || n >= frame.num_temps16) {
+        g_error_reporter.report_error(
+            tok.loc,
+            "temp_address overflow"
+        );
+        return -1;
+    }
+
+    int addr = frame.start_stack_ptr - 2 * (frame.num_locals16 + n + 1);
+    return addr;
+}
+
 void BFOutput::reset() {
     output_.clear();
+    frame_stack_.clear();
     loop_stack_.clear();
     free_list_.clear();
     alloc_map_.clear();
@@ -359,3 +493,4 @@ int BFOutput::heap_size() const {
 int BFOutput::max_stack_depth() const {
     return stack_base_ - min_stack_ptr_;
 }
+

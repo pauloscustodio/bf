@@ -130,8 +130,8 @@ bool Parser::parse() {
     // After finishing, check for unclosed builtin structures
     macro_expander_.check_struct_stack();
 
-    // After finishing, check for unmatched loops
-    output_.check_loops();
+    // After finishing, check for unmatched structures
+    output_.check_structures();
 
     // After finishing, check for unmatched braces
     for (const BraceFrame& frame : brace_stack_) {
