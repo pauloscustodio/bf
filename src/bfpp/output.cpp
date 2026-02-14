@@ -312,6 +312,74 @@ void BFOutput::free_cells(int addr) {
     add_free_block(addr, len);
 }
 
+void BFOutput::alloc_global(const Token& tok, int count16) {
+    if (count16 <= 0) {
+        return; // no-op, but defined behavior
+    }
+    if (global_ptr_ == -1) {
+        global_ptr_ = alloc_cells(count16 * 2);
+        global_count16_ = count16;
+    }
+    else {
+        g_error_reporter.report_error(
+            tok.loc,
+            "alloc_global already called"
+        );
+    }
+}
+
+void BFOutput::alloc_temp(const Token& tok, int count16) {
+    if (count16 <= 0) {
+        return; // no-op, but defined behavior
+    }
+    if (temp_ptr_ == -1) {
+        temp_ptr_ = alloc_cells(count16 * 2);
+        temp_count16_ = count16;
+    }
+    else {
+        g_error_reporter.report_error(
+            tok.loc,
+            "alloc_temp already called"
+        );
+    }
+}
+
+int BFOutput::global_address(const Token& tok, int n) {
+    if (global_ptr_ == -1) {
+        g_error_reporter.report_error(
+            tok.loc,
+            "global_address called before alloc_global"
+        );
+        return -1;
+    }
+    if (n < 0 || n >= global_count16_) {
+        g_error_reporter.report_error(
+            tok.loc,
+            "global_address overflow"
+        );
+        return -1;
+    }
+    return global_ptr_ + 2 * n;
+}
+
+int BFOutput::temp_address(const Token& tok, int n) {
+    if (temp_ptr_ == -1) {
+        g_error_reporter.report_error(
+            tok.loc,
+            "temp_address called before alloc_temp"
+        );
+        return -1;
+    }
+    if (n < 0 || n >= temp_count16_) {
+        g_error_reporter.report_error(
+            tok.loc,
+            "temp_address overflow"
+        );
+        return -1;
+    }
+    return temp_ptr_ + 2 * n;
+}
+
 int BFOutput::alloc_stack(int count) {
     if (count <= 0) {
         return stack_ptr_; // no-op, but defined behavior
@@ -480,6 +548,11 @@ void BFOutput::reset() {
     tape_ptr_ = 0;
     heap_size_ = 0;
     stack_base_ = stack_ptr_ = min_stack_ptr_ = kInitialStackBase;
+    global_ptr_ = -1;
+    global_count16_ = 0;
+    temp_ptr_ = -1;
+    temp_count16_ = 0;
+
 }
 
 void BFOutput::set_stack_base(int base) {

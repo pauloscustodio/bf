@@ -55,7 +55,7 @@ struct BuiltinStructLevel {
 
 class MacroExpander {
 public:
-    MacroExpander(MacroTable& table);
+    MacroExpander(MacroTable& table, Parser* parser);
 
     // Returns true if token was expanded, false otherwise
     bool try_expand(Parser& parser, const Token& token);
@@ -79,6 +79,7 @@ private:
     static const std::unordered_map<std::string, BuiltinHandler> kBuiltins;
 
     MacroTable& table_;
+    Parser* parser_ = nullptr;
     std::unordered_set<std::string> expanding_; // recursion guard
     std::vector<BuiltinStructLevel> struct_stack_;
 

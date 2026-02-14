@@ -31,9 +31,16 @@ public:
     void check_structures() const;
     int tape_ptr() const;
 
-    // allocate cells on the tape
+    // allocate cells on the heap, heap grows upwards
     int alloc_cells(int count);
     void free_cells(int addr);
+
+    // allocate globals and temps on the heap
+    // they are not freed until the end of the program
+    void alloc_global(const Token& tok, int count16);
+    void alloc_temp(const Token& tok, int count16);
+    int global_address(const Token& tok, int n);
+    int temp_address(const Token& tok, int n);
 
     // allocate cells on the stack, stack grows downwards
     int alloc_stack(int count);
@@ -64,6 +71,10 @@ private:
     int stack_base_ = kInitialStackBase;
     int stack_ptr_ = kInitialStackBase;
     int min_stack_ptr_ = kInitialStackBase;
+    int global_ptr_ = -1;
+    int global_count16_ = 0;
+    int temp_ptr_ = -1;
+    int temp_count16_ = 0;
     std::vector<StackFrame> frame_stack_;
     std::vector<SourceLocation> loop_stack_;
     std::vector<Token> output_;

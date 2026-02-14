@@ -11,7 +11,7 @@
 #include "parser.h"
 
 Parser::Parser(Lexer& lexer)
-    : lexer_(lexer), macro_expander_(g_macro_table) {
+    : lexer_(lexer), macro_expander_(g_macro_table, this) {
 }
 
 bool Parser::run(std::string& output_) {
@@ -361,7 +361,7 @@ void Parser::parse_if() {
 
     // Evaluate expression
     ParserTokenSource ts(*this);
-    ExpressionParser expr(ts, /*undefined_as_zero=*/true);
+    ExpressionParser expr(ts, this, /*undefined_as_zero=*/true);
     int value = expr.parse_expression();
 
     IfState state;
@@ -383,7 +383,7 @@ void Parser::parse_elsif() {
 
     // Evaluate expression
     ParserTokenSource ts(*this);
-    ExpressionParser expr(ts, /*undefined_as_zero=*/true);
+    ExpressionParser expr(ts, this, /*undefined_as_zero=*/true);
     int value = expr.parse_expression();
 
     if (if_stack_.empty()) {
@@ -624,7 +624,7 @@ bool Parser::parse_bf_int_arg(int& output) {
         // evaluate expression result of macro expansion
         std::vector<Token> expr_tokens{ current_ };
         ArrayTokenSource source(expr_tokens);
-        ExpressionParser expr(source);
+        ExpressionParser expr(source, this, /*undefined_as_zero=*/false);
         output = expr.parse_expression();
         advance(); // consume identifier
         return true;
@@ -633,7 +633,7 @@ bool Parser::parse_bf_int_arg(int& output) {
     if (current_.type == TokenType::LParen) {
         // Parse expression until matching RParen
         ParserTokenSource source(*this);
-        ExpressionParser expr(source);
+        ExpressionParser expr(source, this, /*undefined_as_zero=*/false);
         output = expr.parse_expression();
         return true;
     }

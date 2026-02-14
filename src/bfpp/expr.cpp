@@ -8,8 +8,11 @@
 #include "expr.h"
 #include "parser.h"
 
-ExpressionParser::ExpressionParser(TokenSource& source, bool undefined_as_zero)
-    : source_(source), undefined_as_zero_(undefined_as_zero) {
+ExpressionParser::ExpressionParser(TokenSource& source, Parser* parser,
+                                   bool undefined_as_zero)
+    : source_(source), parser_(parser)
+    , output_(parser ? & parser->output() : nullptr)
+    , undefined_as_zero_(undefined_as_zero) {
 }
 
 int ExpressionParser::parse_expression() {
@@ -376,7 +379,7 @@ int ExpressionParser::eval_macro_recursive(const Token& tok,
 
     expanding.insert(name);
     ArrayTokenSource source(macro->body);
-    ExpressionParser expr(source, undefined_as_zero_);
+    ExpressionParser expr(source, parser_, undefined_as_zero_);
     int result = expr.parse_expression();
     expanding.erase(name);
 

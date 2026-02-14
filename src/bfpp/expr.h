@@ -64,12 +64,20 @@ private:
 
 class ExpressionParser {
 public:
-    explicit ExpressionParser(TokenSource& source, bool undefined_as_zero = false);
+    ExpressionParser(TokenSource& source, Parser* parser, bool undefined_as_zero = false);
 
     int parse_expression();
+    Parser* parser() const {
+        return parser_;
+    }
+    BFOutput* output() const {
+        return output_;
+    }
 
 private:
     TokenSource& source_;  // Single interface for both contexts
+    Parser* parser_ = nullptr;
+    BFOutput* output_ = nullptr;
     bool undefined_as_zero_ = false;
 
     int parse_logical_or();

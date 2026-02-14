@@ -139,8 +139,8 @@ const Macro* MacroTable::lookup(const std::string& name) const {
     return &it->second;
 }
 
-MacroExpander::MacroExpander(MacroTable& table)
-    : table_(table) {
+MacroExpander::MacroExpander(MacroTable& table, Parser* parser)
+    : table_(table), parser_(parser) {
 }
 
 bool MacroExpander::try_expand(Parser& parser, const Token& token) {
@@ -3061,7 +3061,7 @@ bool MacroExpander::parse_expr_args(Parser& parser,
     values.reserve(args.size());
     for (const auto& arg_tokens : args) {
         ArrayTokenSource source(arg_tokens);
-        ExpressionParser expr(source, /*undefined_as_zero=*/false);
+        ExpressionParser expr(source, parser_, /*undefined_as_zero=*/false);
         values.push_back(expr.parse_expression());
     }
     return true;
