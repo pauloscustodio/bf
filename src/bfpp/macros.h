@@ -178,6 +178,10 @@ private:
     bool handle_push16i(Parser& parser, const Token& tok);
     bool handle_pop8(Parser& parser, const Token& tok);
     bool handle_pop16(Parser& parser, const Token& tok);
+    bool handle_alloc_global16(Parser& parser, const Token& tok);
+    bool handle_free_global16(Parser& parser, const Token& tok);
+    bool handle_alloc_temp16(Parser& parser, const Token& tok);
+    bool handle_free_temp16(Parser& parser, const Token& tok);
 
     bool parse_expr_args(Parser& parser,
                          const Token& tok,
@@ -185,7 +189,7 @@ private:
                          std::vector<int>& values);
     bool parse_ident_arg(Parser& parser, const Token& tok,
                          std::string& ident_out);
-
+    std::string clear_memory_area(int addr, int size16);
     std::vector<Token> substitute_body(const Macro& macro,
                                        const std::vector<std::vector<Token>>& args);
 };

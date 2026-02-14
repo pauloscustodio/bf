@@ -37,8 +37,10 @@ public:
 
     // allocate globals and temps on the heap
     // they are not freed until the end of the program
-    void alloc_global(const Token& tok, int count16);
-    void alloc_temp(const Token& tok, int count16);
+    int alloc_global(const Token& tok, int count16);
+    void free_global();
+    int alloc_temp(const Token& tok, int count16);
+    void free_temp();
     int global_address(const Token& tok, int n);
     int temp_address(const Token& tok, int n);
 

@@ -160,7 +160,7 @@ void BFOutput::check_structures() const {
     for (auto& it : frame_stack_) {
         g_error_reporter.report_error(
             it.loc,
-            "unmatched enter_frame instruction"
+            "unmatched enter_frame16 instruction"
         );
     }
 }
@@ -312,50 +312,72 @@ void BFOutput::free_cells(int addr) {
     add_free_block(addr, len);
 }
 
-void BFOutput::alloc_global(const Token& tok, int count16) {
+int BFOutput::alloc_global(const Token& tok, int count16) {
     if (count16 <= 0) {
-        return; // no-op, but defined behavior
+        return -1; // no-op, but defined behavior
     }
     if (global_ptr_ == -1) {
         global_ptr_ = alloc_cells(count16 * 2);
         global_count16_ = count16;
+        return global_ptr_;
     }
     else {
         g_error_reporter.report_error(
             tok.loc,
-            "alloc_global already called"
+            "alloc_global16 already called"
         );
+        return -1;
     }
 }
 
-void BFOutput::alloc_temp(const Token& tok, int count16) {
-    if (count16 <= 0) {
+void BFOutput::free_global() {
+    if (global_ptr_ == -1) {
         return; // no-op, but defined behavior
+    }
+    free_cells(global_ptr_);
+    global_ptr_ = -1;
+    global_count16_ = 0;
+}
+
+int BFOutput::alloc_temp(const Token& tok, int count16) {
+    if (count16 <= 0) {
+        return -1; // no-op, but defined behavior
     }
     if (temp_ptr_ == -1) {
         temp_ptr_ = alloc_cells(count16 * 2);
         temp_count16_ = count16;
+        return temp_ptr_;
     }
     else {
         g_error_reporter.report_error(
             tok.loc,
-            "alloc_temp already called"
+            "alloc_temp16 already called"
         );
+        return -1;
     }
+}
+
+void BFOutput::free_temp() {
+    if (temp_ptr_ == -1) {
+        return; // no-op, but defined behavior
+    }
+    free_cells(temp_ptr_);
+    temp_ptr_ = -1;
+    temp_count16_ = 0;
 }
 
 int BFOutput::global_address(const Token& tok, int n) {
     if (global_ptr_ == -1) {
         g_error_reporter.report_error(
             tok.loc,
-            "global_address called before alloc_global"
+            "global() called before alloc_global16"
         );
         return -1;
     }
     if (n < 0 || n >= global_count16_) {
         g_error_reporter.report_error(
             tok.loc,
-            "global_address overflow"
+            "global(" + std::to_string(n) + ") overflow"
         );
         return -1;
     }
@@ -366,14 +388,14 @@ int BFOutput::temp_address(const Token& tok, int n) {
     if (temp_ptr_ == -1) {
         g_error_reporter.report_error(
             tok.loc,
-            "temp_address called before alloc_temp"
+            "temp() called before alloc_temp16"
         );
         return -1;
     }
     if (n < 0 || n >= temp_count16_) {
         g_error_reporter.report_error(
             tok.loc,
-            "temp_address overflow"
+            "temp(" + std::to_string(n) + ") overflow"
         );
         return -1;
     }
@@ -421,10 +443,24 @@ void BFOutput::enter_frame(const Token& tok, int args16, int locals16) {
         return; // no-op, but defined behavior
     }
 
+    // Ensure the arguments are already present on the stack.
+    // Each arg is 16-bit => 2 cells.
+    int args_cells = 2 * args16;
+    int available = stack_base_ - stack_ptr_;
+    if (available < args_cells) {
+        g_error_reporter.report_error(
+            tok.loc,
+            "enter_frame: not enough arguments on stack (expected " +
+            std::to_string(args16) + " x16-bit)"
+        );
+        return;
+    }
+
     // reserve arg0 for return value
     if (args16 == 0) {
         alloc_stack(2);
         args16++;
+        args_cells = 2 * args16;
     }
 
     // create frame
@@ -438,7 +474,7 @@ void BFOutput::enter_frame(const Token& tok, int args16, int locals16) {
 
     // space to reserve on stack: whole frame less args16, these are
     // already on the stack when enter_frame() is called
-    int reserve_size = frame.size() - 2 * frame.num_args16;
+    int reserve_size = frame.size() - args_cells;
     alloc_stack(reserve_size);
 }
 
@@ -446,7 +482,7 @@ void BFOutput::leave_frame(const Token& tok) {
     if (frame_stack_.empty()) {
         g_error_reporter.report_error(
             tok.loc,
-            "unmatched leave_frame instruction"
+            "unmatched leave_frame16 instruction"
         );
         return;
     }
@@ -463,7 +499,7 @@ void BFOutput::frame_alloc_temp(const Token& tok, int temp16) {
     if (frame_stack_.empty()) {
         g_error_reporter.report_error(
             tok.loc,
-            "alloc_temp instruction outside frame"
+            "alloc_temp16 instruction outside alloc_frame16"
         );
         return;
     }
@@ -477,7 +513,7 @@ int BFOutput::frame_arg_address(const Token& tok, int n) {
     if (frame_stack_.empty()) {
         g_error_reporter.report_error(
             tok.loc,
-            "arg_address instruction outside frame"
+            "arg() instruction outside alloc_frame16"
         );
         return -1;
     }
@@ -486,7 +522,7 @@ int BFOutput::frame_arg_address(const Token& tok, int n) {
     if (n < 0 || n >= frame.num_args16) {
         g_error_reporter.report_error(
             tok.loc,
-            "arg_address overflow"
+            "arg(" + std::to_string(n) + ") overflow"
         );
         return -1;
     }
@@ -499,7 +535,7 @@ int BFOutput::frame_local_address(const Token& tok, int n) {
     if (frame_stack_.empty()) {
         g_error_reporter.report_error(
             tok.loc,
-            "local_address instruction outside frame"
+            "local() instruction outside alloc_frame16"
         );
         return -1;
     }
@@ -508,7 +544,7 @@ int BFOutput::frame_local_address(const Token& tok, int n) {
     if (n < 0 || n >= frame.num_locals16) {
         g_error_reporter.report_error(
             tok.loc,
-            "local_address overflow"
+            "local(" + std::to_string(n) + ") overflow"
         );
         return -1;
     }
@@ -521,7 +557,7 @@ int BFOutput::frame_temp_address(const Token& tok, int n) {
     if (frame_stack_.empty()) {
         g_error_reporter.report_error(
             tok.loc,
-            "temp_address instruction outside frame"
+            "frame_temp() instruction outside alloc_frame16"
         );
         return -1;
     }
@@ -530,7 +566,7 @@ int BFOutput::frame_temp_address(const Token& tok, int n) {
     if (n < 0 || n >= frame.num_temps16) {
         g_error_reporter.report_error(
             tok.loc,
-            "temp_address overflow"
+            "frame_temp(" + std::to_string(n) + ") overflow"
         );
         return -1;
     }

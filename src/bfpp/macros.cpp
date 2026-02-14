@@ -13,93 +13,97 @@ MacroTable g_macro_table;
 
 // Built-ins are now private to MacroExpander
 const std::unordered_map<std::string, MacroExpander::BuiltinHandler> MacroExpander::kBuiltins = {
-    { "alloc_cell8",  &MacroExpander::handle_alloc_cell8  },
-    { "alloc_cell16", &MacroExpander::handle_alloc_cell16 },
-    { "free_cell8",   &MacroExpander::handle_free_cell8   },
-    { "free_cell16",  &MacroExpander::handle_free_cell16  },
-    { "clear8",       &MacroExpander::handle_clear8       },
-    { "clear16",      &MacroExpander::handle_clear16      },
-    { "set8",         &MacroExpander::handle_set8         },
-    { "set16",        &MacroExpander::handle_set16        },
-    { "move8",        &MacroExpander::handle_move8        },
-    { "move16",       &MacroExpander::handle_move16       },
-    { "copy8",        &MacroExpander::handle_copy8        },
-    { "copy16",       &MacroExpander::handle_copy16       },
-    { "not8",         &MacroExpander::handle_not8         },
-    { "not16",        &MacroExpander::handle_not16        },
-    { "and8",         &MacroExpander::handle_and8         },
-    { "and16",        &MacroExpander::handle_and16        },
-    { "or8",          &MacroExpander::handle_or8          },
-    { "or16",         &MacroExpander::handle_or16         },
-    { "xor8",         &MacroExpander::handle_xor8         },
-    { "xor16",        &MacroExpander::handle_xor16        },
-    { "add8",         &MacroExpander::handle_add8         },
-    { "add16",        &MacroExpander::handle_add16        },
-    { "sadd8",        &MacroExpander::handle_sadd8        },
-    { "sadd16",       &MacroExpander::handle_sadd16       },
-    { "sub8",         &MacroExpander::handle_sub8         },
-    { "sub16",        &MacroExpander::handle_sub16        },
-    { "ssub8",        &MacroExpander::handle_ssub8        },
-    { "ssub16",       &MacroExpander::handle_ssub16       },
-    { "neg8",         &MacroExpander::handle_neg8         },
-    { "neg16",        &MacroExpander::handle_neg16        },
-    { "sign8",        &MacroExpander::handle_sign8        },
-    { "sign16",       &MacroExpander::handle_sign16       },
-    { "abs8",         &MacroExpander::handle_abs8         },
-    { "abs16",        &MacroExpander::handle_abs16        },
-    { "mul8",         &MacroExpander::handle_mul8         },
-    { "mul16",        &MacroExpander::handle_mul16        },
-    { "smul8",        &MacroExpander::handle_smul8        },
-    { "smul16",       &MacroExpander::handle_smul16       },
-    { "div8",         &MacroExpander::handle_div8         },
-    { "div16",        &MacroExpander::handle_div16        },
-    { "sdiv8",        &MacroExpander::handle_sdiv8        },
-    { "sdiv16",       &MacroExpander::handle_sdiv16       },
-    { "mod8",         &MacroExpander::handle_mod8         },
-    { "mod16",        &MacroExpander::handle_mod16        },
-    { "smod8",        &MacroExpander::handle_smod8        },
-    { "smod16",       &MacroExpander::handle_smod16       },
-    { "eq8",          &MacroExpander::handle_eq8          },
-    { "eq16",         &MacroExpander::handle_eq16         },
-    { "seq8",         &MacroExpander::handle_seq8         },
-    { "seq16",        &MacroExpander::handle_seq16        },
-    { "ne8",          &MacroExpander::handle_ne8          },
-    { "ne16",         &MacroExpander::handle_ne16         },
-    { "sne8",         &MacroExpander::handle_sne8         },
-    { "sne16",        &MacroExpander::handle_sne16        },
-    { "lt8",          &MacroExpander::handle_lt8          },
-    { "lt16",         &MacroExpander::handle_lt16         },
-    { "slt8",         &MacroExpander::handle_slt8         },
-    { "slt16",        &MacroExpander::handle_slt16        },
-    { "gt8",          &MacroExpander::handle_gt8          },
-    { "gt16",         &MacroExpander::handle_gt16         },
-    { "sgt8",         &MacroExpander::handle_sgt8         },
-    { "sgt16",        &MacroExpander::handle_sgt16        },
-    { "le8",          &MacroExpander::handle_le8          },
-    { "le16",         &MacroExpander::handle_le16         },
-    { "sle8",         &MacroExpander::handle_sle8         },
-    { "sle16",        &MacroExpander::handle_sle16        },
-    { "ge8",          &MacroExpander::handle_ge8          },
-    { "ge16",         &MacroExpander::handle_ge16         },
-    { "sge8",         &MacroExpander::handle_sge8         },
-    { "sge16",        &MacroExpander::handle_sge16        },
-    { "shr8",         &MacroExpander::handle_shr8         },
-    { "shr16",        &MacroExpander::handle_shr16        },
-    { "shl8",         &MacroExpander::handle_shl8         },
-    { "shl16",        &MacroExpander::handle_shl16        },
-    { "if",           &MacroExpander::handle_if           },
-    { "else",         &MacroExpander::handle_else         },
-    { "endif",        &MacroExpander::handle_endif        },
-    { "while",        &MacroExpander::handle_while        },
-    { "endwhile",     &MacroExpander::handle_endwhile     },
-    { "repeat",       &MacroExpander::handle_repeat       },
-    { "endrepeat",    &MacroExpander::handle_endrepeat    },
-    { "push8",        &MacroExpander::handle_push8        },
-    { "push16",       &MacroExpander::handle_push16       },
-    { "push8i",       &MacroExpander::handle_push8i       },
-    { "push16i",      &MacroExpander::handle_push16i      },
-    { "pop8",         &MacroExpander::handle_pop8         },
-    { "pop16",        &MacroExpander::handle_pop16        },
+    { "alloc_cell8",    &MacroExpander::handle_alloc_cell8    },
+    { "alloc_cell16",   &MacroExpander::handle_alloc_cell16   },
+    { "free_cell8",     &MacroExpander::handle_free_cell8     },
+    { "free_cell16",    &MacroExpander::handle_free_cell16    },
+    { "clear8",         &MacroExpander::handle_clear8         },
+    { "clear16",        &MacroExpander::handle_clear16        },
+    { "set8",           &MacroExpander::handle_set8           },
+    { "set16",          &MacroExpander::handle_set16          },
+    { "move8",          &MacroExpander::handle_move8          },
+    { "move16",         &MacroExpander::handle_move16         },
+    { "copy8",          &MacroExpander::handle_copy8          },
+    { "copy16",         &MacroExpander::handle_copy16         },
+    { "not8",           &MacroExpander::handle_not8           },
+    { "not16",          &MacroExpander::handle_not16          },
+    { "and8",           &MacroExpander::handle_and8           },
+    { "and16",          &MacroExpander::handle_and16          },
+    { "or8",            &MacroExpander::handle_or8            },
+    { "or16",           &MacroExpander::handle_or16           },
+    { "xor8",           &MacroExpander::handle_xor8           },
+    { "xor16",          &MacroExpander::handle_xor16          },
+    { "add8",           &MacroExpander::handle_add8           },
+    { "add16",          &MacroExpander::handle_add16          },
+    { "sadd8",          &MacroExpander::handle_sadd8          },
+    { "sadd16",         &MacroExpander::handle_sadd16         },
+    { "sub8",           &MacroExpander::handle_sub8           },
+    { "sub16",          &MacroExpander::handle_sub16          },
+    { "ssub8",          &MacroExpander::handle_ssub8          },
+    { "ssub16",         &MacroExpander::handle_ssub16         },
+    { "neg8",           &MacroExpander::handle_neg8           },
+    { "neg16",          &MacroExpander::handle_neg16          },
+    { "sign8",          &MacroExpander::handle_sign8          },
+    { "sign16",         &MacroExpander::handle_sign16         },
+    { "abs8",           &MacroExpander::handle_abs8           },
+    { "abs16",          &MacroExpander::handle_abs16          },
+    { "mul8",           &MacroExpander::handle_mul8           },
+    { "mul16",          &MacroExpander::handle_mul16          },
+    { "smul8",          &MacroExpander::handle_smul8          },
+    { "smul16",         &MacroExpander::handle_smul16         },
+    { "div8",           &MacroExpander::handle_div8           },
+    { "div16",          &MacroExpander::handle_div16          },
+    { "sdiv8",          &MacroExpander::handle_sdiv8          },
+    { "sdiv16",         &MacroExpander::handle_sdiv16         },
+    { "mod8",           &MacroExpander::handle_mod8           },
+    { "mod16",          &MacroExpander::handle_mod16          },
+    { "smod8",          &MacroExpander::handle_smod8          },
+    { "smod16",         &MacroExpander::handle_smod16         },
+    { "eq8",            &MacroExpander::handle_eq8            },
+    { "eq16",           &MacroExpander::handle_eq16           },
+    { "seq8",           &MacroExpander::handle_seq8           },
+    { "seq16",          &MacroExpander::handle_seq16          },
+    { "ne8",            &MacroExpander::handle_ne8            },
+    { "ne16",           &MacroExpander::handle_ne16           },
+    { "sne8",           &MacroExpander::handle_sne8           },
+    { "sne16",          &MacroExpander::handle_sne16          },
+    { "lt8",            &MacroExpander::handle_lt8            },
+    { "lt16",           &MacroExpander::handle_lt16           },
+    { "slt8",           &MacroExpander::handle_slt8           },
+    { "slt16",          &MacroExpander::handle_slt16          },
+    { "gt8",            &MacroExpander::handle_gt8            },
+    { "gt16",           &MacroExpander::handle_gt16           },
+    { "sgt8",           &MacroExpander::handle_sgt8           },
+    { "sgt16",          &MacroExpander::handle_sgt16          },
+    { "le8",            &MacroExpander::handle_le8            },
+    { "le16",           &MacroExpander::handle_le16           },
+    { "sle8",           &MacroExpander::handle_sle8           },
+    { "sle16",          &MacroExpander::handle_sle16          },
+    { "ge8",            &MacroExpander::handle_ge8            },
+    { "ge16",           &MacroExpander::handle_ge16           },
+    { "sge8",           &MacroExpander::handle_sge8           },
+    { "sge16",          &MacroExpander::handle_sge16          },
+    { "shr8",           &MacroExpander::handle_shr8           },
+    { "shr16",          &MacroExpander::handle_shr16          },
+    { "shl8",           &MacroExpander::handle_shl8           },
+    { "shl16",          &MacroExpander::handle_shl16          },
+    { "if",             &MacroExpander::handle_if             },
+    { "else",           &MacroExpander::handle_else           },
+    { "endif",          &MacroExpander::handle_endif          },
+    { "while",          &MacroExpander::handle_while          },
+    { "endwhile",       &MacroExpander::handle_endwhile       },
+    { "repeat",         &MacroExpander::handle_repeat         },
+    { "endrepeat",      &MacroExpander::handle_endrepeat      },
+    { "push8",          &MacroExpander::handle_push8          },
+    { "push16",         &MacroExpander::handle_push16         },
+    { "push8i",         &MacroExpander::handle_push8i         },
+    { "push16i",        &MacroExpander::handle_push16i        },
+    { "pop8",           &MacroExpander::handle_pop8           },
+    { "pop16",          &MacroExpander::handle_pop16          },
+    { "alloc_global16", &MacroExpander::handle_alloc_global16 },
+    { "free_global16",  &MacroExpander::handle_free_global16  },
+    { "alloc_temp16",   &MacroExpander::handle_alloc_temp16   },
+    { "free_temp16",    &MacroExpander::handle_free_temp16    },
 };
 
 void MacroTable::clear() {
@@ -2868,7 +2872,7 @@ bool MacroExpander::handle_endwhile(Parser& parser, const Token& tok) {
             mock_filename));
     struct_stack_.pop_back();
 
-    return false;
+    return true;
 }
 
 bool MacroExpander::handle_repeat(Parser& parser, const Token& tok) {
@@ -3031,6 +3035,56 @@ bool MacroExpander::handle_pop16(Parser& parser, const Token& tok) {
     return true;
 }
 
+bool MacroExpander::handle_alloc_global16(Parser& parser, const Token& tok) {
+    Token func_tok = tok;
+    std::vector<int> vals;
+    if (!parse_expr_args(parser, tok, { "count" }, vals)) {
+        return true;
+    }
+    int count16 = vals[0];
+    int addr = parser.output().alloc_global(func_tok, count16);
+    std::string clear_code = clear_memory_area(addr, count16);
+
+    TokenScanner scanner;
+    std::string mock_filename = "(alloc_global16)";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            clear_code,
+            mock_filename));
+    return true;
+}
+
+bool MacroExpander::handle_free_global16(Parser& parser, const Token&) {
+    parser.output().free_global();
+    return true;
+}
+
+bool MacroExpander::handle_alloc_temp16(Parser& parser, const Token& tok) {
+    Token func_tok = tok;
+    std::vector<int> vals;
+    if (!parse_expr_args(parser, tok, { "count" }, vals)) {
+        return true;
+    }
+    int count16 = vals[0];
+    int addr = parser.output().alloc_temp(func_tok, count16);
+    std::string clear_code = clear_memory_area(addr, count16);
+
+    TokenScanner scanner;
+    std::string mock_filename = "(alloc_temp16)";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            clear_code,
+            mock_filename));
+    return true;
+}
+
+bool MacroExpander::handle_free_temp16(Parser& parser, const Token&) {
+    parser.output().free_temp();
+    return true;
+}
+
 bool MacroExpander::parse_expr_args(Parser& parser,
                                     const Token& tok,
                                     const std::vector<std::string>& param_names,
@@ -3093,6 +3147,15 @@ bool MacroExpander::parse_ident_arg(Parser& parser,
     return true;
 }
 
+std::string MacroExpander::clear_memory_area(int addr, int size16) {
+    std::string code_impl = "{ >" + std::to_string(addr) + " ";
+    for (int i = 0; i < size16 * 2; ++i) {
+        code_impl += "[-] > ";
+    }
+    code_impl += "}";
+    return code_impl;
+}
+
 std::vector<Token> MacroExpander::substitute_body(const Macro& macro,
         const std::vector<std::vector<Token>>& args) {
     std::vector<Token> result;
@@ -3130,7 +3193,8 @@ bool is_reserved_keyword(const std::string& name) {
            name == "include" ||
            name == "define" ||
            name == "undef" ||
-           MacroExpander::is_builtin_name(name);
+           MacroExpander::is_builtin_name(name) ||
+           ExpressionParser::is_function_name(name);
 }
 
 // temporary names generated for macro expansions

@@ -7,12 +7,27 @@
 #include "errors.h"
 #include "expr.h"
 #include "parser.h"
+#include <cassert>
+#include <unordered_map>
+
+const std::unordered_map<std::string, ExpressionParser::FunctionHandler>
+ExpressionParser::kFunctions = {
+    { "global",     &ExpressionParser::handle_global     },
+    { "temp",       &ExpressionParser::handle_temp       },
+    { "arg",        &ExpressionParser::handle_arg        },
+    { "local",      &ExpressionParser::handle_local      },
+    { "local_temp", &ExpressionParser::handle_local_temp },
+};
 
 ExpressionParser::ExpressionParser(TokenSource& source, Parser* parser,
                                    bool undefined_as_zero)
     : source_(source), parser_(parser)
     , output_(parser ? & parser->output() : nullptr)
     , undefined_as_zero_(undefined_as_zero) {
+}
+
+bool ExpressionParser::is_function_name(const std::string& name) {
+    return kFunctions.find(name) != kFunctions.end();
 }
 
 int ExpressionParser::parse_expression() {
@@ -309,6 +324,39 @@ int ExpressionParser::parse_primary() {
     }
 
     if (tok.type == TokenType::Identifier) {
+        // Function call with address helpers
+        if (is_function_name(tok.text)) {
+            auto it = kFunctions.find(tok.text);
+            const Token func_tok = tok;
+            source_.advance(); // consume function name
+
+            if (source_.current().type != TokenType::LParen) {
+                g_error_reporter.report_error(
+                    source_.current().loc,
+                    "expected '(' after function name '" + func_tok.text + "'"
+                );
+                return 0;
+            }
+
+            source_.advance(); // consume '('
+            int arg = parse_expression();
+
+            if (source_.current().type != TokenType::RParen) {
+                g_error_reporter.report_error(
+                    source_.current().loc,
+                    "expected ')'"
+                );
+            }
+            else {
+                source_.advance(); // consume ')'
+            }
+
+            if (it != kFunctions.end()) {
+                return (this->*it->second)(func_tok, arg);
+            }
+            return 0;
+        }
+
         int v = value_of_identifier(tok);
         source_.advance();
         return v;
@@ -384,4 +432,29 @@ int ExpressionParser::eval_macro_recursive(const Token& tok,
     expanding.erase(name);
 
     return result;
+}
+
+int ExpressionParser::handle_global(const Token& tok, int argument) {
+    assert(output_); // global() requires an active parser
+    return output_->global_address(tok, argument);
+}
+
+int ExpressionParser::handle_temp(const Token& tok, int argument) {
+    assert(output_); // temp() requires an active parser
+    return output_->temp_address(tok, argument);
+}
+
+int ExpressionParser::handle_arg(const Token& tok, int argument) {
+    assert(output_); // arg() requires an active parser
+    return output_->frame_arg_address(tok, argument);
+}
+
+int ExpressionParser::handle_local(const Token& tok, int argument) {
+    assert(output_); // local() requires an active parser
+    return output_->frame_local_address(tok, argument);
+}
+
+int ExpressionParser::handle_local_temp(const Token& tok, int argument) {
+    assert(output_); // local_temp() requires an active parser
+    return output_->frame_temp_address(tok, argument);
 }
