@@ -58,7 +58,7 @@ public:
     int frame_temp_address(const Token& tok, int n);
 
     // optimize tape movements by combining consecutive < and >
-    void optimize_tape_movements();
+    void optimize_bfcode();
 
     void reset();
     void set_stack_base(int base);
@@ -89,4 +89,7 @@ private:
 
     void add_free_block(int start, int len);
 
+    // optimize tape movements by combining consecutive < and >
+    void optimize_tape_movements();
+    void remove_duplicate_clears();
 };

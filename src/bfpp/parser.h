@@ -63,7 +63,7 @@ private:
 
     friend class MacroExpander;
 
-    void optimize_tape_movements();
+    void optimize_bfcode();
     std::string to_string() const;
 
     bool parse();

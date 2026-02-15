@@ -251,6 +251,11 @@ void BFOutput::add_free_block(int start, int len) {
 #endif
 }
 
+void BFOutput::optimize_bfcode() {
+    optimize_tape_movements();
+    remove_duplicate_clears();
+}
+
 void BFOutput::optimize_tape_movements() {
     std::vector<Token> optimized;
     optimized.reserve(output_.size());
@@ -294,6 +299,46 @@ void BFOutput::optimize_tape_movements() {
             optimized.push_back(Token::make_bf('<', SourceLocation()));
         }
     }
+    output_.swap(optimized);
+}
+
+void BFOutput::remove_duplicate_clears() {
+    std::vector<Token> optimized;
+    optimized.reserve(output_.size());
+
+    std::size_t i = 0;
+    while (i < output_.size()) {
+        // Detect a clear pattern "[-]"
+        if (i + 2 < output_.size() &&
+                output_[i].type == TokenType::BFInstr && output_[i].text == "[" &&
+                output_[i + 1].type == TokenType::BFInstr && output_[i + 1].text == "-" &&
+                output_[i + 2].type == TokenType::BFInstr && output_[i + 2].text == "]") {
+
+            SourceLocation loc_open = output_[i].loc;
+            SourceLocation loc_minus = output_[i + 1].loc;
+            SourceLocation loc_close = output_[i + 2].loc;
+
+            i += 3;
+
+            // Consume any subsequent contiguous "[-]" patterns
+            while (i + 2 < output_.size() &&
+                    output_[i].type == TokenType::BFInstr && output_[i].text == "[" &&
+                    output_[i + 1].type == TokenType::BFInstr && output_[i + 1].text == "-" &&
+                    output_[i + 2].type == TokenType::BFInstr && output_[i + 2].text == "]") {
+                loc_close = output_[i + 2].loc; // keep last closing loc
+                i += 3;
+            }
+
+            optimized.push_back(Token::make_bf('[', loc_open));
+            optimized.push_back(Token::make_bf('-', loc_minus));
+            optimized.push_back(Token::make_bf(']', loc_close));
+            continue;
+        }
+
+        optimized.push_back(output_[i]);
+        ++i;
+    }
+
     output_.swap(optimized);
 }
 

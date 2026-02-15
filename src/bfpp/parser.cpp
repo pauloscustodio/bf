@@ -17,7 +17,7 @@ Parser::Parser(Lexer& lexer)
 bool Parser::run(std::string& output_) {
     advance();  // get first token
     if (parse()) {
-        optimize_tape_movements();
+        optimize_bfcode();
         output_ = to_string();
         return true;
     }
@@ -99,8 +99,8 @@ int Parser::max_stack_depth() const {
     return output_.max_stack_depth();
 }
 
-void Parser::optimize_tape_movements() {
-    output_.optimize_tape_movements();
+void Parser::optimize_bfcode() {
+    output_.optimize_bfcode();
 }
 
 std::string Parser::to_string() const {

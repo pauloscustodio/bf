@@ -71,9 +71,6 @@ capture_ok("bfpp $test.in", <<END);
 [
   -
 ]
-[
-  -
-]
 >
 [
   -
@@ -100,9 +97,6 @@ capture_ok("bfpp $test.in", <<END);
 [
   -
 ]
-[
-  -
-]
 <
 [
   -
@@ -114,9 +108,6 @@ capture_ok("bfpp $test.in", <<END);
 >>>>>>
 [
   -<<<<<<+>>>>>>
-]
-[
-  -
 ]
 [
   -
@@ -152,9 +143,6 @@ capture_ok("bfpp $test.in", <<END);
 [
   -
 ]
-[
-  -
-]
 <<<
 [
   -
@@ -170,9 +158,6 @@ capture_ok("bfpp $test.in", <<END);
 [
   -
 ]
-[
-  -
-]
 <<
 [
   -
@@ -184,9 +169,6 @@ capture_ok("bfpp $test.in", <<END);
 >>>>
 [
   -<<<<+>>>>
-]
-[
-  -
 ]
 [
   -
@@ -284,9 +266,6 @@ capture_ok("bfpp $test.in", <<END);
 >>>>>>
 [
   -<<<<<<+>>>>>>
-]
-[
-  -
 ]
 [
   -
@@ -404,9 +383,6 @@ capture_ok("bfpp $test.in", <<END);
 [
   -
 ]
-[
-  -
-]
 >
 [
   -
@@ -482,9 +458,6 @@ capture_ok("bfpp $test.in", <<END);
   >>>>>
   [
     -<<<<<+>>>>>
-  ]
-  [
-    -
   ]
   [
     -
@@ -582,9 +555,6 @@ capture_ok("bfpp $test.in", <<END);
   >>>>>>>
   [
     -<<<<<<<+>>>>>>>
-  ]
-  [
-    -
   ]
   [
     -
@@ -698,9 +668,6 @@ capture_ok("bfpp $test.in", <<END);
   [
     -
   ]
-  [
-    -
-  ]
   >
   [
     -
@@ -783,9 +750,6 @@ capture_ok("bfpp $test.in", <<END);
 >>>
 [
   -<<<+>>>
-]
-[
-  -
 ]
 [
   -
@@ -918,9 +882,6 @@ capture_ok("bfpp $test.in", <<END);
 [
   -
 ]
-[
-  -
-]
 >
 [
   -
@@ -1038,9 +999,6 @@ capture_ok("bfpp $test.in", <<END);
 [
   -
 ]
-[
-  -
-]
 >
 [
   -
@@ -1083,9 +1041,6 @@ capture_ok("bfpp $test.in", <<END);
 >
 [
   -<+>
-]
-[
-  -
 ]
 [
   -
@@ -1170,9 +1125,6 @@ capture_ok("bfpp $test.in", <<END);
 <
 [
   -<<<<<->>>>>
-]
-[
-  -
 ]
 [
   -

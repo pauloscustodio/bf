@@ -138,9 +138,6 @@ capture_ok("bfpp $test.in", <<END);
 [
   -
 ]
-[
-  -
-]
 >
 [
   -
