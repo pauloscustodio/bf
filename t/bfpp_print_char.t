@@ -1,0 +1,72 @@
+#!/usr/bin/env perl
+
+BEGIN { use lib 't'; require 'testlib.pl'; }
+
+use Modern::Perl;
+
+# print_char - error no arguments
+spew("$test.in", "print_char");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:11: error: expected '(' after macro name 'print_char'
+END
+
+# print_char - error empty arguments
+spew("$test.in", "print_char()");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:13: error: macro 'print_char' expects 1 argument
+END
+
+# print_char - error too many arguments
+spew("$test.in", "print_char(A,B)");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:13: error: expected ')' at end of macro call, found ','
+END
+
+# print_char - print the given cells
+spew("$test.in", <<END);
+print_char('H')
+print_char('e')
+print_char('l')
+print_char('l')
+print_char('o')
+print_char(10)
+END
+capture_ok("bfpp $test.in", <<END);
+[
+  -
+]
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++.
+[
+  -
+]
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++++++++++++++++++++++.
+[
+  -
+]
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++.
+[
+  -
+]
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++.
+[
+  -
+]
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++++++++++++++++++++++++++++++++.
+[
+  -
+]
+++++++++++.
+[
+  -
+]
+END
+capture_ok("bfpp $test.in | bf", <<END);
+Hello
+END
+
+unlink_testfiles;
+done_testing;

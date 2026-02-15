@@ -531,8 +531,8 @@ capture_ok("bfpp $test.in", <<END);
 END
 
 # run eq16(a,b)
-for my $A (0, 1, 2, 256, 511) {
-	for my $B (0, 1, 2, 256, 511) {
+for my $A (0, 1, 2, 256, 511, 1023, 30000, 40000, 65535) {
+	for my $B (0, 1, 2, 256, 511, 1023, 30000, 40000, 65535) {
 		spew("$test.in", <<END);
 		alloc_cell16(A)
 		alloc_cell16(B)

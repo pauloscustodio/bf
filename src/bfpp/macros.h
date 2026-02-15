@@ -185,6 +185,16 @@ private:
     bool handle_enter_frame16(Parser& parser, const Token& tok);
     bool handle_leave_frame16(Parser& parser, const Token& tok);
     bool handle_frame_alloc_temp16(Parser& parser, const Token& tok);
+    bool handle_print_char(Parser& parser, const Token& tok);
+    bool handle_print_char8(Parser& parser, const Token& tok);
+    bool handle_print_string(Parser& parser, const Token& tok);
+    bool handle_print_newline(Parser& parser, const Token& tok);
+    bool handle_print_cellX(Parser& parser, const Token& tok, int width);
+    bool handle_print_cell8(Parser& parser, const Token& tok);
+    bool handle_print_cell16(Parser& parser, const Token& tok);
+    bool handle_print_cellXs(Parser& parser, const Token& tok, int width);
+    bool handle_print_cell8s(Parser& parser, const Token& tok);
+    bool handle_print_cell16s(Parser& parser, const Token& tok);
 
     bool parse_expr_args(Parser& parser,
                          const Token& tok,
@@ -192,11 +202,13 @@ private:
                          std::vector<int>& values);
     bool parse_ident_arg(Parser& parser, const Token& tok,
                          std::string& ident_out);
+    bool parse_string_arg(Parser& parser, const Token& tok,
+                          std::string& text_out);
     std::string clear_memory_area(int addr, int size16);
     std::vector<Token> substitute_body(const Macro& macro,
                                        const std::vector<std::vector<Token>>& args);
 };
 
 bool is_reserved_keyword(const std::string& name);
-std::string make_temp_name();
+std::string make_temp_name(const std::string& suffix);
 void reset_temp_names();
