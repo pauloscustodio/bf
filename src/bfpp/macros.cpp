@@ -1483,6 +1483,7 @@ bool MacroExpander::handle_div16_mod16(Parser& parser, const Token& tok,
     std::string T_tmp = make_temp_name();
     std::string T_cond = make_temp_name();
     std::string T_one = make_temp_name();
+    std::string T_guard = make_temp_name();
 
     const std::string move_target = return_remainder ? T_work : T_quot;
     const std::string mock_filename = return_remainder ? "(mod16)" : "(div16)";
@@ -1497,7 +1498,8 @@ bool MacroExpander::handle_div16_mod16(Parser& parser, const Token& tok,
             "  alloc_cell16(" + T_bit + ") "
             "  alloc_cell16(" + T_tmp + ") "
             "  alloc_cell16(" + T_cond + ") "
-            "  alloc_cell16(" + T_one + ") >" + T_one + " + "
+            "  alloc_cell16(" + T_guard + ") "
+            "  alloc_cell16(" + T_one + ") set16(" + T_one + ", 1) "
             // division by zero check
             "  copy16(" + std::to_string(b) + ", " + T_cond + ") "
             "  ge16(" + T_cond + ", " + T_one + ") "
@@ -1518,6 +1520,10 @@ bool MacroExpander::handle_div16_mod16(Parser& parser, const Token& tok,
             "      shl16(" + T_tmp + ", " + T_one + ") "
             "      copy16(" + T_work + ", " + T_cond + ") "
             "      ge16(" + T_cond + ", " + T_tmp + ") "
+            //     add a guard for overflow guard = (tmp > scale)
+            "      copy16(" + T_tmp + ", " + T_guard + ") "
+            "      gt16(" + T_guard + ", " + T_scale + ") "
+            "      and16(" + T_cond + ", " + T_guard + ") "
             "      while (" + T_cond + ") "
             "        shl16(" + T_scale + ", " + T_one + ") "
             "        shl16(" + T_bit + ", " + T_one + ") "
@@ -1526,6 +1532,10 @@ bool MacroExpander::handle_div16_mod16(Parser& parser, const Token& tok,
             "        shl16(" + T_tmp + ", " + T_one + ") "
             "        copy16(" + T_work + ", " + T_cond + ") "
             "        ge16(" + T_cond + ", " + T_tmp + ") "
+            //       add a guard for overflow guard = (tmp > scale)
+            "        copy16(" + T_tmp + ", " + T_guard + ") "
+            "        gt16(" + T_guard + ", " + T_scale + ") "
+            "        and16(" + T_cond + ", " + T_guard + ") "
             "      endwhile "
             //     subtract largest chunk
             "      sub16(" + T_work + ", " + T_scale + ") "
@@ -1545,6 +1555,7 @@ bool MacroExpander::handle_div16_mod16(Parser& parser, const Token& tok,
             "  free_cell16(" + T_bit + ") "
             "  free_cell16(" + T_tmp + ") "
             "  free_cell16(" + T_cond + ") "
+            "  free_cell16(" + T_guard + ") "
             "  free_cell16(" + T_one + ") "
             "}",
             mock_filename));
