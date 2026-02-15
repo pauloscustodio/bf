@@ -58,11 +58,15 @@ capture_nok("bfpp $test.in", <<END);
 $test.in:1:9: error: cannot define macro 'alloc_temp16': reserved word
 END
 
+# temp - use as reserved word
+spew("$test.in", "#define temp 1");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:9: error: cannot define macro 'temp': reserved word
+END
+
 # double call with free
 spew("$test.in", <<END);
-alloc_temp16(4) 
-free_temp16 
-alloc_temp16(2)
+alloc_temp16(4) free_temp16 alloc_temp16(2)
 END
 capture_ok("bfpp $test.in", <<END);
 [

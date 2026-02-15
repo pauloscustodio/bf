@@ -108,5 +108,5 @@ private:
     int handle_temp(const Token& tok, int argument);
     int handle_arg(const Token& tok, int argument);
     int handle_local(const Token& tok, int argument);
-    int handle_local_temp(const Token& tok, int argument);
+    int handle_frame_temp(const Token& tok, int argument);
 };

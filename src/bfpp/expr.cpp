@@ -16,7 +16,7 @@ ExpressionParser::kFunctions = {
     { "temp",       &ExpressionParser::handle_temp       },
     { "arg",        &ExpressionParser::handle_arg        },
     { "local",      &ExpressionParser::handle_local      },
-    { "local_temp", &ExpressionParser::handle_local_temp },
+    { "frame_temp", &ExpressionParser::handle_frame_temp },
 };
 
 ExpressionParser::ExpressionParser(TokenSource& source, Parser* parser,
@@ -454,7 +454,7 @@ int ExpressionParser::handle_local(const Token& tok, int argument) {
     return output_->frame_local_address(tok, argument);
 }
 
-int ExpressionParser::handle_local_temp(const Token& tok, int argument) {
-    assert(output_); // local_temp() requires an active parser
+int ExpressionParser::handle_frame_temp(const Token& tok, int argument) {
+    assert(output_); // frame_temp() requires an active parser
     return output_->frame_temp_address(tok, argument);
 }

@@ -75,6 +75,7 @@ void Parser::push_macro_expansion(const std::string& name, const std::vector<Tok
     frame.tokens = tokens;           // expansion body
     frame.tokens.push_back(current_); // resume with the token we had already loaded
     frame.index = 0;
+    current_ = frame.tokens[frame.index++];   // point current at new expansion
     expansion_stack_.push_back(std::move(frame));
 }
 
@@ -456,7 +457,6 @@ void Parser::parse_statements() {
 void Parser::parse_statement() {
     // Try macro expansion first
     while (macro_expander_.try_expand(*this, current_)) {
-        advance(); // load first token from expansion or move past macro name
     }
 
     if (current_.type == TokenType::EndOfLine ||

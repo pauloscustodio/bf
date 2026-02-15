@@ -58,12 +58,17 @@ capture_nok("bfpp $test.in", <<END);
 $test.in:1:9: error: cannot define macro 'alloc_global16': reserved word
 END
 
+# global - use as reserved word
+spew("$test.in", "#define global 1");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:9: error: cannot define macro 'global': reserved word
+END
+
 # double call with free
 spew("$test.in", <<END);
-alloc_global16(4) 
-free_global16 
-alloc_global16(2)
+alloc_global16(4) free_global16 alloc_global16(2)
 END
+
 capture_ok("bfpp $test.in", <<END);
 [
   -

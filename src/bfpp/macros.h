@@ -182,6 +182,9 @@ private:
     bool handle_free_global16(Parser& parser, const Token& tok);
     bool handle_alloc_temp16(Parser& parser, const Token& tok);
     bool handle_free_temp16(Parser& parser, const Token& tok);
+    bool handle_enter_frame16(Parser& parser, const Token& tok);
+    bool handle_leave_frame16(Parser& parser, const Token& tok);
+    bool handle_frame_alloc_temp16(Parser& parser, const Token& tok);
 
     bool parse_expr_args(Parser& parser,
                          const Token& tok,

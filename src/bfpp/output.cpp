@@ -450,7 +450,7 @@ void BFOutput::enter_frame(const Token& tok, int args16, int locals16) {
     if (available < args_cells) {
         g_error_reporter.report_error(
             tok.loc,
-            "enter_frame: not enough arguments on stack (expected " +
+            "enter_frame16: not enough arguments on stack (expected " +
             std::to_string(args16) + " x16-bit)"
         );
         return;
@@ -491,7 +491,7 @@ void BFOutput::leave_frame(const Token& tok) {
     StackFrame frame = frame_stack_.back();
     frame_stack_.pop_back();
 
-    int free_size = frame.size() - 2 * (frame.num_args16 - 1);
+    int free_size = frame.size() - 2; // keep return address
     free_stack(free_size);
 }
 
