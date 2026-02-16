@@ -11,21 +11,7 @@ print_newline
 print_newline
 END
 capture_ok("bfpp $test.in", <<END);
-[
-  -
-]
-++++++++++.
-[
-  -
-]
-++++++++++.
-[
-  -
-]
-++++++++++.
-[
-  -
-]
+[-]++++++++++.[-]++++++++++.[-]++++++++++.[-]
 END
 capture_ok("bfpp $test.in | bf", <<END);
 

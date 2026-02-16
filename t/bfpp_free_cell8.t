@@ -53,22 +53,7 @@ alloc_cell8(X) /* X=1 */
 >A
 END
 capture_ok("bfpp $test.in", <<END);
-[
-  -
-]
->
-[
-  -
-]
->
-[
-  -
-]
-<
-[
-  -
-]
-<
+[-]>[-]>[-]<[-]<
 END
 
 unlink_testfiles;

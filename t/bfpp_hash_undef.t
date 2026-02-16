@@ -30,9 +30,6 @@ spew("$test.in", <<END);
 +X
 END
 capture_ok("bfpp $test.in", <<END);
-
-
-
 +++
 END
 

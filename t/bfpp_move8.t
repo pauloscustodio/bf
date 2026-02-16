@@ -25,14 +25,7 @@ END
 # move8 - move contents between cells
 spew("$test.in", "++++ move8(0,1)");
 capture_ok("bfpp $test.in", <<END);
-++++>
-[
-  -
-]
-<
-[
-  ->+<
-]
+++++>[-]<[->+<]
 END
 capture_ok("bfpp $test.in | bf -D", <<END);
 Tape:  0   4 

@@ -25,41 +25,7 @@ END
 # not8 - negate the cell value
 spew("$test.in", "alloc_cell8(X) not8(X)");
 capture_ok("bfpp $test.in", <<END);
-[
-  -
-]
->
-[
-  -
-]
->
-[
-  -
-]
-<
-[
-  -
-]
-<
-[
-  ->+<
-]
-+>>+<
-[
-  ->
-  [
-    -<<->>
-  ]
-  <
-]
-[
-  -
-]
->
-[
-  -
-]
-<<
+[-]>[-]>[-]<[-]<[->+<]+>>+<[->[-<<->>]<][-]>[-]<<
 END
 
 # not8 - execute a test program

@@ -42,22 +42,7 @@ alloc_cell16(B) /* B=2 */
 >B +++ > ++++
 END
 capture_ok("bfpp $test.in", <<END);
-[
-  -
-]
->
-[
-  -
-]
->
-[
-  -
-]
->
-[
-  -
-]
-<<<+>++>+++>++++
+[-]>[-]>[-]>[-]<<<+>++>+++>++++
 END
 capture_ok("bfpp $test.in | bf -D", <<END);
 Tape:  1   2   3   4 

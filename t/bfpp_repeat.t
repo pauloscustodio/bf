@@ -48,17 +48,7 @@ endrepeat
 >COUNT
 END
 capture_ok("bfpp $test.in", <<END);
-[
-  -
-]
->
-[
-  -
-]
-+++
-[
-  <+>-
-]
+[-]>[-]+++[<+>-]
 END
 capture_ok("bfpp $test.in | bf -D", <<END);
 Tape:  3   0 

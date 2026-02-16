@@ -49,9 +49,6 @@ spew("$test.in", <<END);
 +A
 END
 capture_ok("bfpp $test.in", <<END);
-
-
-
 ++++
 END
 
@@ -62,10 +59,7 @@ spew("$test.in", <<END);
 X
 END
 capture_ok("bfpp $test.in", <<END);
-[
-  -
-]
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++.
+[-]++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++.
 END
 
 # #define - multi-line function macro
@@ -76,25 +70,7 @@ spew("$test.in", <<END);
 COPY(0,1,2)
 END
 capture_ok("bfpp $test.in", <<END);
-
-
-++++>
-[
-  -
-]
->
-[
-  -
-]
-<<
-[
-  ->+>+<<
-]
->>
-[
-  -<<+>>
-]
-<<
+++++>[-]>[-]<<[->+>+<<]>>[-<<+>>]<<
 END
 
 unlink_testfiles;

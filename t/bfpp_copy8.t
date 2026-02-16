@@ -25,26 +25,7 @@ END
 # copy8 - copy contents between cells
 spew("$test.in", ">++++ copy8(1,2)");
 capture_ok("bfpp $test.in", <<END);
->++++<
-[
-  -
-]
->>
-[
-  -
-]
-<
-[
-  ->+<<+>
-]
-<
-[
-  ->+<
-]
-[
-  -
-]
->
+>++++<[-]>>[-]<[->+<<+>]<[->+<][-]>
 END
 capture_ok("bfpp $test.in | bf -D", <<END);
 Tape:  0   4   4 

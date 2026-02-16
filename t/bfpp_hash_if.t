@@ -80,7 +80,6 @@ spew("$test.in", <<END);
 #endif
 END
 capture_ok("bfpp $test.in", <<END);
-
 +
 END
 
@@ -109,7 +108,6 @@ spew("$test.in", <<END);
 #endif
 END
 capture_ok("bfpp -D X=1 $test.in", <<END);
-
 +
 END
 
@@ -122,9 +120,6 @@ spew("$test.in", <<END);
 #endif
 END
 capture_ok("bfpp $test.in", <<END);
-
-
-
 -
 END
 
@@ -137,7 +132,6 @@ spew("$test.in", <<END);
 #endif
 END
 capture_ok("bfpp $test.in", <<END);
-
 +
 END
 
@@ -154,7 +148,6 @@ spew("$test.in", <<END);
 #endif
 END
 capture_ok("bfpp $test.in", <<END);
-
 +
 END
 
@@ -171,9 +164,6 @@ spew("$test.in", <<END);
 #endif
 END
 capture_ok("bfpp $test.in", <<END);
-
-
-
 ++
 END
 
@@ -190,11 +180,6 @@ spew("$test.in", <<END);
 #endif
 END
 capture_ok("bfpp $test.in", <<END);
-
-
-
-
-
 +++
 END
 
@@ -211,13 +196,6 @@ spew("$test.in", <<END);
 #endif
 END
 capture_ok("bfpp $test.in", <<END);
-
-
-
-
-
-
-
 ++++
 END
 

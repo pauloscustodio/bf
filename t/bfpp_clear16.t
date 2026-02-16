@@ -25,22 +25,7 @@ END
 # clear16 - clear16 the given cells
 spew("$test.in", "clear16(0) clear16(2)");
 capture_ok("bfpp $test.in", <<END);
-[
-  -
-]
->
-[
-  -
-]
->
-[
-  -
-]
->
-[
-  -
-]
-<<<
+[-]>[-]>[-]>[-]<<<
 END
 
 # clear16 - execute a test program

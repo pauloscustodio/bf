@@ -25,14 +25,7 @@ END
 # clear8 - clear the given cells
 spew("$test.in", "clear8(0) clear8(1)");
 capture_ok("bfpp $test.in", <<END);
-[
-  -
-]
->
-[
-  -
-]
-<
+[-]>[-]<
 END
 
 # clear8 - execute a test program

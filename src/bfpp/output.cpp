@@ -53,100 +53,25 @@ void BFOutput::put(const Token& tok) {
 
 std::string BFOutput::to_string() const {
     std::string result;
-    int line_num = 1;
-    int indent_level = 0;
     bool at_line_start = true;
-    int line_len = 0; // current line length including indentation
-
-    auto start_new_line = [&](int new_indent_level) {
-        result += '\n';
-        line_num++;
-        at_line_start = true;
-        line_len = 0;
-        indent_level = new_indent_level;
-    };
-
-    auto ensure_wrap_before = [&](int needed_len, int indent_spaces) {
-        if (line_len + needed_len > 80) {
-            result += '\n';
-            line_num++;
-            at_line_start = true;
-            line_len = 0;
-            result += std::string(indent_spaces, ' ');
-            line_len += indent_spaces;
-        }
-    };
+    int line_len = 0;
 
     for (const Token& t : output_) {
-        // synchronize line numbers with SourceLocation
-        while (line_num < t.loc.line_num) {
+        int needed_len = static_cast<int>(t.text.size());
+        if (line_len + needed_len > 80) {
             result += '\n';
-            line_num++;
             at_line_start = true;
             line_len = 0;
         }
-
-        if (t.text == "[") {
-            // Output '[' with current indentation on its own line
-            if (!at_line_start) {
-                start_new_line(indent_level);
-            }
-            int indent_spaces = indent_level * 2;
-            result += std::string(indent_spaces, ' ');
-            result += "[\n";
-            line_num++;
-            indent_level++;
-            at_line_start = true;
-            line_len = 0;
-        }
-        else if (t.text == "]") {
-            // Decrease indent, then output ']' on its own line
-            if (!at_line_start) {
-                start_new_line(indent_level);
-            }
-            indent_level--;
-            int indent_spaces = indent_level * 2;
-            result += std::string(indent_spaces, ' ');
-            result += "]\n";
-            line_num++;
-            at_line_start = true;
-            line_len = 0;
-        }
-        else {
-            int indent_spaces = at_line_start ? indent_level * 2 : 0;
-            int needed_len = indent_spaces + static_cast<int>(t.text.size());
-
-            if (at_line_start) {
-                // apply wrapping considering indentation + token
-                if (needed_len > 80) {
-                    // token with indent alone exceeds line; still place it on new line
-                    result += std::string(indent_spaces, ' ');
-                    result += t.text;
-                    at_line_start = false;
-                    line_len = indent_spaces + static_cast<int>(t.text.size());
-                }
-                else {
-                    ensure_wrap_before(needed_len, indent_spaces);
-                    if (line_len == 0 && indent_spaces > 0) {
-                        result += std::string(indent_spaces, ' ');
-                        line_len += indent_spaces;
-                    }
-                    result += t.text;
-                    line_len += static_cast<int>(t.text.size());
-                    at_line_start = false;
-                }
-            }
-            else {
-                // not at line start; wrap if needed before adding token
-                ensure_wrap_before(static_cast<int>(t.text.size()), indent_level * 2);
-                result += t.text;
-                line_len += static_cast<int>(t.text.size());
-            }
-        }
+        result += t.text;
+        line_len += needed_len;
+        at_line_start = false;
     }
+
     if (!at_line_start) {
         result += '\n';
     }
+
     return result;
 }
 

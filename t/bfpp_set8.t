@@ -25,14 +25,7 @@ END
 # set8 - set the given cells
 spew("$test.in", "set8(0,3) set8(1,2)");
 capture_ok("bfpp $test.in", <<END);
-[
-  -
-]
-+++>
-[
-  -
-]
-++<
+[-]+++>[-]++<
 END
 
 # set8 - execute a test program
