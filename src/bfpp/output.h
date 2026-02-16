@@ -69,6 +69,7 @@ private:
     static inline const int kInitialStackBase = 1000;
 
     int tape_ptr_ = 0;
+    int max_tape_ptr_ = 0;
     int heap_size_ = 0;
     int stack_base_ = kInitialStackBase;
     int stack_ptr_ = kInitialStackBase;
