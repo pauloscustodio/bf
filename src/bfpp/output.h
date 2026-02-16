@@ -24,7 +24,7 @@ struct StackFrame {
 
 class BFOutput {
 public:
-    BFOutput() = default;
+    BFOutput();
 
     void put(const Token& tok);
     std::string to_string() const;
@@ -64,6 +64,7 @@ public:
     void set_stack_base(int base);
     int heap_size() const;
     int max_stack_depth() const;
+    int input_buffer();
 
 private:
     static inline const int kInitialStackBase = 1000;
@@ -78,6 +79,7 @@ private:
     int global_count16_ = 0;
     int temp_ptr_ = -1;
     int temp_count16_ = 0;
+    int input_buffer_ = -1;
     std::vector<StackFrame> frame_stack_;
     std::vector<SourceLocation> loop_stack_;
     std::vector<Token> output_;

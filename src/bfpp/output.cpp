@@ -12,6 +12,10 @@ int StackFrame::size() const {
     return 2 * (num_args16 + num_locals16 + num_temps16);
 }
 
+BFOutput::BFOutput() {
+    reset();
+}
+
 void BFOutput::put(const Token& tok) {
     if (tok.type != TokenType::BFInstr) {
         g_error_reporter.report_error(
@@ -564,7 +568,7 @@ void BFOutput::reset() {
     global_count16_ = 0;
     temp_ptr_ = -1;
     temp_count16_ = 0;
-
+    input_buffer_ = -1;
 }
 
 void BFOutput::set_stack_base(int base) {
@@ -579,3 +583,11 @@ int BFOutput::max_stack_depth() const {
     return stack_base_ - min_stack_ptr_;
 }
 
+int BFOutput::input_buffer() {
+    // if input buffer not allocated, allocate it now
+    if (input_buffer_ < 0) {
+        input_buffer_ = alloc_cells(1);
+    }
+
+    return input_buffer_;
+}

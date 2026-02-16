@@ -116,6 +116,10 @@ const std::unordered_map<std::string, MacroExpander::BuiltinHandler> MacroExpand
     { "print_cell16",       &MacroExpander::handle_print_cell16       },
     { "print_cell8s",       &MacroExpander::handle_print_cell8s       },
     { "print_cell16s",      &MacroExpander::handle_print_cell16s      },
+    { "scan_char8",         &MacroExpander::handle_scan_char8         },
+    { "unscan_char8",       &MacroExpander::handle_unscan_char8       },
+    { "scan_cell8",         &MacroExpander::handle_scan_cell8         },
+    { "scan_cell16",        &MacroExpander::handle_scan_cell16        },
 };
 
 void MacroTable::clear() {
@@ -3427,6 +3431,141 @@ bool MacroExpander::handle_print_cell8s(Parser& parser, const Token& tok) {
 
 bool MacroExpander::handle_print_cell16s(Parser& parser, const Token& tok) {
     return handle_print_cellXs(parser, tok, 16);
+}
+
+bool MacroExpander::handle_scan_char8(Parser& parser, const Token& tok) {
+    Token func_tok = tok;
+    std::vector<int> vals;
+    if (!parse_expr_args(parser, tok, { "cell" }, vals)) {
+        return true;
+    }
+    int cell = vals[0];
+    int input_buffer = parser.output().input_buffer();
+
+    TokenScanner scanner;
+    std::string mock_filename = "(scan_char8)";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            "{ if(" + std::to_string(input_buffer) + ") "   // one char available
+            "    move8(" + std::to_string(input_buffer) + ", " +
+            std::to_string(cell) + ") "  // move so that input buffer is cleared
+            "  else "
+            "    { >" + std::to_string(cell) + " , } "
+            "  endif "
+            "} ",
+            mock_filename));
+    return true;
+}
+
+bool MacroExpander::handle_unscan_char8(Parser& parser, const Token& tok) {
+    Token func_tok = tok;
+    std::vector<int> vals;
+    if (!parse_expr_args(parser, tok, { "cell" }, vals)) {
+        return true;
+    }
+    int cell = vals[0];
+    int input_buffer = parser.output().input_buffer();
+
+    TokenScanner scanner;
+    std::string mock_filename = "(unscan_char8)";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            "copy8(" + std::to_string(cell) + ", " +
+            std::to_string(input_buffer) + ") ",
+            mock_filename));
+    return true;
+}
+
+bool MacroExpander::handle_scan_cellX(Parser& parser, const Token& tok, 
+    int width) {
+    assert(width == 8 || width == 16);
+    std::string X = std::to_string(width);
+
+    Token func_tok = tok;
+    std::vector<int> vals;
+    if (!parse_expr_args(parser, tok, { "target" }, vals)) {
+        return true;
+    }
+    int target = vals[0];
+
+    // temps
+    std::string t_char = make_temp_name("t_char");
+    std::string t_cond1 = make_temp_name("t_cond1");
+    std::string t_cond2 = make_temp_name("t_cond2");
+    std::string t_10 = make_temp_name("t_10");
+    std::string t_0_char = make_temp_name("t_0_char");
+    std::string t_9_char = make_temp_name("t_9_char");
+    std::string t_space_char = make_temp_name("t_space_char");
+
+    TokenScanner scanner;
+    std::string mock_filename = "(scan_cell" + X + ")";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            // allocate temps
+            "{ alloc_cell" + X + "(" + t_char + ") "
+            "  alloc_cell" + X + "(" + t_cond1 + ") "
+            "  alloc_cell" + X + "(" + t_cond2 + ") "
+            "  alloc_cell" + X + "(" + t_10 + ") "
+            "  set" + X + "(" + t_10 + ", 10) "
+            "  alloc_cell" + X + "(" + t_0_char + ") "
+            "  set" + X + "(" + t_0_char + ", '0') "
+            "  alloc_cell" + X + "(" + t_9_char + ") "
+            "  set" + X + "(" + t_9_char + ", '9') "
+            "  alloc_cell" + X + "(" + t_space_char + ") "
+            "  set" + X + "(" + t_space_char + ", ' ') "
+            // zero accumulator
+            "  clear" + X + "(" + std::to_string(target) + ") "
+            // skip white space
+            "  scan_char8(" + t_char + ") "
+            "  copy8(" + t_char + ", " + t_cond1 + ") "
+            "  le8(" + t_cond1 + ", " + t_space_char + ") "
+            "  while(" + t_cond1 + ") "
+            "    scan_char8(" + t_char + ") "
+            "    copy8(" + t_char + ", " + t_cond1 + ") "
+            "    le8(" + t_cond1 + ", " + t_space_char + ") "
+            "  endwhile"
+            // t_char has the first non-space
+            "  copy8(" + t_char + ", " + t_cond1 + ") "
+            "  ge8(" + t_cond1 + ", " + t_0_char + ") "
+            "  copy8(" + t_char + ", " + t_cond2 + ") "
+            "  le8(" + t_cond2 + ", " + t_9_char + ") "
+            "  and8(" + t_cond1 + ", " + t_cond2 + ") "
+            "  while(" + t_cond1 + ") " // while digit
+            "    sub8(" + t_char + ", " + t_0_char + ") "
+            "    mul" + X + "(" + std::to_string(target) + ", " + t_10 + ") "
+            "    add" + X + "(" + std::to_string(target) + ", " + t_char + ") "
+            //   get next char and recompute while condition
+            "    scan_char8(" + t_char + ") "
+            "    copy8(" + t_char + ", " + t_cond1 + ") "
+            "    ge8(" + t_cond1 + ", " + t_0_char + ") "
+            "    copy8(" + t_char + ", " + t_cond2 + ") "
+            "    le8(" + t_cond2 + ", " + t_9_char + ") "
+            "    and8(" + t_cond1 + ", " + t_cond2 + ") "
+            "  endwhile "
+            // t_char has first non-digit
+            "  unscan_char8(" + t_char + ") "
+            // free temps
+            "  free_cell" + X + "(" + t_char + ") "
+            "  free_cell" + X + "(" + t_cond1 + ") "
+            "  free_cell" + X + "(" + t_cond2 + ") "
+            "  free_cell" + X + "(" + t_10 + ") "
+            "  free_cell" + X + "(" + t_0_char + ") "
+            "  free_cell" + X + "(" + t_9_char + ") "
+            "  free_cell" + X + "(" + t_space_char + ") "
+            "} ",
+            mock_filename));
+    return true;
+}
+
+bool MacroExpander::handle_scan_cell8(Parser& parser, const Token& tok) {
+    return handle_scan_cellX(parser, tok, 8);
+}
+
+bool MacroExpander::handle_scan_cell16(Parser& parser, const Token& tok) {
+    return handle_scan_cellX(parser, tok, 16);
 }
 
 bool MacroExpander::parse_expr_args(Parser& parser,

@@ -195,6 +195,11 @@ private:
     bool handle_print_cellXs(Parser& parser, const Token& tok, int width);
     bool handle_print_cell8s(Parser& parser, const Token& tok);
     bool handle_print_cell16s(Parser& parser, const Token& tok);
+    bool handle_scan_char8(Parser& parser, const Token& tok);
+    bool handle_unscan_char8(Parser& parser, const Token& tok);
+    bool handle_scan_cellX(Parser& parser, const Token& tok, int width);
+    bool handle_scan_cell8(Parser& parser, const Token& tok);
+    bool handle_scan_cell16(Parser& parser, const Token& tok);
 
     bool parse_expr_args(Parser& parser,
                          const Token& tok,
