@@ -164,18 +164,30 @@ void Parser::consume_end_of_statement() {
     error_here("Unexpected token after statement");
 }
 
-// expr ::= term { ("+"|"-"|"*"|"/") term }
 Expr Parser::parse_expr() {
-    Expr left = parse_term();
+    return parse_shift();
+}
 
-    while (match(TokenType::Plus) ||
-            match(TokenType::Minus) ||
-            match(TokenType::Star) ||
-            match(TokenType::Slash)) {
+Expr Parser::parse_shift() {
+    Expr left = parse_add();
 
+    while (match(TokenType::Shl) || match(TokenType::Shr)) {
         Token op = advance();
-        Expr right = parse_term();
+        Expr right = parse_add();
+        left = Expr::binop(op.type == TokenType::Shl ? '<' : '>',
+                           std::move(left), std::move(right),
+        { op.line, op.column });
+    }
 
+    return left;
+}
+
+Expr Parser::parse_add() {
+    Expr left = parse_mul();
+
+    while (match(TokenType::Plus) || match(TokenType::Minus)) {
+        Token op = advance();
+        Expr right = parse_mul();
         left = Expr::binop(op.text[0], std::move(left), std::move(right),
         { op.line, op.column });
     }
@@ -183,9 +195,42 @@ Expr Parser::parse_expr() {
     return left;
 }
 
-// term ::= NUMBER | IDENT
-Expr Parser::parse_term() {
+Expr Parser::parse_mul() {
+    Expr left = parse_primary();
+
+    while (match(TokenType::Star) ||
+            match(TokenType::Slash) ||   // includes '\'
+            match(TokenType::Mod)) {
+        Token op = advance();
+        char opchar;
+        if (op.type == TokenType::Mod) {
+            opchar = '%';
+        }
+        else if (op.text[0] == '\\') {
+            opchar = '/';
+        }
+        else {
+            opchar = op.text[0];
+        }
+
+        Expr right = parse_primary();
+        left = Expr::binop(opchar, std::move(left), std::move(right),
+        { op.line, op.column });
+    }
+
+    return left;
+}
+
+Expr Parser::parse_primary() {
     Token t = peek();
+
+    // Unary + or -
+    if (match(TokenType::Plus) || match(TokenType::Minus)) {
+        Token op = advance();
+        Expr inner = parse_primary();
+        return Expr::unary(op.text[0], std::move(inner),
+        { op.line, op.column });
+    }
 
     if (match(TokenType::Number)) {
         advance();
@@ -197,5 +242,12 @@ Expr Parser::parse_term() {
         return Expr::var(t.text, { t.line, t.column });
     }
 
-    error_here("Expected number or variable");
+    if (match(TokenType::LParen)) {
+        advance();
+        Expr e = parse_expr();
+        expect(TokenType::RParen, "Expected ')'");
+        return e;
+    }
+
+    error_here("Expected number, variable, unary operator, or '('");
 }

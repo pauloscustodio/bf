@@ -16,7 +16,7 @@ struct SourceLoc {
 };
 
 struct Expr {
-    enum class Type { Number, Var, BinOp } type;
+    enum class Type { Number, Var, BinOp, UnaryOp } type;
 
     SourceLoc loc;
 
@@ -31,9 +31,13 @@ struct Expr {
     std::unique_ptr<Expr> left;
     std::unique_ptr<Expr> right;
 
+    char unary_op = 0; // '+' or '-'
+    std::unique_ptr<Expr> unary_expr;
+
     static Expr number(int v, SourceLoc loc);
     static Expr var(const std::string& n, SourceLoc loc);
     static Expr binop(char op, Expr lhs, Expr rhs, SourceLoc loc);
+    static Expr unary(char op, Expr inner, SourceLoc loc);
 };
 
 struct Stmt {

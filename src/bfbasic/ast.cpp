@@ -31,3 +31,12 @@ Expr Expr::binop(char op, Expr lhs, Expr rhs, SourceLoc loc) {
     e.loc = loc;
     return e;
 }
+
+Expr Expr::unary(char op, Expr inner, SourceLoc loc) {
+    Expr e;
+    e.type = Type::UnaryOp;
+    e.unary_op = op;
+    e.unary_expr = std::make_unique<Expr>(std::move(inner));
+    e.loc = loc;
+    return e;
+}

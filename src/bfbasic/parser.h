@@ -41,5 +41,8 @@ private:
     // --- Expressions ---------------------------------------------------------
 
     Expr parse_expr();
-    Expr parse_term();
+    Expr parse_shift();
+    Expr parse_add();
+    Expr parse_mul();
+    Expr parse_primary();
 };

@@ -56,10 +56,17 @@ std::vector<Token> Lexer::tokenize() {
             tokens.push_back(simple(TokenType::Star));
             continue;
         case '/':
+        case'\\':
             tokens.push_back(simple(TokenType::Slash));
             continue;
         case '=':
             tokens.push_back(simple(TokenType::Equal));
+            continue;
+        case '(':
+            tokens.push_back(simple(TokenType::LParen));
+            continue;
+        case ')':
+            tokens.push_back(simple(TokenType::RParen));
             continue;
         }
 
@@ -139,11 +146,17 @@ Token Lexer::identifier_or_keyword() {
     std::string upper = uppercase(text);
 
     if (upper == "LET")
-        return Token{ TokenType::KeywordLet,   text, 0, line, start_col };
+        return Token{ TokenType::KeywordLet, text, 0, line, start_col };
     if (upper == "INPUT")
         return Token{ TokenType::KeywordInput, text, 0, line, start_col };
     if (upper == "PRINT")
         return Token{ TokenType::KeywordPrint, text, 0, line, start_col };
+    if (upper == "MOD")
+        return Token{ TokenType::Mod, text, 0, line, start_col };
+    if (upper == "SHL")
+        return Token{ TokenType::Shl, text, 0, line, start_col };
+    if (upper == "SHR")
+        return Token{ TokenType::Shr, text, 0, line, start_col };
 
     // IDENTIFIER — store uppercase name in text
     return Token{ TokenType::Identifier, upper, 0, line, start_col };

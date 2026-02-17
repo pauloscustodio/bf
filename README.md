@@ -67,8 +67,23 @@ Supported statements (one per line; blank lines allowed):
 
 Expressions:
 - variables and decimal integers
-- binary `+ - * /` (left-associative, integer arithmetic)
+- operators
 
+## Expression operators and precedence
+The BASIC compiler supports these operators in expressions:
+
+- Unary: `+x` (no-op), `-x` (negation)
+- Multiplicative: `*`, `/`, `\\` (same as `\`), `%` (modulo)
+- Additive: `+`, `-`
+- Shifts: `shl`, `shr`
+
+Precedence and associativity (highest to lowest):
+1. Unary `+`, `-` (right-associative)
+2. Multiplicative `*`, `/`, `\\`, `%` (left-associative)
+3. Additive `+`, `-` (left-associative)
+4. Shifts `shl`, `shr` (left-associative)
+
+Parentheses `(...)` can be used to override precedence.
 The compiler allocates variables automatically and emits `bfpp` code.
 
 ## Building
