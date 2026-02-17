@@ -1,0 +1,52 @@
+// basic calculator
+alloc_cell16(A)		// accumulator
+alloc_cell16(B)		// second operand
+alloc_cell8(op)		// operator
+
+// constants
+alloc_cell8(char_plus)  set8(char_plus,  '+')
+alloc_cell8(char_minus) set8(char_minus, '-')
+alloc_cell8(char_mul)   set8(char_mul, 	 '*')
+alloc_cell8(char_div)   set8(char_div,   '/')
+
+// conditions
+alloc_cell8(cond)
+alloc_cell8(is_plus)
+alloc_cell8(is_minus)
+alloc_cell8(is_mul)
+alloc_cell8(is_div)
+
+// condition must be checked twice, before while and just before endwhile
+#define CHECK_OP \
+			clear8(cond) \
+			copy8(op, is_plus)  eq8(is_plus,  char_plus)  or8(cond, is_plus)  \
+			copy8(op, is_minus) eq8(is_minus, char_minus) or8(cond, is_minus) \
+			copy8(op, is_mul)   eq8(is_mul,   char_mul)   or8(cond, is_mul)   \
+			copy8(op, is_div)   eq8(is_div,   char_div)   or8(cond, is_div)
+
+// read accumulator
+scan_spaces scan_cell16s(A)
+
+// read operator
+scan_spaces scan_char8(op)
+
+// loop while valid operator
+CHECK_OP
+while(cond) 
+	// read second operand
+	scan_spaces scan_cell16s(B)
+	
+	// perform operation
+	if(is_plus)	  add16s(A, B) endif
+	if(is_minus)  sub16s(A, B) endif
+	if(is_mul)	  mul16s(A, B) endif
+	if(is_div)	  div16s(A, B) endif
+	
+	// read operator
+	scan_spaces scan_char8(op)
+
+	// loop while valid operator
+	CHECK_OP
+endwhile
+
+print_cell16s(A) print_newline

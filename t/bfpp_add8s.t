@@ -4,29 +4,29 @@ BEGIN { use lib 't'; require 'testlib.pl'; }
 
 use Modern::Perl;
 
-# sadd8 - error no arguments
-spew("$test.in", "sadd8");
+# add8s - error no arguments
+spew("$test.in", "add8s");
 capture_nok("bfpp $test.in", <<END);
-$test.in:1:6: error: expected '(' after macro name 'sadd8'
+$test.in:1:6: error: expected '(' after macro name 'add8s'
 END
 
-# sadd8 - error empty arguments
-spew("$test.in", "sadd8()");
+# add8s - error empty arguments
+spew("$test.in", "add8s()");
 capture_nok("bfpp $test.in", <<END);
-$test.in:1:8: error: macro 'sadd8' expects 2 arguments
+$test.in:1:8: error: macro 'add8s' expects 2 arguments
 END
 
-# sadd8 - error too many arguments
-spew("$test.in", "sadd8(A,B,C)");
+# add8s - error too many arguments
+spew("$test.in", "add8s(A,B,C)");
 capture_nok("bfpp $test.in", <<END);
 $test.in:1:10: error: expected ')' at end of macro call, found ','
 END
 
-# sadd8(a,b)
+# add8s(a,b)
 spew("$test.in", <<END);
 alloc_cell8(A)
 alloc_cell8(B)
-sadd8(A,B)
+add8s(A,B)
 >A
 END
 capture_ok("bfpp $test.in", <<END);
@@ -36,7 +36,7 @@ capture_ok("bfpp $test.in", <<END);
 [-]>[-]>[-]>[-]<[-]<[->+>+<<]>>[-<<+>>][-]<[-<<+>>][-]<<
 END
 
-# run sadd8(a,b)
+# run add8s(a,b)
 for my $A (-127, -2, -1, 0, 1, 2, 127) {
 	for my $B (-127, -2, -1, 0, 1, 2, 127) {
 		my $A8bit = $A & 0xFF;
@@ -46,7 +46,7 @@ for my $A (-127, -2, -1, 0, 1, 2, 127) {
 		alloc_cell8(B)
 		set8(A, $A8bit)
 		set8(B, $B8bit)
-		sadd8(A, B)
+		add8s(A, B)
 		>B
 END
 		my $R = sprintf("%3d", ($A + $B) & 0xFF);

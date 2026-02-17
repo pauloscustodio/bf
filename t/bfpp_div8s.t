@@ -4,29 +4,29 @@ BEGIN { use lib 't'; require 'testlib.pl'; }
 
 use Modern::Perl;
 
-# sdiv8 - error no arguments
-spew("$test.in", "sdiv8");
+# div8s - error no arguments
+spew("$test.in", "div8s");
 capture_nok("bfpp $test.in", <<END);
-$test.in:1:6: error: expected '(' after macro name 'sdiv8'
+$test.in:1:6: error: expected '(' after macro name 'div8s'
 END
 
-# sdiv8 - error empty arguments
-spew("$test.in", "sdiv8()");
+# div8s - error empty arguments
+spew("$test.in", "div8s()");
 capture_nok("bfpp $test.in", <<END);
-$test.in:1:8: error: macro 'sdiv8' expects 2 arguments
+$test.in:1:8: error: macro 'div8s' expects 2 arguments
 END
 
-# sdiv8 - error too many arguments
-spew("$test.in", "sdiv8(A,B,C)");
+# div8s - error too many arguments
+spew("$test.in", "div8s(A,B,C)");
 capture_nok("bfpp $test.in", <<END);
 $test.in:1:10: error: expected ')' at end of macro call, found ','
 END
 
-# sdiv8(a,b)
+# div8s(a,b)
 spew("$test.in", <<END);
 alloc_cell8(A)
 alloc_cell8(B)
-sdiv8(A,B)
+div8s(A,B)
 >A
 END
 capture_ok("bfpp $test.in", <<END);
@@ -281,7 +281,7 @@ END
 spew("$test.in", <<END);
 		alloc_cell8(A)
 		alloc_cell8(B)
-		sdiv8(A, B)
+		div8s(A, B)
 END
 capture_ok("bfpp $test.in | bf -D", <<END);
 Tape:  0 
@@ -289,7 +289,7 @@ Tape:  0
 
 END
 
-# run sdiv8(a,b)
+# run div8s(a,b)
 for my $A (-20, -10, 0, 10, 20) {
 	for my $B (-4, -3, -2, -1, 1, 2, 3, 4) {
 		my $A8bit = $A & 0xFF;
@@ -299,7 +299,7 @@ for my $A (-20, -10, 0, 10, 20) {
 		alloc_cell8(B)
 		set8(A, $A8bit)
 		set8(B, $B8bit)
-		sdiv8(A, B)
+		div8s(A, B)
 		>B
 END
 		my $R = sprintf("%3d", int($A / $B) & 0xFF);

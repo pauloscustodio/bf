@@ -4,29 +4,29 @@ BEGIN { use lib 't'; require 'testlib.pl'; }
 
 use Modern::Perl;
 
-# ssub8 - error no arguments
-spew("$test.in", "ssub8");
+# sub8s - error no arguments
+spew("$test.in", "sub8s");
 capture_nok("bfpp $test.in", <<END);
-$test.in:1:6: error: expected '(' after macro name 'ssub8'
+$test.in:1:6: error: expected '(' after macro name 'sub8s'
 END
 
-# ssub8 - error empty arguments
-spew("$test.in", "ssub8()");
+# sub8s - error empty arguments
+spew("$test.in", "sub8s()");
 capture_nok("bfpp $test.in", <<END);
-$test.in:1:8: error: macro 'ssub8' expects 2 arguments
+$test.in:1:8: error: macro 'sub8s' expects 2 arguments
 END
 
-# ssub8 - error too many arguments
-spew("$test.in", "ssub8(A,B,C)");
+# sub8s - error too many arguments
+spew("$test.in", "sub8s(A,B,C)");
 capture_nok("bfpp $test.in", <<END);
 $test.in:1:10: error: expected ')' at end of macro call, found ','
 END
 
-# ssub8(a,b)
+# sub8s(a,b)
 spew("$test.in", <<END);
 alloc_cell8(A)
 alloc_cell8(B)
-ssub8(A,B)
+sub8s(A,B)
 >A
 END
 capture_ok("bfpp $test.in", <<END);
@@ -36,7 +36,7 @@ capture_ok("bfpp $test.in", <<END);
 [-]>[-]>[-]>[-]<[-]<[->+>+<<]>>[-<<+>>][-]<[-<<->>][-]<<
 END
 
-# run ssub8(a,b)
+# run sub8s(a,b)
 for my $A (-127, -2, -1, 0, 1, 2, 127) {
 	for my $B (-127, -2, -1, 0, 1, 2, 127) {
 		my $A8bit = $A & 0xFF;
@@ -46,7 +46,7 @@ for my $A (-127, -2, -1, 0, 1, 2, 127) {
 		alloc_cell8(B)
 		set8(A, $A8bit)
 		set8(B, $B8bit)
-		ssub8(A, B)
+		sub8s(A, B)
 		>B
 END
 		my $R = sprintf("%3d", ($A - $B) & 0xFF);

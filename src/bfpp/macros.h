@@ -105,12 +105,12 @@ private:
     bool handle_xor16(Parser& parser, const Token& tok);
     bool handle_add8(Parser& parser, const Token& tok);
     bool handle_add16(Parser& parser, const Token& tok);
-    bool handle_sadd8(Parser& parser, const Token& tok);
-    bool handle_sadd16(Parser& parser, const Token& tok);
+    bool handle_add8s(Parser& parser, const Token& tok);
+    bool handle_add16s(Parser& parser, const Token& tok);
     bool handle_sub8(Parser& parser, const Token& tok);
     bool handle_sub16(Parser& parser, const Token& tok);
-    bool handle_ssub8(Parser& parser, const Token& tok);
-    bool handle_ssub16(Parser& parser, const Token& tok);
+    bool handle_sub8s(Parser& parser, const Token& tok);
+    bool handle_sub16s(Parser& parser, const Token& tok);
     bool handle_neg8(Parser& parser, const Token& tok);
     bool handle_neg16(Parser& parser, const Token& tok);
     bool handle_sign8(Parser& parser, const Token& tok);
@@ -119,48 +119,48 @@ private:
     bool handle_abs16(Parser& parser, const Token& tok);
     bool handle_mul8(Parser& parser, const Token& tok);
     bool handle_mul16(Parser& parser, const Token& tok);
-    bool handle_smul8(Parser& parser, const Token& tok);
-    bool handle_smul16(Parser& parser, const Token& tok);
+    bool handle_mul8s(Parser& parser, const Token& tok);
+    bool handle_mul16s(Parser& parser, const Token& tok);
     bool handle_div8(Parser& parser, const Token& tok);
     bool handle_div16(Parser& parser, const Token& tok);
-    bool handle_sdiv8(Parser& parser, const Token& tok);
-    bool handle_sdiv16(Parser& parser, const Token& tok);
+    bool handle_div8s(Parser& parser, const Token& tok);
+    bool handle_div16s(Parser& parser, const Token& tok);
     bool handle_mod8(Parser& parser, const Token& tok);
     bool handle_mod16(Parser& parser, const Token& tok);
-    bool handle_smod8(Parser& parser, const Token& tok);
-    bool handle_smod16(Parser& parser, const Token& tok);
+    bool handle_mod8s(Parser& parser, const Token& tok);
+    bool handle_mod16s(Parser& parser, const Token& tok);
     bool handle_div8_mod8(Parser& parser, const Token& tok,
                           bool return_remainder);
     bool handle_div16_mod16(Parser& parser, const Token& tok,
                             bool return_remainder);
-    bool handle_sdiv8_smod8(Parser& parser, const Token& tok,
+    bool handle_div8s_mod8s(Parser& parser, const Token& tok,
                             bool return_remainder);
-    bool handle_sdiv16_smod16(Parser& parser, const Token& tok,
+    bool handle_div16s_mod16s(Parser& parser, const Token& tok,
                               bool return_remainder);
     bool handle_eq8(Parser& parser, const Token& tok);
     bool handle_eq16(Parser& parser, const Token& tok);
-    bool handle_seq8(Parser& parser, const Token& tok);
-    bool handle_seq16(Parser& parser, const Token& tok);
+    bool handle_eq8s(Parser& parser, const Token& tok);
+    bool handle_eq16s(Parser& parser, const Token& tok);
     bool handle_ne8(Parser& parser, const Token& tok);
     bool handle_ne16(Parser& parser, const Token& tok);
-    bool handle_sne8(Parser& parser, const Token& tok);
-    bool handle_sne16(Parser& parser, const Token& tok);
+    bool handle_ne8s(Parser& parser, const Token& tok);
+    bool handle_ne16s(Parser& parser, const Token& tok);
     bool handle_lt8(Parser& parser, const Token& tok);
     bool handle_lt16(Parser& parser, const Token& tok);
-    bool handle_slt8(Parser& parser, const Token& tok);
-    bool handle_slt16(Parser& parser, const Token& tok);
+    bool handle_lt8s(Parser& parser, const Token& tok);
+    bool handle_lt16s(Parser& parser, const Token& tok);
     bool handle_gt8(Parser& parser, const Token& tok);
     bool handle_gt16(Parser& parser, const Token& tok);
-    bool handle_sgt8(Parser& parser, const Token& tok);
-    bool handle_sgt16(Parser& parser, const Token& tok);
+    bool handle_gt8s(Parser& parser, const Token& tok);
+    bool handle_gt16s(Parser& parser, const Token& tok);
     bool handle_le8(Parser& parser, const Token& tok);
     bool handle_le16(Parser& parser, const Token& tok);
-    bool handle_sle8(Parser& parser, const Token& tok);
-    bool handle_sle16(Parser& parser, const Token& tok);
+    bool handle_le8s(Parser& parser, const Token& tok);
+    bool handle_le16s(Parser& parser, const Token& tok);
     bool handle_ge8(Parser& parser, const Token& tok);
     bool handle_ge16(Parser& parser, const Token& tok);
-    bool handle_sge8(Parser& parser, const Token& tok);
-    bool handle_sge16(Parser& parser, const Token& tok);
+    bool handle_ge8s(Parser& parser, const Token& tok);
+    bool handle_ge16s(Parser& parser, const Token& tok);
     bool handle_shr8(Parser& parser, const Token& tok);
     bool handle_shr16(Parser& parser, const Token& tok);
     bool handle_shl8(Parser& parser, const Token& tok);

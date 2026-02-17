@@ -36,12 +36,12 @@ const std::unordered_map<std::string, MacroExpander::BuiltinHandler> MacroExpand
     { "xor16",              &MacroExpander::handle_xor16              },
     { "add8",               &MacroExpander::handle_add8               },
     { "add16",              &MacroExpander::handle_add16              },
-    { "sadd8",              &MacroExpander::handle_sadd8              },
-    { "sadd16",             &MacroExpander::handle_sadd16             },
+    { "add8s",              &MacroExpander::handle_add8s              },
+    { "add16s",             &MacroExpander::handle_add16s             },
     { "sub8",               &MacroExpander::handle_sub8               },
     { "sub16",              &MacroExpander::handle_sub16              },
-    { "ssub8",              &MacroExpander::handle_ssub8              },
-    { "ssub16",             &MacroExpander::handle_ssub16             },
+    { "sub8s",              &MacroExpander::handle_sub8s              },
+    { "sub16s",             &MacroExpander::handle_sub16s             },
     { "neg8",               &MacroExpander::handle_neg8               },
     { "neg16",              &MacroExpander::handle_neg16              },
     { "sign8",              &MacroExpander::handle_sign8              },
@@ -50,40 +50,40 @@ const std::unordered_map<std::string, MacroExpander::BuiltinHandler> MacroExpand
     { "abs16",              &MacroExpander::handle_abs16              },
     { "mul8",               &MacroExpander::handle_mul8               },
     { "mul16",              &MacroExpander::handle_mul16              },
-    { "smul8",              &MacroExpander::handle_smul8              },
-    { "smul16",             &MacroExpander::handle_smul16             },
+    { "mul8s",              &MacroExpander::handle_mul8s              },
+    { "mul16s",             &MacroExpander::handle_mul16s             },
     { "div8",               &MacroExpander::handle_div8               },
     { "div16",              &MacroExpander::handle_div16              },
-    { "sdiv8",              &MacroExpander::handle_sdiv8              },
-    { "sdiv16",             &MacroExpander::handle_sdiv16             },
+    { "div8s",              &MacroExpander::handle_div8s              },
+    { "div16s",             &MacroExpander::handle_div16s             },
     { "mod8",               &MacroExpander::handle_mod8               },
     { "mod16",              &MacroExpander::handle_mod16              },
-    { "smod8",              &MacroExpander::handle_smod8              },
-    { "smod16",             &MacroExpander::handle_smod16             },
+    { "mod8s",              &MacroExpander::handle_mod8s              },
+    { "mod16s",             &MacroExpander::handle_mod16s             },
     { "eq8",                &MacroExpander::handle_eq8                },
     { "eq16",               &MacroExpander::handle_eq16               },
-    { "seq8",               &MacroExpander::handle_seq8               },
-    { "seq16",              &MacroExpander::handle_seq16              },
+    { "eq8s",               &MacroExpander::handle_eq8s               },
+    { "eq16s",              &MacroExpander::handle_eq16s              },
     { "ne8",                &MacroExpander::handle_ne8                },
     { "ne16",               &MacroExpander::handle_ne16               },
-    { "sne8",               &MacroExpander::handle_sne8               },
-    { "sne16",              &MacroExpander::handle_sne16              },
+    { "ne8s",               &MacroExpander::handle_ne8s               },
+    { "ne16s",              &MacroExpander::handle_ne16s              },
     { "lt8",                &MacroExpander::handle_lt8                },
     { "lt16",               &MacroExpander::handle_lt16               },
-    { "slt8",               &MacroExpander::handle_slt8               },
-    { "slt16",              &MacroExpander::handle_slt16              },
+    { "lt8s",               &MacroExpander::handle_lt8s               },
+    { "lt16s",              &MacroExpander::handle_lt16s              },
     { "gt8",                &MacroExpander::handle_gt8                },
     { "gt16",               &MacroExpander::handle_gt16               },
-    { "sgt8",               &MacroExpander::handle_sgt8               },
-    { "sgt16",              &MacroExpander::handle_sgt16              },
+    { "gt8s",               &MacroExpander::handle_gt8s               },
+    { "gt16s",              &MacroExpander::handle_gt16s              },
     { "le8",                &MacroExpander::handle_le8                },
     { "le16",               &MacroExpander::handle_le16               },
-    { "sle8",               &MacroExpander::handle_sle8               },
-    { "sle16",              &MacroExpander::handle_sle16              },
+    { "le8s",               &MacroExpander::handle_le8s               },
+    { "le16s",              &MacroExpander::handle_le16s              },
     { "ge8",                &MacroExpander::handle_ge8                },
     { "ge16",               &MacroExpander::handle_ge16               },
-    { "sge8",               &MacroExpander::handle_sge8               },
-    { "sge16",              &MacroExpander::handle_sge16              },
+    { "ge8s",               &MacroExpander::handle_ge8s               },
+    { "ge16s",              &MacroExpander::handle_ge16s              },
     { "shr8",               &MacroExpander::handle_shr8               },
     { "shr16",              &MacroExpander::handle_shr16              },
     { "shl8",               &MacroExpander::handle_shl8               },
@@ -1040,11 +1040,11 @@ bool MacroExpander::handle_add16(Parser& parser, const Token& tok) {
     return true;
 }
 
-bool MacroExpander::handle_sadd8(Parser& parser, const Token& tok) {
+bool MacroExpander::handle_add8s(Parser& parser, const Token& tok) {
     return handle_add8(parser, tok);
 }
 
-bool MacroExpander::handle_sadd16(Parser& parser, const Token& tok) {
+bool MacroExpander::handle_add16s(Parser& parser, const Token& tok) {
     return handle_add16(parser, tok);
 }
 
@@ -1115,11 +1115,11 @@ bool MacroExpander::handle_sub16(Parser& parser, const Token& tok) {
     return true;
 }
 
-bool MacroExpander::handle_ssub8(Parser& parser, const Token& tok) {
+bool MacroExpander::handle_sub8s(Parser& parser, const Token& tok) {
     return handle_sub8(parser, tok);
 }
 
-bool MacroExpander::handle_ssub16(Parser& parser, const Token& tok) {
+bool MacroExpander::handle_sub16s(Parser& parser, const Token& tok) {
     return handle_sub16(parser, tok);
 }
 
@@ -1285,7 +1285,7 @@ bool MacroExpander::handle_mul16(Parser& parser, const Token& tok) {
     return true;
 }
 
-bool MacroExpander::handle_smul8(Parser& parser, const Token& tok) {
+bool MacroExpander::handle_mul8s(Parser& parser, const Token& tok) {
     std::vector<int> vals;
     if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
         return true;
@@ -1299,7 +1299,7 @@ bool MacroExpander::handle_smul8(Parser& parser, const Token& tok) {
     std::string T_b_copy = make_temp_name("T_b_copy");
 
     TokenScanner scanner;
-    std::string mock_filename = "(smul8)";
+    std::string mock_filename = "(mul8s)";
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(
@@ -1337,7 +1337,7 @@ bool MacroExpander::handle_smul8(Parser& parser, const Token& tok) {
     return true;
 }
 
-bool MacroExpander::handle_smul16(Parser& parser, const Token& tok) {
+bool MacroExpander::handle_mul16s(Parser& parser, const Token& tok) {
     std::vector<int> vals;
     if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
         return true;
@@ -1351,7 +1351,7 @@ bool MacroExpander::handle_smul16(Parser& parser, const Token& tok) {
     std::string T_b_copy = make_temp_name("T_b_copy");
 
     TokenScanner scanner;
-    std::string mock_filename = "(smul16)";
+    std::string mock_filename = "(mul16s)";
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(
@@ -1397,12 +1397,12 @@ bool MacroExpander::handle_div16(Parser& parser, const Token& tok) {
     return handle_div16_mod16(parser, tok, /*return_remainder=*/false);
 }
 
-bool MacroExpander::handle_sdiv8(Parser& parser, const Token& tok) {
-    return handle_sdiv8_smod8(parser, tok, /*return_remainder=*/false);
+bool MacroExpander::handle_div8s(Parser& parser, const Token& tok) {
+    return handle_div8s_mod8s(parser, tok, /*return_remainder=*/false);
 }
 
-bool MacroExpander::handle_sdiv16(Parser& parser, const Token& tok) {
-    return handle_sdiv16_smod16(parser, tok, /*return_remainder=*/false);
+bool MacroExpander::handle_div16s(Parser& parser, const Token& tok) {
+    return handle_div16s_mod16s(parser, tok, /*return_remainder=*/false);
 }
 
 bool MacroExpander::handle_mod8(Parser& parser, const Token& tok) {
@@ -1413,12 +1413,12 @@ bool MacroExpander::handle_mod16(Parser& parser, const Token& tok) {
     return handle_div16_mod16(parser, tok, /*return_remainder=*/true);
 }
 
-bool MacroExpander::handle_smod8(Parser& parser, const Token& tok) {
-    return handle_sdiv8_smod8(parser, tok, /*return_remainder=*/true);
+bool MacroExpander::handle_mod8s(Parser& parser, const Token& tok) {
+    return handle_div8s_mod8s(parser, tok, /*return_remainder=*/true);
 }
 
-bool MacroExpander::handle_smod16(Parser& parser, const Token& tok) {
-    return handle_sdiv16_smod16(parser, tok, /*return_remainder=*/true);
+bool MacroExpander::handle_mod16s(Parser& parser, const Token& tok) {
+    return handle_div16s_mod16s(parser, tok, /*return_remainder=*/true);
 }
 
 bool MacroExpander::handle_div8_mod8(Parser& parser, const Token& tok,
@@ -1578,7 +1578,7 @@ bool MacroExpander::handle_div16_mod16(Parser& parser, const Token& tok,
     return true;
 }
 
-bool MacroExpander::handle_sdiv8_smod8(Parser& parser, const Token& tok,
+bool MacroExpander::handle_div8s_mod8s(Parser& parser, const Token& tok,
                                        bool return_remainder) {
     std::vector<int> vals;
     if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
@@ -1592,7 +1592,7 @@ bool MacroExpander::handle_sdiv8_smod8(Parser& parser, const Token& tok,
     std::string t_final_sign = make_temp_name("t_final_sign");
     std::string t_b_abs = make_temp_name("t_b_abs");
 
-    const std::string mock_filename = return_remainder ? "(smod8)" : "(sdiv8)";
+    const std::string mock_filename = return_remainder ? "(mod8s)" : "(div8s)";
     const std::string final_sign =
         return_remainder ?
         // final_sign = sa
@@ -1639,7 +1639,7 @@ bool MacroExpander::handle_sdiv8_smod8(Parser& parser, const Token& tok,
     return true;
 }
 
-bool MacroExpander::handle_sdiv16_smod16(Parser& parser, const Token& tok,
+bool MacroExpander::handle_div16s_mod16s(Parser& parser, const Token& tok,
         bool return_remainder) {
     std::vector<int> vals;
     if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
@@ -1653,7 +1653,7 @@ bool MacroExpander::handle_sdiv16_smod16(Parser& parser, const Token& tok,
     std::string t_final_sign = make_temp_name("t_final_sign");
     std::string t_b_abs = make_temp_name("t_b_abs");
 
-    const std::string mock_filename = return_remainder ? "(smod16)" : "(sdiv16)";
+    const std::string mock_filename = return_remainder ? "(mod16s)" : "(div16s)";
     const std::string final_sign =
         return_remainder ?
         // final_sign = sa
@@ -1870,11 +1870,11 @@ bool MacroExpander::handle_eq16(Parser& parser, const Token& tok) {
     return true;
 }
 
-bool MacroExpander::handle_seq8(Parser& parser, const Token& tok) {
+bool MacroExpander::handle_eq8s(Parser& parser, const Token& tok) {
     return handle_eq8(parser, tok);
 }
 
-bool MacroExpander::handle_seq16(Parser& parser, const Token& tok) {
+bool MacroExpander::handle_eq16s(Parser& parser, const Token& tok) {
     return handle_eq16(parser, tok);
 }
 
@@ -1922,11 +1922,11 @@ bool MacroExpander::handle_ne16(Parser& parser, const Token& tok) {
     return true;
 }
 
-bool MacroExpander::handle_sne8(Parser& parser, const Token& tok) {
+bool MacroExpander::handle_ne8s(Parser& parser, const Token& tok) {
     return handle_ne8(parser, tok);
 }
 
-bool MacroExpander::handle_sne16(Parser& parser, const Token& tok) {
+bool MacroExpander::handle_ne16s(Parser& parser, const Token& tok) {
     return handle_ne16(parser, tok);
 }
 
@@ -2028,7 +2028,7 @@ bool MacroExpander::handle_lt16(Parser& parser, const Token& tok) {
     return true;
 }
 
-bool MacroExpander::handle_slt8(Parser& parser, const Token& tok) {
+bool MacroExpander::handle_lt8s(Parser& parser, const Token& tok) {
     std::vector<int> vals;
     if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
         return true;
@@ -2041,7 +2041,7 @@ bool MacroExpander::handle_slt8(Parser& parser, const Token& tok) {
     std::string t_tmp = make_temp_name("t_tmp");
 
     TokenScanner scanner;
-    std::string mock_filename = "(slt8)";
+    std::string mock_filename = "(lt8s)";
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(
@@ -2073,7 +2073,7 @@ bool MacroExpander::handle_slt8(Parser& parser, const Token& tok) {
     return true;
 }
 
-bool MacroExpander::handle_slt16(Parser& parser, const Token& tok) {
+bool MacroExpander::handle_lt16s(Parser& parser, const Token& tok) {
     std::vector<int> vals;
     if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
         return true;
@@ -2086,7 +2086,7 @@ bool MacroExpander::handle_slt16(Parser& parser, const Token& tok) {
     std::string t_tmp = make_temp_name("t_tmp");
 
     TokenScanner scanner;
-    std::string mock_filename = "(slt16)";
+    std::string mock_filename = "(lt16s)";
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(
@@ -2216,7 +2216,7 @@ bool MacroExpander::handle_gt16(Parser& parser, const Token& tok) {
     return true;
 }
 
-bool MacroExpander::handle_sgt8(Parser& parser, const Token& tok) {
+bool MacroExpander::handle_gt8s(Parser& parser, const Token& tok) {
     std::vector<int> vals;
     if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
         return true;
@@ -2229,7 +2229,7 @@ bool MacroExpander::handle_sgt8(Parser& parser, const Token& tok) {
     std::string t_tmp = make_temp_name("t_tmp");
 
     TokenScanner scanner;
-    std::string mock_filename = "(sgt8)";
+    std::string mock_filename = "(gt8s)";
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(
@@ -2261,7 +2261,7 @@ bool MacroExpander::handle_sgt8(Parser& parser, const Token& tok) {
     return true;
 }
 
-bool MacroExpander::handle_sgt16(Parser& parser, const Token& tok) {
+bool MacroExpander::handle_gt16s(Parser& parser, const Token& tok) {
     std::vector<int> vals;
     if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
         return true;
@@ -2274,7 +2274,7 @@ bool MacroExpander::handle_sgt16(Parser& parser, const Token& tok) {
     std::string t_tmp = make_temp_name("t_tmp");
 
     TokenScanner scanner;
-    std::string mock_filename = "(sgt16)";
+    std::string mock_filename = "(gt16s)";
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(
@@ -2348,7 +2348,7 @@ bool MacroExpander::handle_le16(Parser& parser, const Token& tok) {
     return true;
 }
 
-bool MacroExpander::handle_sle8(Parser& parser, const Token& tok) {
+bool MacroExpander::handle_le8s(Parser& parser, const Token& tok) {
     std::vector<int> vals;
     if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
         return true;
@@ -2361,7 +2361,7 @@ bool MacroExpander::handle_sle8(Parser& parser, const Token& tok) {
     std::string t_tmp = make_temp_name("t_tmp");
 
     TokenScanner scanner;
-    std::string mock_filename = "(sle8)";
+    std::string mock_filename = "(le8s)";
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(
@@ -2393,7 +2393,7 @@ bool MacroExpander::handle_sle8(Parser& parser, const Token& tok) {
     return true;
 }
 
-bool MacroExpander::handle_sle16(Parser& parser, const Token& tok) {
+bool MacroExpander::handle_le16s(Parser& parser, const Token& tok) {
     std::vector<int> vals;
     if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
         return true;
@@ -2406,7 +2406,7 @@ bool MacroExpander::handle_sle16(Parser& parser, const Token& tok) {
     std::string t_tmp = make_temp_name("t_tmp");
 
     TokenScanner scanner;
-    std::string mock_filename = "(sle16)";
+    std::string mock_filename = "(le16s)";
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(
@@ -2480,7 +2480,7 @@ bool MacroExpander::handle_ge16(Parser& parser, const Token& tok) {
     return true;
 }
 
-bool MacroExpander::handle_sge8(Parser& parser, const Token& tok) {
+bool MacroExpander::handle_ge8s(Parser& parser, const Token& tok) {
     std::vector<int> vals;
     if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
         return true;
@@ -2493,7 +2493,7 @@ bool MacroExpander::handle_sge8(Parser& parser, const Token& tok) {
     std::string t_tmp = make_temp_name("t_tmp");
 
     TokenScanner scanner;
-    std::string mock_filename = "(sge8)";
+    std::string mock_filename = "(ge8s)";
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(
@@ -2525,7 +2525,7 @@ bool MacroExpander::handle_sge8(Parser& parser, const Token& tok) {
     return true;
 }
 
-bool MacroExpander::handle_sge16(Parser& parser, const Token& tok) {
+bool MacroExpander::handle_ge16s(Parser& parser, const Token& tok) {
     std::vector<int> vals;
     if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
         return true;
@@ -2538,7 +2538,7 @@ bool MacroExpander::handle_sge16(Parser& parser, const Token& tok) {
     std::string t_tmp = make_temp_name("t_tmp");
 
     TokenScanner scanner;
-    std::string mock_filename = "(sge16)";
+    std::string mock_filename = "(ge16s)";
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(

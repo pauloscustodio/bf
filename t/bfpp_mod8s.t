@@ -4,29 +4,29 @@ BEGIN { use lib 't'; require 'testlib.pl'; }
 
 use Modern::Perl;
 
-# smod8 - error no arguments
-spew("$test.in", "smod8");
+# mod8s - error no arguments
+spew("$test.in", "mod8s");
 capture_nok("bfpp $test.in", <<END);
-$test.in:1:6: error: expected '(' after macro name 'smod8'
+$test.in:1:6: error: expected '(' after macro name 'mod8s'
 END
 
-# smod8 - error empty arguments
-spew("$test.in", "smod8()");
+# mod8s - error empty arguments
+spew("$test.in", "mod8s()");
 capture_nok("bfpp $test.in", <<END);
-$test.in:1:8: error: macro 'smod8' expects 2 arguments
+$test.in:1:8: error: macro 'mod8s' expects 2 arguments
 END
 
-# smod8 - error too many arguments
-spew("$test.in", "smod8(A,B,C)");
+# mod8s - error too many arguments
+spew("$test.in", "mod8s(A,B,C)");
 capture_nok("bfpp $test.in", <<END);
 $test.in:1:10: error: expected ')' at end of macro call, found ','
 END
 
-# smod8(a,b)
+# mod8s(a,b)
 spew("$test.in", <<END);
 alloc_cell8(A)
 alloc_cell8(B)
-smod8(A,B)
+mod8s(A,B)
 >A
 END
 capture_ok("bfpp $test.in", <<END);
@@ -265,7 +265,7 @@ END
 spew("$test.in", <<END);
 		alloc_cell8(A)
 		alloc_cell8(B)
-		smod8(A, B)
+		mod8s(A, B)
 END
 capture_ok("bfpp $test.in | bf -D", <<END);
 Tape:  0 
@@ -273,7 +273,7 @@ Tape:  0
 
 END
 
-# run smod8(a,b)
+# run mod8s(a,b)
 for my $A (-20, -10, 0, 10, 20) {
 	for my $B (-4, -3, -2, -1, 1, 2, 3, 4) {
 		my $A8 = $A & 0xFF;
@@ -283,11 +283,11 @@ for my $A (-20, -10, 0, 10, 20) {
 		alloc_cell8(B)
 		set8(A, $A8)
 		set8(B, $B8)
-		smod8(A, B)
+		mod8s(A, B)
 		>B
 END
 		# signed modulo
-		my $R = sprintf("%3d", smod8($A, $B));
+		my $R = sprintf("%3d", mod8s($A, $B));
 		my $Bout = sprintf("%3d", $B & 0xFF);
 		capture_ok("bfpp $test.in | bf -D", <<END);
 Tape:$R $Bout 
@@ -300,7 +300,7 @@ END
 unlink_testfiles;
 done_testing;
 
-sub smod8 {
+sub mod8s {
     my ($a, $b) = @_;
 
     # convert to signed 8-bit
