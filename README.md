@@ -1,6 +1,6 @@
 # bf, bfpp & bfbasic
 
-Brainfuck tools: a tiny interpreter (`bf`), a macro preprocessor (`bfpp`) that emits plain BF, and a yiny BASIC compiler (`bfbasic`) that emits bfpp macros.
+Brainfuck tools: a tiny interpreter (`bf`), a macro preprocessor (`bfpp`) that emits plain BF, and a tiny BASIC compiler (`bfbasic`) that emits bfpp macros.
 
 ## bf - interpreter
 
