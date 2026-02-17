@@ -71,5 +71,15 @@ Here's a simple example using `bfpp` to create a BF program that prints "Hello, 
 ```
 ./bf examples/hello.bf
 ./bfpp examples/hello.bfpp | ./bf
+```
+
+Here's a simple calculator written in `bfpp` and compiled to `bf`:
+
+```
 echo '2*3+7' | ./bf examples/calc.bf
 ```
+
+## License
+
+This project is licensed under the [Artistic License 2.0](http://www.perlfoundation.org/artistic_license_2_0).
+
