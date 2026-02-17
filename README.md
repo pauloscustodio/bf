@@ -97,7 +97,7 @@ make
 make test
 ```
 
-This produces `bf` and `bfpp` executables in the project directory. You can run them as described above.
+This produces `bf`, `bfpp` and `bfbasic` executables in the project directory. You can run them as described above.
 
 ## Example
 
