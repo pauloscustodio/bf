@@ -20,7 +20,7 @@ usage: bfpp [-o output_file] [-I include_path] [-D name=value] [-v] [input_file]
 - -I include_path : add directory to search path for source and include files
 - -D name=value : defines numeric macro to be used in the code
 - input_file : parse input file instead of stdin
-- v : show memory usage statistics
+- -v : show memory usage statistics
 
 ### Extended syntax
 - `>N` / `<N` : absolute move to tape cell `N` (0-based).
