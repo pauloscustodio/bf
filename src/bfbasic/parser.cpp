@@ -29,7 +29,17 @@ Program Parser::parse_program() {
 }
 
 const Token& Parser::peek() const {
-    return tokens[pos];
+    if (pos < tokens.size()) {
+        return tokens[pos];
+    }
+    return tokens.back(); // always EOF
+}
+
+const Token& Parser::peek_next() const {
+    if (pos + 1 < tokens.size()) {
+        return tokens[pos + 1];
+    }
+    return tokens.back(); // always EOF
 }
 
 bool Parser::eof() const {
@@ -71,6 +81,11 @@ Stmt Parser::parse_statement() {
         return parse_print();
     }
 
+    // optional LET
+    if (match(TokenType::Identifier) && peek_next().type == TokenType::Equal) {
+        return parse_let_without_keyword();
+    }
+
     error_here("Expected LET, INPUT, or PRINT");
 }
 
@@ -85,6 +100,21 @@ Stmt Parser::parse_let() {
     Stmt s;
     s.type = Stmt::Type::Let;
     s.loc = { kw.line, kw.column };
+    s.var = id.text;
+    s.expr = std::make_unique<Expr>(std::move(e));
+
+    return s;
+}
+
+Stmt Parser::parse_let_without_keyword() {
+    Token id = expect(TokenType::Identifier, "Expected variable name");
+    expect(TokenType::Equal, "Expected '=' after variable name");
+
+    Expr e = parse_expr();
+
+    Stmt s;
+    s.type = Stmt::Type::Let;
+    s.loc = { id.line, id.column };
     s.var = id.text;
     s.expr = std::make_unique<Expr>(std::move(e));
 

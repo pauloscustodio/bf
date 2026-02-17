@@ -22,6 +22,7 @@ private:
     // --- Utility -------------------------------------------------------------
 
     const Token& peek() const;
+    const Token& peek_next() const;
     bool eof() const;
     const Token& advance();
     bool match(TokenType t) const;
@@ -32,6 +33,7 @@ private:
 
     Stmt parse_statement();
     Stmt parse_let();
+    Stmt parse_let_without_keyword();
     Stmt parse_input();
     Stmt parse_print();
     void consume_end_of_statement();

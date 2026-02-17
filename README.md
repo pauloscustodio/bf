@@ -61,7 +61,7 @@ usage: bfbasic [-o output_file] input_file
 - input_file : BASIC source file (reads stdin if omitted)
 
 Supported statements (one per line; blank lines allowed):
-- `LET var = expr` - assign integer expression to a variable.
+- `[LET] var = expr` - assign integer expression to a variable.
 - `INPUT var` - read an integer into `var`.
 - `PRINT var` - print the integer value of `var`.
 
