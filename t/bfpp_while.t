@@ -26,9 +26,9 @@ END
 spew("$test.in", "while(0)");
 capture_nok("bfpp $test.in", <<END);
 $test.in:1:9: error: while without matching endwhile
-(while):1:107: error: unmatched '[' instruction
+(while):1:82: error: unmatched '[' instruction
 (while):1:1: error: unmatched '{' brace
-(while):1:109: error: unmatched '{' brace
+(while):1:84: error: unmatched '{' brace
 END
 
 # naked endwhile

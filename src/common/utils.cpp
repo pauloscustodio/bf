@@ -29,3 +29,10 @@ std::string lowercase(std::string s) {
     }
     return s;
 }
+
+std::string uppercase(std::string s) {
+    for (char& c : s) {
+        c = std::toupper(c);
+    }
+    return s;
+}

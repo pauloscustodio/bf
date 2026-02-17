@@ -233,5 +233,5 @@ private:
 };
 
 bool is_reserved_keyword(const std::string& name);
-std::string make_temp_name(const std::string& suffix);
+std::string make_temp_name();
 void reset_temp_names();

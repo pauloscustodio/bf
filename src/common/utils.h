@@ -13,4 +13,4 @@ bool is_alpha(int ch);
 bool is_digit(int ch);
 bool is_alnum(int ch);
 std::string lowercase(std::string s);
-
+std::string uppercase(std::string s);

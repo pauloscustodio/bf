@@ -52,6 +52,25 @@ Notes:
 - `move` zeroes the source; `copy` preserves it.
 - Division/modulo are integer; arithmetic wraps at 8-bit (or 16-bit for `xx16`).
 
+## bfbasic - BASIC to BFPP compiler
+
+Compiles a tiny BASIC subset to Brainfuck (via `bfpp` codegen).
+
+usage: bfbasic [-o output_file] input_file
+- -o output_file : write output to the given file instead of stdout
+- input_file : BASIC source file (reads stdin if omitted)
+
+Supported statements (one per line; blank lines allowed):
+- `LET var = expr` - assign integer expression to a variable.
+- `INPUT var` - read an integer into `var`.
+- `PRINT var` - print the integer value of `var`.
+
+Expressions:
+- variables and decimal integers
+- binary `+ - * /` (left-associative, integer arithmetic)
+
+The compiler allocates variables automatically and emits `bfpp` code.
+
 ## Building
 
 Makefile project targeting C++17. Typical flow:

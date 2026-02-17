@@ -618,7 +618,7 @@ bool MacroExpander::handle_copy8(Parser& parser, const Token& tok) {
     int a = vals[0];
     int b = vals[1];
 
-    std::string t_name = make_temp_name("t_name");
+    std::string t_name = make_temp_name();
 
     TokenScanner scanner;
     std::string mock_filename = "(copy8)";
@@ -665,8 +665,8 @@ bool MacroExpander::handle_not8(Parser& parser, const Token& tok) {
     }
     int X = vals[0];
 
-    std::string T = make_temp_name("T");
-    std::string F = make_temp_name("F");
+    std::string T = make_temp_name();
+    std::string F = make_temp_name();
 
     TokenScanner scanner;
     std::string mock_filename = "(not8)";
@@ -707,8 +707,8 @@ bool MacroExpander::handle_not16(Parser& parser, const Token& tok) {
     }
     int a = vals[0];
 
-    std::string T1 = make_temp_name("T1");
-    std::string T2 = make_temp_name("T2");
+    std::string T1 = make_temp_name();
+    std::string T2 = make_temp_name();
 
     TokenScanner scanner;
     std::string mock_filename = "(not16)";
@@ -746,9 +746,9 @@ bool MacroExpander::handle_and8(Parser& parser, const Token& tok) {
     int a = vals[0];
     int b = vals[1];
 
-    std::string t_a = make_temp_name("t_a");
-    std::string t_b = make_temp_name("t_b");
-    std::string t_r = make_temp_name("t_r");
+    std::string t_a = make_temp_name();
+    std::string t_b = make_temp_name();
+    std::string t_r = make_temp_name();
 
     TokenScanner scanner;
     std::string mock_filename = "(and8)";
@@ -787,8 +787,8 @@ bool MacroExpander::handle_and16(Parser& parser, const Token& tok) {
     int a = vals[0];
     int b = vals[1];
 
-    std::string T1 = make_temp_name("T1");
-    std::string T2 = make_temp_name("T2");
+    std::string T1 = make_temp_name();
+    std::string T2 = make_temp_name();
 
     TokenScanner scanner;
     std::string mock_filename = "(and16)";
@@ -827,9 +827,9 @@ bool MacroExpander::handle_or8(Parser& parser, const Token& tok) {
     int a = vals[0];
     int b = vals[1];
 
-    std::string t_a = make_temp_name("t_a");
-    std::string t_b = make_temp_name("t_b");
-    std::string t_r = make_temp_name("t_r");
+    std::string t_a = make_temp_name();
+    std::string t_b = make_temp_name();
+    std::string t_r = make_temp_name();
 
     TokenScanner scanner;
     std::string mock_filename = "(or8)";
@@ -873,7 +873,7 @@ bool MacroExpander::handle_or16(Parser& parser, const Token& tok) {
     int a = vals[0];
     int b = vals[1];
 
-    std::string T = make_temp_name("T");
+    std::string T = make_temp_name();
 
     TokenScanner scanner;
     std::string mock_filename = "(or16)";
@@ -908,8 +908,8 @@ bool MacroExpander::handle_xor8(Parser& parser, const Token& tok) {
     int a = vals[0];
     int b = vals[1];
 
-    std::string T1 = make_temp_name("T1");
-    std::string T2 = make_temp_name("T2");
+    std::string T1 = make_temp_name();
+    std::string T2 = make_temp_name();
 
     TokenScanner scanner;
     std::string mock_filename = "(xor8)";
@@ -946,8 +946,8 @@ bool MacroExpander::handle_xor16(Parser& parser, const Token& tok) {
     int a = vals[0];
     int b = vals[1];
 
-    std::string T1 = make_temp_name("T1");
-    std::string T2 = make_temp_name("T2");
+    std::string T1 = make_temp_name();
+    std::string T2 = make_temp_name();
 
     TokenScanner scanner;
     std::string mock_filename = "(xor16)";
@@ -987,7 +987,7 @@ bool MacroExpander::handle_add8(Parser& parser, const Token& tok) {
     int a = vals[0];
     int b = vals[1];
 
-    std::string T = make_temp_name("T");
+    std::string T = make_temp_name();
 
     TokenScanner scanner;
     std::string mock_filename = "(add8)";
@@ -1016,8 +1016,8 @@ bool MacroExpander::handle_add16(Parser& parser, const Token& tok) {
     int a = vals[0];
     int b = vals[1];
 
-    std::string t_old = make_temp_name("t_old");
-    std::string t_carry = make_temp_name("t_carry");
+    std::string t_old = make_temp_name();
+    std::string t_carry = make_temp_name();
 
     TokenScanner scanner;
     std::string mock_filename = "(add16)";
@@ -1062,7 +1062,7 @@ bool MacroExpander::handle_sub8(Parser& parser, const Token& tok) {
     int a = vals[0];
     int b = vals[1];
 
-    std::string T = make_temp_name("T");
+    std::string T = make_temp_name();
 
     TokenScanner scanner;
     std::string mock_filename = "(sub8)";
@@ -1091,8 +1091,8 @@ bool MacroExpander::handle_sub16(Parser& parser, const Token& tok) {
     int a = vals[0];
     int b = vals[1];
 
-    std::string t_old = make_temp_name("t_old");
-    std::string t_borrow = make_temp_name("t_borrow");
+    std::string t_old = make_temp_name();
+    std::string t_borrow = make_temp_name();
 
     TokenScanner scanner;
     std::string mock_filename = "(sub16)";
@@ -1136,7 +1136,7 @@ bool MacroExpander::handle_neg8(Parser& parser, const Token& tok) {
     }
     int a = vals[0];
 
-    std::string T_zero = make_temp_name("T_zero");
+    std::string T_zero = make_temp_name();
 
     TokenScanner scanner;
     std::string mock_filename = "(neg8)";
@@ -1160,7 +1160,7 @@ bool MacroExpander::handle_neg16(Parser& parser, const Token& tok) {
     }
     int a = vals[0];
 
-    std::string T_zero = make_temp_name("T_zero");
+    std::string T_zero = make_temp_name();
 
     TokenScanner scanner;
     std::string mock_filename = "(neg16)";
@@ -1185,11 +1185,11 @@ bool MacroExpander::handle_mul8(Parser& parser, const Token& tok) {
     int a = vals[0];
     int b = vals[1];
 
-    std::string T_res = make_temp_name("T_res");
-    std::string T_b = make_temp_name("T_b");
-    std::string T_tmp = make_temp_name("T_tmp");
-    std::string T_one = make_temp_name("T_one");
-    std::string T_two = make_temp_name("T_two");
+    std::string T_res = make_temp_name();
+    std::string T_b = make_temp_name();
+    std::string T_tmp = make_temp_name();
+    std::string T_one = make_temp_name();
+    std::string T_two = make_temp_name();
 
     TokenScanner scanner;
     std::string mock_filename = "(mul8)";
@@ -1236,12 +1236,12 @@ bool MacroExpander::handle_mul16(Parser& parser, const Token& tok) {
     int a = vals[0];
     int b = vals[1];
 
-    std::string T_acc = make_temp_name("T_acc");
-    std::string T_mul = make_temp_name("T_mul");
-    std::string T_mcand = make_temp_name("T_mcand");
-    std::string T_tmp = make_temp_name("T_tmp");
-    std::string T_one = make_temp_name("T_one");
-    std::string T_two = make_temp_name("T_two");
+    std::string T_acc = make_temp_name();
+    std::string T_mul = make_temp_name();
+    std::string T_mcand = make_temp_name();
+    std::string T_tmp = make_temp_name();
+    std::string T_one = make_temp_name();
+    std::string T_two = make_temp_name();
 
     TokenScanner scanner;
     std::string mock_filename = "(mul16)";
@@ -1299,10 +1299,10 @@ bool MacroExpander::handle_mul8s(Parser& parser, const Token& tok) {
     int a = vals[0];
     int b = vals[1];
 
-    std::string T_sign_a = make_temp_name("T_sign_a");
-    std::string T_sign_b = make_temp_name("T_sign_b");
-    std::string T_final_sign = make_temp_name("T_final_sign");
-    std::string T_b_copy = make_temp_name("T_b_copy");
+    std::string T_sign_a = make_temp_name();
+    std::string T_sign_b = make_temp_name();
+    std::string T_final_sign = make_temp_name();
+    std::string T_b_copy = make_temp_name();
 
     TokenScanner scanner;
     std::string mock_filename = "(mul8s)";
@@ -1351,10 +1351,10 @@ bool MacroExpander::handle_mul16s(Parser& parser, const Token& tok) {
     int a = vals[0];
     int b = vals[1];
 
-    std::string T_sign_a = make_temp_name("T_sign_a");
-    std::string T_sign_b = make_temp_name("T_sign_b");
-    std::string T_final_sign = make_temp_name("T_final_sign");
-    std::string T_b_copy = make_temp_name("T_b_copy");
+    std::string T_sign_a = make_temp_name();
+    std::string T_sign_b = make_temp_name();
+    std::string T_final_sign = make_temp_name();
+    std::string T_b_copy = make_temp_name();
 
     TokenScanner scanner;
     std::string mock_filename = "(mul16s)";
@@ -1436,13 +1436,13 @@ bool MacroExpander::handle_div8_mod8(Parser& parser, const Token& tok,
     int a = vals[0];
     int b = vals[1];
 
-    std::string T_quot = make_temp_name("T_quot");
-    std::string T_rem = make_temp_name("T_rem");
-    std::string T_bit = make_temp_name("T_bit");
-    std::string T_tmp = make_temp_name("T_tmp");
-    std::string T_one = make_temp_name("T_one");
-    std::string T_seven = make_temp_name("T_seven");
-    std::string T_eight = make_temp_name("T_eight");
+    std::string T_quot = make_temp_name();
+    std::string T_rem = make_temp_name();
+    std::string T_bit = make_temp_name();
+    std::string T_tmp = make_temp_name();
+    std::string T_one = make_temp_name();
+    std::string T_seven = make_temp_name();
+    std::string T_eight = make_temp_name();
 
     const std::string move_target = return_remainder ? T_rem : T_quot;
     const std::string mock_filename = return_remainder ? "(mod8)" : "(div8)";
@@ -1498,14 +1498,14 @@ bool MacroExpander::handle_div16_mod16(Parser& parser, const Token& tok,
     int a = vals[0];
     int b = vals[1];
 
-    std::string T_work = make_temp_name("T_work");
-    std::string T_quot = make_temp_name("T_quot");
-    std::string T_scale = make_temp_name("T_scale");
-    std::string T_bit = make_temp_name("T_bit");
-    std::string T_tmp = make_temp_name("T_tmp");
-    std::string T_cond = make_temp_name("T_cond");
-    std::string T_guard = make_temp_name("T_guard");
-    std::string T_one = make_temp_name("T_one");
+    std::string T_work = make_temp_name();
+    std::string T_quot = make_temp_name();
+    std::string T_scale = make_temp_name();
+    std::string T_bit = make_temp_name();
+    std::string T_tmp = make_temp_name();
+    std::string T_cond = make_temp_name();
+    std::string T_guard = make_temp_name();
+    std::string T_one = make_temp_name();
 
     const std::string move_target = return_remainder ? T_work : T_quot;
     const std::string mock_filename = return_remainder ? "(mod16)" : "(div16)";
@@ -1593,10 +1593,10 @@ bool MacroExpander::handle_div8s_mod8s(Parser& parser, const Token& tok,
     int a = vals[0];
     int b = vals[1];
 
-    std::string t_sa = make_temp_name("t_sa");
-    std::string t_sb = make_temp_name("t_sb");
-    std::string t_final_sign = make_temp_name("t_final_sign");
-    std::string t_b_abs = make_temp_name("t_b_abs");
+    std::string t_sa = make_temp_name();
+    std::string t_sb = make_temp_name();
+    std::string t_final_sign = make_temp_name();
+    std::string t_b_abs = make_temp_name();
 
     const std::string mock_filename = return_remainder ? "(mod8s)" : "(div8s)";
     const std::string final_sign =
@@ -1654,10 +1654,10 @@ bool MacroExpander::handle_div16s_mod16s(Parser& parser, const Token& tok,
     int a = vals[0];
     int b = vals[1];
 
-    std::string t_sa = make_temp_name("t_sa");
-    std::string t_sb = make_temp_name("t_sb");
-    std::string t_final_sign = make_temp_name("t_final_sign");
-    std::string t_b_abs = make_temp_name("t_b_abs");
+    std::string t_sa = make_temp_name();
+    std::string t_sb = make_temp_name();
+    std::string t_final_sign = make_temp_name();
+    std::string t_b_abs = make_temp_name();
 
     const std::string mock_filename = return_remainder ? "(mod16s)" : "(div16s)";
     const std::string final_sign =
@@ -1713,7 +1713,7 @@ bool MacroExpander::handle_sign8(Parser& parser, const Token& tok) {
     }
     int x = vals[0];
 
-    std::string T_128 = make_temp_name("T_128");
+    std::string T_128 = make_temp_name();
 
     TokenScanner scanner;
     std::string mock_filename = "(sign8)";
@@ -1738,7 +1738,7 @@ bool MacroExpander::handle_sign16(Parser& parser, const Token& tok) {
     }
     int x = vals[0];
 
-    std::string T_32768 = make_temp_name("T_32768");
+    std::string T_32768 = make_temp_name();
 
     TokenScanner scanner;
     std::string mock_filename = "(sign16)";
@@ -1763,7 +1763,7 @@ bool MacroExpander::handle_abs8(Parser& parser, const Token& tok) {
     }
     int x = vals[0];
 
-    std::string T_cond = make_temp_name("T_cond");
+    std::string T_cond = make_temp_name();
 
     TokenScanner scanner;
     std::string mock_filename = "(abs8)";
@@ -1792,7 +1792,7 @@ bool MacroExpander::handle_abs16(Parser& parser, const Token& tok) {
     }
     int x = vals[0];
 
-    std::string T_cond = make_temp_name("T_cond");
+    std::string T_cond = make_temp_name();
 
     TokenScanner scanner;
     std::string mock_filename = "(abs16)";
@@ -1844,8 +1844,8 @@ bool MacroExpander::handle_eq16(Parser& parser, const Token& tok) {
     int a = vals[0];
     int b = vals[1];
 
-    std::string T1 = make_temp_name("T1");
-    std::string T2 = make_temp_name("T2");
+    std::string T1 = make_temp_name();
+    std::string T2 = make_temp_name();
 
     TokenScanner scanner;
     std::string mock_filename = "(eq16)";
@@ -1944,10 +1944,10 @@ bool MacroExpander::handle_lt8(Parser& parser, const Token& tok) {
     int a = vals[0];
     int b = vals[1];
 
-    std::string t_a = make_temp_name("t_a");
-    std::string t_b = make_temp_name("t_b");
-    std::string t_a_and_b = make_temp_name("t_a_and_b");
-    std::string temp_lt = make_temp_name("temp_lt");
+    std::string t_a = make_temp_name();
+    std::string t_b = make_temp_name();
+    std::string t_a_and_b = make_temp_name();
+    std::string temp_lt = make_temp_name();
 
     TokenScanner scanner;
     std::string mock_filename = "(lt8)";
@@ -1998,8 +1998,8 @@ bool MacroExpander::handle_lt16(Parser& parser, const Token& tok) {
     int a = vals[0];
     int b = vals[1];
 
-    std::string T1 = make_temp_name("T1");
-    std::string T2 = make_temp_name("T2");
+    std::string T1 = make_temp_name();
+    std::string T2 = make_temp_name();
 
     TokenScanner scanner;
     std::string mock_filename = "(lt16)";
@@ -2042,9 +2042,9 @@ bool MacroExpander::handle_lt8s(Parser& parser, const Token& tok) {
     int a = vals[0];
     int b = vals[1];
 
-    std::string t_sa = make_temp_name("t_sa");
-    std::string t_sb = make_temp_name("t_sb");
-    std::string t_tmp = make_temp_name("t_tmp");
+    std::string t_sa = make_temp_name();
+    std::string t_sb = make_temp_name();
+    std::string t_tmp = make_temp_name();
 
     TokenScanner scanner;
     std::string mock_filename = "(lt8s)";
@@ -2087,9 +2087,9 @@ bool MacroExpander::handle_lt16s(Parser& parser, const Token& tok) {
     int a = vals[0];
     int b = vals[1];
 
-    std::string t_sa = make_temp_name("t_sa");
-    std::string t_sb = make_temp_name("t_sb");
-    std::string t_tmp = make_temp_name("t_tmp");
+    std::string t_sa = make_temp_name();
+    std::string t_sb = make_temp_name();
+    std::string t_tmp = make_temp_name();
 
     TokenScanner scanner;
     std::string mock_filename = "(lt16s)";
@@ -2132,10 +2132,10 @@ bool MacroExpander::handle_gt8(Parser& parser, const Token& tok) {
     int a = vals[0];
     int b = vals[1];
 
-    std::string t_a = make_temp_name("t_a");
-    std::string t_b = make_temp_name("t_b");
-    std::string t_a_and_b = make_temp_name("t_a_and_b");
-    std::string t_gt = make_temp_name("t_gt");
+    std::string t_a = make_temp_name();
+    std::string t_b = make_temp_name();
+    std::string t_a_and_b = make_temp_name();
+    std::string t_gt = make_temp_name();
 
     TokenScanner scanner;
     std::string mock_filename = "(gt8)";
@@ -2186,8 +2186,8 @@ bool MacroExpander::handle_gt16(Parser& parser, const Token& tok) {
     int a = vals[0];
     int b = vals[1];
 
-    std::string T1 = make_temp_name("T1");
-    std::string T2 = make_temp_name("T2");
+    std::string T1 = make_temp_name();
+    std::string T2 = make_temp_name();
 
     TokenScanner scanner;
     std::string mock_filename = "(gt16)";
@@ -2230,9 +2230,9 @@ bool MacroExpander::handle_gt8s(Parser& parser, const Token& tok) {
     int a = vals[0];
     int b = vals[1];
 
-    std::string t_sa = make_temp_name("t_sa");
-    std::string t_sb = make_temp_name("t_sb");
-    std::string t_tmp = make_temp_name("t_tmp");
+    std::string t_sa = make_temp_name();
+    std::string t_sb = make_temp_name();
+    std::string t_tmp = make_temp_name();
 
     TokenScanner scanner;
     std::string mock_filename = "(gt8s)";
@@ -2275,9 +2275,9 @@ bool MacroExpander::handle_gt16s(Parser& parser, const Token& tok) {
     int a = vals[0];
     int b = vals[1];
 
-    std::string t_sa = make_temp_name("t_sa");
-    std::string t_sb = make_temp_name("t_sb");
-    std::string t_tmp = make_temp_name("t_tmp");
+    std::string t_sa = make_temp_name();
+    std::string t_sb = make_temp_name();
+    std::string t_tmp = make_temp_name();
 
     TokenScanner scanner;
     std::string mock_filename = "(gt16s)";
@@ -2362,9 +2362,9 @@ bool MacroExpander::handle_le8s(Parser& parser, const Token& tok) {
     int a = vals[0];
     int b = vals[1];
 
-    std::string t_sa = make_temp_name("t_sa");
-    std::string t_sb = make_temp_name("t_sb");
-    std::string t_tmp = make_temp_name("t_tmp");
+    std::string t_sa = make_temp_name();
+    std::string t_sb = make_temp_name();
+    std::string t_tmp = make_temp_name();
 
     TokenScanner scanner;
     std::string mock_filename = "(le8s)";
@@ -2407,9 +2407,9 @@ bool MacroExpander::handle_le16s(Parser& parser, const Token& tok) {
     int a = vals[0];
     int b = vals[1];
 
-    std::string t_sa = make_temp_name("t_sa");
-    std::string t_sb = make_temp_name("t_sb");
-    std::string t_tmp = make_temp_name("t_tmp");
+    std::string t_sa = make_temp_name();
+    std::string t_sb = make_temp_name();
+    std::string t_tmp = make_temp_name();
 
     TokenScanner scanner;
     std::string mock_filename = "(le16s)";
@@ -2494,9 +2494,9 @@ bool MacroExpander::handle_ge8s(Parser& parser, const Token& tok) {
     int a = vals[0];
     int b = vals[1];
 
-    std::string t_sa = make_temp_name("t_sa");
-    std::string t_sb = make_temp_name("t_sb");
-    std::string t_tmp = make_temp_name("t_tmp");
+    std::string t_sa = make_temp_name();
+    std::string t_sb = make_temp_name();
+    std::string t_tmp = make_temp_name();
 
     TokenScanner scanner;
     std::string mock_filename = "(ge8s)";
@@ -2539,9 +2539,9 @@ bool MacroExpander::handle_ge16s(Parser& parser, const Token& tok) {
     int a = vals[0];
     int b = vals[1];
 
-    std::string t_sa = make_temp_name("t_sa");
-    std::string t_sb = make_temp_name("t_sb");
-    std::string t_tmp = make_temp_name("t_tmp");
+    std::string t_sa = make_temp_name();
+    std::string t_sb = make_temp_name();
+    std::string t_tmp = make_temp_name();
 
     TokenScanner scanner;
     std::string mock_filename = "(ge16s)";
@@ -2584,11 +2584,11 @@ bool MacroExpander::handle_shr8(Parser& parser, const Token& tok) {
     int a = vals[0];
     int b = vals[1];
 
-    std::string T_half = make_temp_name("T_half");
-    std::string T_cmp = make_temp_name("T_cmp");
-    std::string T_one = make_temp_name("T_one");
-    std::string T_two = make_temp_name("T_two");
-    std::string T_count = make_temp_name("T_count");
+    std::string T_half = make_temp_name();
+    std::string T_cmp = make_temp_name();
+    std::string T_one = make_temp_name();
+    std::string T_two = make_temp_name();
+    std::string T_count = make_temp_name();
 
     TokenScanner scanner;
     std::string mock_filename = "(shr8)";
@@ -2635,11 +2635,11 @@ bool MacroExpander::handle_shr16(Parser& parser, const Token& tok) {
     int a = vals[0];
     int b = vals[1];
 
-    std::string T_half = make_temp_name("T_half");
-    std::string T_cmp = make_temp_name("T_cmp");
-    std::string T_one = make_temp_name("T_one");
-    std::string T_two = make_temp_name("T_two");
-    std::string T_count = make_temp_name("T_count");
+    std::string T_half = make_temp_name();
+    std::string T_cmp = make_temp_name();
+    std::string T_one = make_temp_name();
+    std::string T_two = make_temp_name();
+    std::string T_count = make_temp_name();
 
     TokenScanner scanner;
     std::string mock_filename = "(shr16)";
@@ -2686,8 +2686,8 @@ bool MacroExpander::handle_shl8(Parser& parser, const Token& tok) {
     int a = vals[0];
     int b = vals[1];
 
-    std::string T_val = make_temp_name("T_val");
-    std::string T_count = make_temp_name("T_count");
+    std::string T_val = make_temp_name();
+    std::string T_count = make_temp_name();
 
     TokenScanner scanner;
     std::string mock_filename = "(shl8)";
@@ -2719,8 +2719,8 @@ bool MacroExpander::handle_shl16(Parser& parser, const Token& tok) {
     int a = vals[0];
     int b = vals[1];
 
-    std::string T_val = make_temp_name("T_val");
-    std::string T_count = make_temp_name("T_count");
+    std::string T_val = make_temp_name();
+    std::string T_count = make_temp_name();
 
     TokenScanner scanner;
     std::string mock_filename = "(shl16)";
@@ -2755,8 +2755,8 @@ bool MacroExpander::handle_if(Parser& parser, const Token& tok) {
     BuiltinStructLevel level;
     level.type = BuiltinStruct::IF;
     level.loc = tok.loc;
-    level.temp_if = make_temp_name("temp_if");
-    level.temp_else = make_temp_name("temp_else");
+    level.temp_if = make_temp_name();
+    level.temp_else = make_temp_name();
 
     TokenScanner scanner;
     std::string mock_filename = "(if)";
@@ -2851,7 +2851,7 @@ bool MacroExpander::handle_while(Parser& parser, const Token& tok) {
     BuiltinStructLevel level;
     level.type = BuiltinStruct::WHILE;
     level.loc = tok.loc;
-    level.temp_if = make_temp_name("temp_if");
+    level.temp_if = make_temp_name();
     level.cond = cond;
 
     TokenScanner scanner;
@@ -3161,7 +3161,7 @@ bool MacroExpander::handle_print_char(Parser& parser, const Token& tok) {
     }
     int ch = vals[0];
 
-    std::string temp = make_temp_name("temp");
+    std::string temp = make_temp_name();
 
     TokenScanner scanner;
     std::string mock_filename = "(print_char)";
@@ -3185,7 +3185,7 @@ bool MacroExpander::handle_print_char8(Parser& parser, const Token& tok) {
     }
     int cell = vals[0];
 
-    std::string temp = make_temp_name("temp");
+    std::string temp = make_temp_name();
 
     TokenScanner scanner;
     std::string mock_filename = "(print_char8)";
@@ -3242,23 +3242,23 @@ bool MacroExpander::handle_print_cellX(Parser& parser, const Token& tok,
     int a = vals[0];
 
     // temps
-    std::string t_a = make_temp_name("t_a");
-    std::string t_digit = make_temp_name("t_digit");
-    std::string t_cond = make_temp_name("t_cond");
-    std::string t_10 = make_temp_name("t_10");
-    std::string t_0_char = make_temp_name("t_0_char");
+    std::string t_a = make_temp_name();
+    std::string t_digit = make_temp_name();
+    std::string t_cond = make_temp_name();
+    std::string t_10 = make_temp_name();
+    std::string t_0_char = make_temp_name();
 
     // numbers for digit buffer indices
     std::vector<std::string> t_numbers;
     for (int i = 0; i < max_digits; i++) {
-        t_numbers.push_back(make_temp_name("number_" + std::to_string(i)));
+        t_numbers.push_back(make_temp_name());
     }
 
     // buffer for digits
-    std::string t_idx = make_temp_name("t_idx");
+    std::string t_idx = make_temp_name();
     std::vector<std::string> t_buffer;
     for (int i = 0; i < max_digits; i++) {
-        t_buffer.push_back(make_temp_name("buffer_" + std::to_string(i)));
+        t_buffer.push_back(make_temp_name());
     }
 
     // allocate and initialize temps
@@ -3394,8 +3394,8 @@ bool MacroExpander::handle_print_cellXs(Parser& parser, const Token& tok,
     int a = vals[0];
 
     // temps
-    std::string t_a = make_temp_name("t_a");
-    std::string t_sign = make_temp_name("t_sign");
+    std::string t_a = make_temp_name();
+    std::string t_sign = make_temp_name();
 
     // allocate and initialize temps
     std::string impl;
@@ -3491,9 +3491,9 @@ bool MacroExpander::handle_scan_spaces(Parser& parser, const Token&) {
     parser.advance(); // consume macro name
 
     // temps
-    std::string t_char = make_temp_name("t_char");
-    std::string t_cond = make_temp_name("t_cond");
-    std::string t_space_char = make_temp_name("t_space_char");
+    std::string t_char = make_temp_name();
+    std::string t_cond = make_temp_name();
+    std::string t_space_char = make_temp_name();
 
     TokenScanner scanner;
     std::string mock_filename = "(scan_spaces)";
@@ -3538,13 +3538,13 @@ bool MacroExpander::handle_scan_cellX(Parser& parser, const Token& tok,
     int target = vals[0];
 
     // temps
-    std::string t_char = make_temp_name("t_char");
-    std::string t_cond1 = make_temp_name("t_cond1");
-    std::string t_cond2 = make_temp_name("t_cond2");
-    std::string t_10 = make_temp_name("t_10");
-    std::string t_0_char = make_temp_name("t_0_char");
-    std::string t_9_char = make_temp_name("t_9_char");
-    std::string t_space_char = make_temp_name("t_space_char");
+    std::string t_char = make_temp_name();
+    std::string t_cond1 = make_temp_name();
+    std::string t_cond2 = make_temp_name();
+    std::string t_10 = make_temp_name();
+    std::string t_0_char = make_temp_name();
+    std::string t_9_char = make_temp_name();
+    std::string t_space_char = make_temp_name();
 
     TokenScanner scanner;
     std::string mock_filename = "(scan_cell" + X + ")";
@@ -3622,10 +3622,10 @@ bool MacroExpander::handle_scan_cellXs(Parser& parser, const Token& tok,
     int target = vals[0];
 
     // temps
-    std::string t_char = make_temp_name("t_char");
-    std::string t_sign = make_temp_name("t_sign");
-    std::string t_cond = make_temp_name("t_cond");
-    std::string t_minus_char = make_temp_name("t_minus_char");
+    std::string t_char = make_temp_name();
+    std::string t_sign = make_temp_name();
+    std::string t_cond = make_temp_name();
+    std::string t_minus_char = make_temp_name();
 
     TokenScanner scanner;
     std::string mock_filename = "(scan_cell" + X + "s)";
@@ -3777,8 +3777,8 @@ bool MacroExpander::handle_pg_arrayX(Parser& parser, const Token& tok,
     }
 
     // temps
-    std::string t_cond = make_temp_name("t_cond");
-    std::string t_num = make_temp_name("t_num");
+    std::string t_cond = make_temp_name();
+    std::string t_num = make_temp_name();
 
     // create dispatcher
     std::string impl =
@@ -4046,8 +4046,8 @@ bool is_reserved_keyword(const std::string& name) {
 // temporary names generated for macro expansions
 static int g_temp_counter = 0;
 
-std::string make_temp_name(const std::string& suffix) {
-    return "_T" + std::to_string(++g_temp_counter) + "_" + suffix;
+std::string make_temp_name() {
+    return "_BFPP" + std::to_string(++g_temp_counter);
 }
 
 void reset_temp_names() {

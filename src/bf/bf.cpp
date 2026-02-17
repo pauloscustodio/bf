@@ -15,7 +15,7 @@
 
 void error(const std::string& msg) {
     std::cerr << "Error: " << msg << std::endl;
-    std::exit(1);
+    exit(EXIT_FAILURE);
 }
 
 void usage_error() {

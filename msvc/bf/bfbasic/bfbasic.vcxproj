@@ -18,41 +18,11 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="..\..\..\src\bfpp\bfpp.cpp" />
-    <ClCompile Include="..\..\..\src\bfpp\errors.cpp" />
-    <ClCompile Include="..\..\..\src\bfpp\expr.cpp" />
-    <ClCompile Include="..\..\..\src\bfpp\files.cpp" />
-    <ClCompile Include="..\..\..\src\bfpp\lexer.cpp" />
-    <ClCompile Include="..\..\..\src\bfpp\macros.cpp" />
-    <ClCompile Include="..\..\..\src\bfpp\output.cpp" />
-    <ClCompile Include="..\..\..\src\bfpp\parser.cpp" />
-    <ClCompile Include="..\..\..\src\bfpp\preprocessor.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\..\..\src\bfpp\errors.h" />
-    <ClInclude Include="..\..\..\src\bfpp\expr.h" />
-    <ClInclude Include="..\..\..\src\bfpp\files.h" />
-    <ClInclude Include="..\..\..\src\bfpp\lexer.h" />
-    <ClInclude Include="..\..\..\src\bfpp\macros.h" />
-    <ClInclude Include="..\..\..\src\bfpp\output.h" />
-    <ClInclude Include="..\..\..\src\bfpp\parser.h" />
-    <ClInclude Include="..\..\..\src\bfpp\preprocessor.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\..\..\README.md" />
-    <None Include="..\..\..\t\bfpp.t" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\common\common.vcxproj">
-      <Project>{082f2562-a2db-4081-b93b-964aabf1af43}</Project>
-    </ProjectReference>
-  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{bb46f52d-444b-47c3-808f-777d2863ac57}</ProjectGuid>
-    <RootNamespace>bfpp</RootNamespace>
+    <ProjectGuid>{082c45a9-70b6-4041-b01c-39a9a66d6beb}</ProjectGuid>
+    <RootNamespace>bfbasic</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -106,8 +76,8 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalIncludeDirectories>..\..\..\src\common</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -122,8 +92,8 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalIncludeDirectories>..\..\..\src\common</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -136,8 +106,8 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalIncludeDirectories>..\..\..\src\common</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -152,14 +122,34 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalIncludeDirectories>..\..\..\src\common</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\src\bfbasic\ast.cpp" />
+    <ClCompile Include="..\..\..\src\bfbasic\bfbasic.cpp" />
+    <ClCompile Include="..\..\..\src\bfbasic\codegen.cpp" />
+    <ClCompile Include="..\..\..\src\bfbasic\lexer.cpp" />
+    <ClCompile Include="..\..\..\src\bfbasic\parser.cpp" />
+    <ClCompile Include="..\..\..\src\bfbasic\symbols.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\src\bfbasic\ast.h" />
+    <ClInclude Include="..\..\..\src\bfbasic\codegen.h" />
+    <ClInclude Include="..\..\..\src\bfbasic\lexer.h" />
+    <ClInclude Include="..\..\..\src\bfbasic\parser.h" />
+    <ClInclude Include="..\..\..\src\bfbasic\symbols.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\common\common.vcxproj">
+      <Project>{082f2562-a2db-4081-b93b-964aabf1af43}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

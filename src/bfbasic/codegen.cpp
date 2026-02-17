@@ -1,0 +1,160 @@
+//-----------------------------------------------------------------------------
+// Brainfuck BASIC compiler
+// Copyright (c) Paulo Custodio 2026
+// License: The Artistic License 2.0, http ://www.perlfoundation.org/artistic_license_2_0
+//-----------------------------------------------------------------------------
+
+#include "codegen.h"
+#include <algorithm>
+#include <cassert>
+
+CodeGen::CodeGen(SymbolTable& sym)
+    : sym(sym), temp_counter(0) {
+}
+
+std::string CodeGen::generate(const Program& prog) {
+    out.clear();
+
+    emit_prelude();
+    emit_var_allocs();
+
+    for (const auto& s : prog.statements) {
+        emit_stmt(s);
+    }
+
+    emit_postlude();
+    return out;
+}
+
+void CodeGen::emit(const std::string& line) {
+    out += line;
+    out += "\n";
+}
+
+std::string CodeGen::alloc_temp16() {
+    std::string name = "_BFB" + std::to_string(++temp_counter);
+    emit("alloc_cell16(" + name + ")");
+    return name;
+}
+
+void CodeGen::free_temp16(const std::string& name) {
+    emit("free_cell16(" + name + ")");
+}
+
+std::vector<std::string> CodeGen::sorted_variable_names() const {
+    std::vector<std::string> names;
+    for (auto& [name, sym] : sym.all()) {
+        names.push_back(name);
+    }
+
+    std::sort(names.begin(), names.end());
+    return names;
+}
+
+void CodeGen::emit_prelude() {
+    // if you need global runtime stuff, put it here
+    // e.g. input buffer, etc., or leave empty for now
+}
+
+void CodeGen::emit_postlude() {
+    // optional: free vars, runtime cleanup
+    // for now, do nothing
+}
+
+void CodeGen::emit_var_allocs() {
+    auto names = sorted_variable_names();
+    for (const auto& name : names) {
+        const Symbol& s = sym.get(name);
+        if (!s.allocated) {
+            emit("alloc_cell16(" + name + ")");
+            sym.mark_allocated(name);
+        }
+    }
+}
+
+void CodeGen::emit_stmt(const Stmt& s) {
+    switch (s.type) {
+    case Stmt::Type::Let:
+        emit_let(s);
+        break;
+    case Stmt::Type::Input:
+        emit_input(s);
+        break;
+    case Stmt::Type::Print:
+        emit_print(s);
+        break;
+    default:
+        assert(0);
+    }
+}
+
+void CodeGen::emit_input(const Stmt& s) {
+    emit("scan_cell16s(" + s.var + ")");
+}
+
+void CodeGen::emit_print(const Stmt& s) {
+    emit("print_cell16s(" + s.var + ")");
+    emit("print_newline");
+}
+
+void CodeGen::emit_let(const Stmt& s) {
+    // Case 1: LET A = <constant>
+    if (s.expr->type == Expr::Type::Number) {
+        emit("set16(" + s.var + ", " + std::to_string(s.expr->value) + ")");
+        return;
+    }
+
+    // Case 2: LET A = B
+    if (s.expr->type == Expr::Type::Var) {
+        emit("copy16(" + s.expr->name + ", " + s.var + ")");
+        return;
+    }
+
+    // General case: LET A = <complex expression>
+    std::string t = alloc_temp16();
+    emit_expr(*s.expr, t);
+    emit("move16(" + t + ", " + s.var + ")");
+    free_temp16(t);
+}
+
+// expr result goes into target (16-bit cell name)
+void CodeGen::emit_expr(const Expr& e, const std::string& target) {
+    switch (e.type) {
+    case Expr::Type::Number:
+        emit("set16(" + target + ", " + std::to_string(e.value) + ")");
+        break;
+
+    case Expr::Type::Var:
+        emit("copy16(" + e.name + ", " + target + ")");
+        break;
+
+    case Expr::Type::BinOp: {
+        // left into target
+        emit_expr(*e.left, target);
+
+        // right into temp
+        std::string t = alloc_temp16();
+        emit_expr(*e.right, t);
+
+        switch (e.op) {
+        case '+':
+            emit("add16s(" + target + ", " + t + ")");
+            break;
+        case '-':
+            emit("sub16s(" + target + ", " + t + ")");
+            break;
+        case '*':
+            emit("mul16s(" + target + ", " + t + ")");
+            break;
+        case '/':
+            emit("div16s(" + target + ", " + t + ")");
+            break;
+        default:
+            assert(0);
+        }
+
+        free_temp16(t);
+        break;
+    }
+    }
+}

@@ -46,3 +46,6 @@ msvc/bf/bf/x64/
 msvc/bf/bfpp/x64/
 *.orig
 .prove
+msvc/bf/bfbasic/x64/
+msvc/bf/common/x64/
+msvc/bf/x64/

@@ -26,9 +26,9 @@ END
 spew("$test.in", "if(0)");
 capture_nok("bfpp $test.in", <<END);
 $test.in:1:6: error: if without matching endif
-(if):1:177: error: unmatched '[' instruction
+(if):1:129: error: unmatched '[' instruction
 (if):1:1: error: unmatched '{' brace
-(if):1:179: error: unmatched '{' brace
+(if):1:131: error: unmatched '{' brace
 END
 
 # naked else
