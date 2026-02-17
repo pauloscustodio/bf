@@ -123,6 +123,12 @@ const std::unordered_map<std::string, MacroExpander::BuiltinHandler> MacroExpand
     { "scan_cell16",        &MacroExpander::handle_scan_cell16        },
     { "scan_cell8s",        &MacroExpander::handle_scan_cell8s        },
     { "scan_cell16s",       &MacroExpander::handle_scan_cell16s       },
+    { "alloc_array16",      &MacroExpander::handle_alloc_array16      },
+    { "free_array16",       &MacroExpander::handle_free_array16       },
+    { "put_array8",         &MacroExpander::handle_put_array8         },
+    { "put_array16",        &MacroExpander::handle_put_array16        },
+    { "get_array8",         &MacroExpander::handle_get_array8         },
+    { "get_array16",        &MacroExpander::handle_get_array16        },
 };
 
 void MacroTable::clear() {
@@ -3668,6 +3674,160 @@ bool MacroExpander::handle_scan_cell16s(Parser& parser, const Token& tok) {
     return handle_scan_cellXs(parser, tok, 16);
 }
 
+bool MacroExpander::handle_alloc_array16(Parser& parser, const Token& tok) {
+    Token macro_tok = tok;
+    Macro fake;
+    fake.name = macro_tok.text;
+    fake.params = { "name", "dimensions" };
+
+    std::vector<std::vector<Token>> args;
+    if (!collect_args(parser, fake, args)) {
+        return false; // error already reported
+    }
+
+    if (args.size() != 2) {
+        g_error_reporter.report_error(tok.loc,
+                                      "macro '" + macro_tok.text + "' expects one identifier and an expression");
+        return false;
+    }
+
+    // collect identifier
+    if (args[0].size() != 1 ||
+            args[0][0].type != TokenType::Identifier) {
+        g_error_reporter.report_error(tok.loc,
+                                      "macro '" + macro_tok.text + "' expects one identifier and an expression");
+        return false;
+    }
+    std::string macro_name = args[0][0].text;
+
+    // collect dimension
+    ArrayTokenSource source(args[1]);
+    ExpressionParser expr(source, parser_, /*undefined_as_zero=*/false);
+    int num_cells16 = expr.parse_expression();
+
+    // create array
+    int base_addr = parser.output().alloc_array(macro_tok, num_cells16);
+
+    // create macro with base address
+    Macro m;
+    m.name = macro_name;
+    m.loc = macro_tok.loc;
+    m.body = { Token::make_int(base_addr, tok.loc) };
+    g_macro_table.define(m);
+
+    return true;
+}
+
+bool MacroExpander::handle_free_array16(Parser& parser, const Token& tok) {
+    Token macro_tok = tok;
+    std::string macro_name;
+    if (!parse_ident_arg(parser, tok, macro_name)) {
+        return true; // error already reported
+    }
+
+    Array* array = validate_array_name_arg(parser, tok, macro_name);
+    if (array == nullptr) {
+        return true;    // error already reported
+    }
+
+    g_macro_table.undef(macro_name);
+    int base_addr = array->base_addr;
+    parser.output().free_array(macro_tok, base_addr);
+
+    TokenScanner scanner;
+    std::string mock_filename = "(free_array16)";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            clear_memory_area(base_addr, array->num_elems16),
+            mock_filename));
+
+    return true;
+}
+
+bool MacroExpander::handle_put_array8(Parser& parser, const Token& tok) {
+    return handle_pg_arrayX(parser, tok, 8, /*put=*/true);
+}
+
+bool MacroExpander::handle_put_array16(Parser& parser, const Token& tok) {
+    return handle_pg_arrayX(parser, tok, 16, /*put=*/true);
+}
+
+bool MacroExpander::handle_get_array8(Parser& parser, const Token& tok) {
+    return handle_pg_arrayX(parser, tok, 8, /*put=*/false);
+}
+
+bool MacroExpander::handle_get_array16(Parser& parser, const Token& tok) {
+    return handle_pg_arrayX(parser, tok, 16, /*put=*/false);
+}
+
+bool MacroExpander::handle_pg_arrayX(Parser& parser, const Token& tok,
+                                     int width, bool put) {
+    assert(width == 8 || width == 16);
+    std::string X = std::to_string(width);
+    std::string F = put ? "put" : "get";
+
+    Token macro_tok = tok;
+    Array* array = nullptr;
+    int idx_cell = -1;
+    int cell = -1;
+    if (!parse_array_get_put_args(parser, macro_tok,
+                                  array, idx_cell, cell)) {
+        return true; // error already reported
+    }
+
+    // temps
+    std::string t_cond = make_temp_name("t_cond");
+    std::string t_num = make_temp_name("t_num");
+
+    // create dispatcher
+    std::string impl =
+        "{ alloc_cell8(" + t_cond + ") "
+        "  alloc_cell8(" + t_num + ") ";
+
+    for (int i = 0; i < array->num_elems16; i++) {
+        int array_addr = array->base_addr + 2 * i;
+        impl +=
+            "  set8(" + t_num + ", " + std::to_string(i) + ") "
+            "  copy8(" + std::to_string(idx_cell) + ", " + t_cond + ") "
+            "  eq8(" + t_cond + ", " + t_num + ") "
+            "  if(" + t_cond + ") ";
+
+        if (put) { // put
+            impl +=
+                "    copy" + X + "(" + std::to_string(cell) + ", " +
+                std::to_string(array_addr) + ") ";
+        }
+        else { // get
+            impl +=
+                "    copy" + X + "(" + std::to_string(array_addr) + ", " +
+                std::to_string(cell) + ") ";
+        }
+
+        impl +=
+            "  else ";
+    }
+
+    for (int i = 0; i < array->num_elems16; i++) {
+        impl +=
+            "  endif ";
+    }
+
+    impl +=
+        "  free_cell8(" + t_cond + ") "
+        "  free_cell8(" + t_num + ") "
+        "}";
+
+    TokenScanner scanner;
+    std::string mock_filename = "(" + F + "_array" + X + ")";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            impl, mock_filename));
+
+    return true;
+}
+
 bool MacroExpander::parse_expr_args(Parser& parser,
                                     const Token& tok,
                                     const std::vector<std::string>& param_names,
@@ -3758,6 +3918,77 @@ bool MacroExpander::parse_string_arg(Parser& parser, const Token& tok,
     if (!text_out.empty() and text_out.back() == '"') {
         text_out.pop_back();
     }
+
+    return true;
+}
+
+Array* MacroExpander::validate_array_name_arg(Parser& parser, const Token& tok,
+        const std::string& macro_name) {
+
+    const Macro* m = g_macro_table.lookup(macro_name);
+
+    if (!m) {
+        g_error_reporter.report_error(tok.loc, "array16: macro '" + macro_name + "' not defined");
+        return nullptr;
+    }
+
+    if (!m->params.empty() || m->body.size() != 1 || m->body[0].type != TokenType::Integer) {
+        g_error_reporter.report_error(tok.loc, "array16: '" + macro_name + "' is not an alloc_array16 result");
+        return nullptr;
+    }
+
+    int base_addr = m->body[0].int_value;
+    Array* array = parser.output().get_array(base_addr);
+
+    if (array == nullptr) {
+        g_error_reporter.report_error(tok.loc, "array16: '" + macro_name + "' is not an alloc_array16 result");
+        return nullptr;
+    }
+
+    return array;
+}
+
+bool MacroExpander::parse_array_get_put_args(Parser& parser, const Token& tok,
+        Array*& array, int& idx_cell, int& cell) {
+
+    Token macro_tok = tok;
+    Macro fake;
+    fake.name = macro_tok.text;
+    fake.params = { "name", "idx", "cell" };
+
+    std::vector<std::vector<Token>> args;
+    if (!collect_args(parser, fake, args)) {
+        return false; // error already reported
+    }
+
+    if (args.size() != 3) {
+        g_error_reporter.report_error(tok.loc,
+                                      "macro '" + macro_tok.text + "' expects one identifier and 2 expressions");
+        return false;
+    }
+
+    // collect identifier
+    if (args[0].size() != 1 ||
+            args[0][0].type != TokenType::Identifier) {
+        g_error_reporter.report_error(tok.loc,
+                                      "macro '" + macro_tok.text + "' expects one identifier and 2 expressions");
+        return false;
+    }
+    std::string macro_name = args[0][0].text;
+    array = validate_array_name_arg(parser, macro_tok, macro_name);
+    if (array == nullptr) {
+        return false; // error already reported
+    }
+
+    // collect index
+    ArrayTokenSource source1(args[1]);
+    ExpressionParser expr1(source1, parser_, /*undefined_as_zero=*/false);
+    idx_cell = expr1.parse_expression();
+
+    // collect cell
+    ArrayTokenSource source2(args[2]);
+    ExpressionParser expr2(source2, parser_, /*undefined_as_zero=*/false);
+    cell = expr2.parse_expression();
 
     return true;
 }

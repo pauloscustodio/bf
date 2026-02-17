@@ -22,6 +22,12 @@ struct StackFrame {
     int size() const;
 };
 
+struct Array {
+    SourceLocation loc;
+    int base_addr = 0;
+    int num_elems16 = 0;
+};
+
 class BFOutput {
 public:
     BFOutput();
@@ -57,6 +63,11 @@ public:
     int frame_local_address(const Token& tok, int n);
     int frame_temp_address(const Token& tok, int n);
 
+    // allocate arrays
+    int alloc_array(const Token& tok, int cells16);
+    void free_array(const Token& tok, int base_addr);
+    Array* get_array(int base_addr);
+
     // optimize tape movements by combining consecutive < and >
     void optimize_bfcode();
 
@@ -81,6 +92,7 @@ private:
     int temp_count16_ = 0;
     int input_buffer_ = -1;
     std::vector<StackFrame> frame_stack_;
+    std::unordered_map<int, Array> arrays_;
     std::vector<SourceLocation> loop_stack_;
     std::vector<Token> output_;
 

@@ -35,7 +35,9 @@ private:
 
 extern MacroTable g_macro_table;
 
-class Parser; // forward declaration
+// forward declarations
+class Parser;
+struct Array;
 
 enum class BuiltinStruct {
     NONE,
@@ -204,6 +206,14 @@ private:
     bool handle_scan_cellXs(Parser& parser, const Token& tok, int width);
     bool handle_scan_cell8s(Parser& parser, const Token& tok);
     bool handle_scan_cell16s(Parser& parser, const Token& tok);
+    bool handle_alloc_array16(Parser& parser, const Token& tok);
+    bool handle_free_array16(Parser& parser, const Token& tok);
+    bool handle_put_array8(Parser& parser, const Token& tok);
+    bool handle_put_array16(Parser& parser, const Token& tok);
+    bool handle_get_array8(Parser& parser, const Token& tok);
+    bool handle_get_array16(Parser& parser, const Token& tok);
+    bool handle_pg_arrayX(Parser& parser, const Token& tok,
+                          int width, bool put);
 
     bool parse_expr_args(Parser& parser,
                          const Token& tok,
@@ -213,6 +223,10 @@ private:
                          std::string& ident_out);
     bool parse_string_arg(Parser& parser, const Token& tok,
                           std::string& text_out);
+    Array* validate_array_name_arg(Parser& parser, const Token& tok,
+                                   const std::string& macro_name);
+    bool parse_array_get_put_args(Parser& parser, const Token& tok,
+                                  Array*& array, int& idx_cell, int& cell);
     std::string clear_memory_area(int addr, int size16);
     std::vector<Token> substitute_body(const Macro& macro,
                                        const std::vector<std::vector<Token>>& args);

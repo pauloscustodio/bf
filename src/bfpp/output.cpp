@@ -554,9 +554,42 @@ int BFOutput::frame_temp_address(const Token& tok, int n) {
     return addr;
 }
 
+int BFOutput::alloc_array(const Token& tok, int cells16) {
+    Array array;
+    array.loc = tok.loc;
+    array.num_elems16 = cells16;
+    array.base_addr = alloc_cells(2 * cells16);
+    arrays_[array.base_addr] = array;
+    return array.base_addr;
+}
+
+void BFOutput::free_array(const Token& tok, int base_addr) {
+    Array* array = get_array(base_addr);
+    if (array == nullptr) {
+        g_error_reporter.report_error(
+            tok.loc,
+            "cannot free array at address " + std::to_string(base_addr)
+        );
+        return;
+    }
+
+    free_cells(array->base_addr);
+}
+
+Array* BFOutput::get_array(int base_addr) {
+    auto it = arrays_.find(base_addr);
+    if (it == arrays_.end()) {
+        return nullptr;
+    }
+    else {
+        return &it->second;
+    }
+}
+
 void BFOutput::reset() {
     output_.clear();
     frame_stack_.clear();
+    arrays_.clear();
     loop_stack_.clear();
     free_list_.clear();
     alloc_map_.clear();
