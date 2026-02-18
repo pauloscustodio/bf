@@ -38,7 +38,7 @@ usage: bfpp [-o output_file] [-I include_path] [-D name=value] [-v] [input_file]
 - Allocation: `alloc_cell8(NAME)`, `free_cell8(NAME)`. (+ `xx16`).
 - Cell ops: `clear8(a)`, `set8(a, v)`, `move8(a, b)`, `copy8(a, b)`. (+ `xx16`).
 - Logic: `not8(a)`, `and8(a, b)`, `or8(a, b)`, `xor8(a, b)`, `shr8(a, b)`, `shl8(a, b)` (and `xx16` forms).
-- Arithmetic: `add8/add8s/sub8/sub8s/mul8/mul8s/div8/div8s/mod8/mod8s(a, b)`, `neg8/sign8/abs8(a)` (+ `xx16`).
+- Arithmetic: `add8/add8s/sub8/sub8s/mul8/mul8s/div8/div8s/mod8/mod8s/pow8/pow8s(a, b)`, `neg8/sign8/abs8(a)` (+ `xx16`).
 - Comparisons: `eq8/eq8s/ne8/ne8s/lt8/lt8s/le8/le8s/gt8/gt8s/ge8/ge8s(a, b)` (+ `xx16`).
 - Control: `if(expr) ... else ... endif`, `while(expr) ... endwhile`, `repeat(count) ... endrepeat`.
 - Stack: `push8(source_cell)`, `push8i(immediate_value)`, `pop8(target_cell)` (+ `xx16`).
@@ -72,16 +72,18 @@ Expressions:
 ## Expression operators and precedence
 The BASIC compiler supports these operators in expressions:
 
+- Power: `a ^ b` (right-associative)
 - Unary: `+x` (no-op), `-x` (negation)
 - Multiplicative: `*`, `/`, `\\` (same as `\`), `%` (modulo)
 - Additive: `+`, `-`
 - Shifts: `shl`, `shr`
 
 Precedence and associativity (highest to lowest):
-1. Unary `+`, `-` (right-associative)
-2. Multiplicative `*`, `/`, `\\`, `%` (left-associative)
-3. Additive `+`, `-` (left-associative)
-4. Shifts `shl`, `shr` (left-associative)
+1. Power `^` (right-associative)
+2. Unary `+`, `-` (right-associative)
+3. Multiplicative `*`, `/`, `\\`, `%` (left-associative)
+4. Additive `+`, `-` (left-associative)
+5. Shifts `shl`, `shr` (left-associative)
 
 Parentheses `(...)` can be used to override precedence.
 The compiler allocates variables automatically and emits `bfpp` code.

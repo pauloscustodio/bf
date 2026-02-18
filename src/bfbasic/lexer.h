@@ -15,7 +15,7 @@ enum class TokenType {
     KeywordLet,
     KeywordInput,
     KeywordPrint,
-    Plus, Minus, Star, Slash, Equal,
+    Plus, Minus, Star, Slash, Equal, Caret,
     LParen, RParen,
     Mod, Shl, Shr,
     Newline,

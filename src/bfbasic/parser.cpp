@@ -196,7 +196,7 @@ Expr Parser::parse_add() {
 }
 
 Expr Parser::parse_mul() {
-    Expr left = parse_primary();
+    Expr left = parse_unary();
 
     while (match(TokenType::Star) ||
             match(TokenType::Slash) ||   // includes '\'
@@ -213,8 +213,32 @@ Expr Parser::parse_mul() {
             opchar = op.text[0];
         }
 
-        Expr right = parse_primary();
+        Expr right = parse_unary();
         left = Expr::binop(opchar, std::move(left), std::move(right),
+        { op.line, op.column });
+    }
+
+    return left;
+}
+
+Expr Parser::parse_unary() {
+    if (match(TokenType::Plus) || match(TokenType::Minus)) {
+        Token op = advance();
+        Expr inner = parse_unary();
+        return Expr::unary(op.text[0], std::move(inner),
+        { op.line, op.column });
+    }
+    return parse_power();
+}
+
+Expr Parser::parse_power() {
+    Expr left = parse_primary();
+
+    if (match(TokenType::Caret)) {
+        Token op = advance();
+        // right-associative; no unary sign allowed directly on the exponent
+        Expr right = parse_power();
+        left = Expr::binop('^', std::move(left), std::move(right),
         { op.line, op.column });
     }
 
@@ -223,14 +247,6 @@ Expr Parser::parse_mul() {
 
 Expr Parser::parse_primary() {
     Token t = peek();
-
-    // Unary + or -
-    if (match(TokenType::Plus) || match(TokenType::Minus)) {
-        Token op = advance();
-        Expr inner = parse_primary();
-        return Expr::unary(op.text[0], std::move(inner),
-        { op.line, op.column });
-    }
 
     if (match(TokenType::Number)) {
         advance();

@@ -59,6 +59,9 @@ std::vector<Token> Lexer::tokenize() {
         case'\\':
             tokens.push_back(simple(TokenType::Slash));
             continue;
+        case '^':
+            tokens.push_back(simple(TokenType::Caret));
+            continue;
         case '=':
             tokens.push_back(simple(TokenType::Equal));
             continue;

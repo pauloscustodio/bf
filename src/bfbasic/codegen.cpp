@@ -151,6 +151,9 @@ void CodeGen::emit_expr(const Expr& e, const std::string& target) {
         case '%':
             emit("mod16s(" + target + ", " + t + ")");
             break;
+        case '^':
+            emit("pow16s(" + target + ", " + t + ")");
+            break;
         case '<':
             emit("shl16(" + target + ", " + t + ")");
             break;

@@ -88,6 +88,10 @@ const std::unordered_map<std::string, MacroExpander::BuiltinHandler> MacroExpand
     { "shr16",              &MacroExpander::handle_shr16              },
     { "shl8",               &MacroExpander::handle_shl8               },
     { "shl16",              &MacroExpander::handle_shl16              },
+    { "pow8",               &MacroExpander::handle_pow8               },
+    { "pow16",              &MacroExpander::handle_pow16              },
+    { "pow8s",              &MacroExpander::handle_pow8s              },
+    { "pow16s",             &MacroExpander::handle_pow16s             },
     { "if",                 &MacroExpander::handle_if                 },
     { "else",               &MacroExpander::handle_else               },
     { "endif",              &MacroExpander::handle_endif              },
@@ -2742,6 +2746,97 @@ bool MacroExpander::handle_shl16(Parser& parser, const Token& tok) {
             mock_filename));
 
     return true;
+}
+
+bool MacroExpander::handle_powX(Parser& parser, const Token& tok,
+                                int width, bool signed_version) {
+    std::vector<int> vals;
+    if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
+        return true;
+    }
+    int base = vals[0];
+    int exp = vals[1];
+
+    assert(width == 8 || width == 16);
+    std::string X = std::to_string(width);
+    std::string S = signed_version ? "s" : "";
+    std::string mock_filename = "(pow" + X + S + ")";
+
+    std::string t_result = make_temp_name();
+    std::string t_base = make_temp_name();
+    std::string t_exp = make_temp_name();
+    std::string t_cond = make_temp_name();
+    std::string t_0 = make_temp_name();
+    std::string t_1 = make_temp_name();
+    std::string t_2 = make_temp_name();
+
+    TokenScanner scanner;
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            "{ alloc_cell" + X + "(" + t_result + ") "
+            "  alloc_cell" + X + "(" + t_base + ") "
+            "  alloc_cell" + X + "(" + t_exp + ") "
+            "  alloc_cell" + X + "(" + t_cond + ") "
+            "  alloc_cell" + X + "(" + t_0 + ") "
+            "  set" + X + "(" + t_0 + ", 0) "
+            "  alloc_cell" + X + "(" + t_1 + ") "
+            "  set" + X + "(" + t_1 + ", 1) "
+            "  alloc_cell" + X + "(" + t_2 + ") "
+            "  set" + X + "(" + t_2 + ", 2) "
+            // copy input variables
+            "  copy" + X + "(" + std::to_string(base) + ", " + t_base + ") "
+            "  copy" + X + "(" + std::to_string(exp) + ", " + t_exp + ") "
+            // initialize result
+            "  set" + X + "(" + t_result + ", 1) "
+            // initialize condition t_exp > 0
+            "  copy" + X + "(" + t_exp + ", " + t_cond + ") "
+            "  gt" + X + "(" + t_cond + ", " + t_0 + ") "
+            "  while(" + t_cond + ") "
+            //   // if (exp & 1) result *= base
+            "    copy" + X + "(" + t_exp + ", " + t_cond + ") "
+            "    mod" + X + "(" + t_cond + ", " + t_2 + ") "
+            "    if(" + t_cond + ") "
+            "      mul" + X + S + "(" + t_result + ", " + t_base + ") "
+            "    endif "
+            //   base *= base
+            "    mul" + X + S + "(" + t_base + ", " + t_base + ") "
+            //   exp >>= 1
+            "    shr" + X + "(" + t_exp + ", " + t_1 + ") "
+            //   recompute while condition exp > 0
+            "    copy" + X + "(" + t_exp + ", " + t_cond + ") "
+            "    gt" + X + "(" + t_cond + ", " + t_0 + ") "
+            "  endwhile "
+            // return result in base
+            "    copy" + X + "(" + t_result + ", " + std::to_string(base) + ") "
+            // free temps
+            "  free_cell" + X + "(" + t_result + ") "
+            "  free_cell" + X + "(" + t_base + ") "
+            "  free_cell" + X + "(" + t_exp + ") "
+            "  free_cell" + X + "(" + t_cond + ") "
+            "  free_cell" + X + "(" + t_0 + ") "
+            "  free_cell" + X + "(" + t_1 + ") "
+            "  free_cell" + X + "(" + t_2 + ") "
+            "}",
+            mock_filename));
+
+    return true;
+}
+
+bool MacroExpander::handle_pow8(Parser& parser, const Token& tok) {
+    return handle_powX(parser, tok, 8, /*signed_version=*/false);
+}
+
+bool MacroExpander::handle_pow16(Parser& parser, const Token& tok) {
+    return handle_powX(parser, tok, 16, /*signed_version=*/false);
+}
+
+bool MacroExpander::handle_pow8s(Parser& parser, const Token& tok) {
+    return handle_powX(parser, tok, 8, /*signed_version=*/true);
+}
+
+bool MacroExpander::handle_pow16s(Parser& parser, const Token& tok) {
+    return handle_powX(parser, tok, 16, /*signed_version=*/true);
 }
 
 bool MacroExpander::handle_if(Parser& parser, const Token& tok) {

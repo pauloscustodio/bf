@@ -44,5 +44,7 @@ private:
     Expr parse_shift();
     Expr parse_add();
     Expr parse_mul();
+    Expr parse_power();
+    Expr parse_unary();
     Expr parse_primary();
 };

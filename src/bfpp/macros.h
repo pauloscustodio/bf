@@ -167,6 +167,12 @@ private:
     bool handle_shr16(Parser& parser, const Token& tok);
     bool handle_shl8(Parser& parser, const Token& tok);
     bool handle_shl16(Parser& parser, const Token& tok);
+    bool handle_powX(Parser& parser, const Token& tok,
+                     int width, bool signed_version);
+    bool handle_pow8(Parser& parser, const Token& tok);
+    bool handle_pow16(Parser& parser, const Token& tok);
+    bool handle_pow8s(Parser& parser, const Token& tok);
+    bool handle_pow16s(Parser& parser, const Token& tok);
     bool handle_if(Parser& parser, const Token& tok);
     bool handle_else(Parser& parser, const Token& tok);
     bool handle_endif(Parser& parser, const Token& tok);
