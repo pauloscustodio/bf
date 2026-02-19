@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "lexer.h"
 #include <memory>
 #include <string>
 #include <vector>
@@ -26,18 +27,16 @@ struct Expr {
     // For Var
     std::string name;
 
-    // For BinOp
-    char op = 0; // '+', '-', '*', '/'
+    // For operators
+    TokenType op = TokenType::EndOfFile;
     std::unique_ptr<Expr> left;
     std::unique_ptr<Expr> right;
-
-    char unary_op = 0; // '+' or '-'
-    std::unique_ptr<Expr> unary_expr;
+    std::unique_ptr<Expr> inner;
 
     static Expr number(int v, SourceLoc loc);
     static Expr var(const std::string& n, SourceLoc loc);
-    static Expr binop(char op, Expr lhs, Expr rhs, SourceLoc loc);
-    static Expr unary(char op, Expr inner, SourceLoc loc);
+    static Expr binop(TokenType op, Expr lhs, Expr rhs, SourceLoc loc);
+    static Expr unary(TokenType op, Expr inner, SourceLoc loc);
 };
 
 struct Stmt {

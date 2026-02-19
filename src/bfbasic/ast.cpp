@@ -22,7 +22,7 @@ Expr Expr::var(const std::string& n, SourceLoc loc) {
     return e;
 }
 
-Expr Expr::binop(char op, Expr lhs, Expr rhs, SourceLoc loc) {
+Expr Expr::binop(TokenType op, Expr lhs, Expr rhs, SourceLoc loc) {
     Expr e;
     e.type = Type::BinOp;
     e.op = op;
@@ -32,11 +32,11 @@ Expr Expr::binop(char op, Expr lhs, Expr rhs, SourceLoc loc) {
     return e;
 }
 
-Expr Expr::unary(char op, Expr inner, SourceLoc loc) {
+Expr Expr::unary(TokenType op, Expr inner, SourceLoc loc) {
     Expr e;
     e.type = Type::UnaryOp;
-    e.unary_op = op;
-    e.unary_expr = std::make_unique<Expr>(std::move(inner));
+    e.op = op;
+    e.inner = std::make_unique<Expr>(std::move(inner));
     e.loc = loc;
     return e;
 }

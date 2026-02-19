@@ -41,10 +41,14 @@ private:
     // --- Expressions ---------------------------------------------------------
 
     Expr parse_expr();
+    Expr parse_or();
+    Expr parse_xor();
+    Expr parse_and();
+    Expr parse_relational();
     Expr parse_shift();
     Expr parse_add();
     Expr parse_mul();
-    Expr parse_power();
     Expr parse_unary();
+    Expr parse_power();
     Expr parse_primary();
 };

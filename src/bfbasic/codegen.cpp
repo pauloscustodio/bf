@@ -127,55 +127,114 @@ void CodeGen::emit_expr(const Expr& e, const std::string& target) {
         emit("copy16(" + e.name + ", " + target + ")");
         break;
 
-    case Expr::Type::BinOp: {
-        // left into target
-        emit_expr(*e.left, target);
-
-        // right into temp
-        std::string t = alloc_temp16();
-        emit_expr(*e.right, t);
-
-        switch (e.op) {
-        case '+':
-            emit("add16s(" + target + ", " + t + ")");
-            break;
-        case '-':
-            emit("sub16s(" + target + ", " + t + ")");
-            break;
-        case '*':
-            emit("mul16s(" + target + ", " + t + ")");
-            break;
-        case '/':
-            emit("div16s(" + target + ", " + t + ")");
-            break;
-        case '%':
-            emit("mod16s(" + target + ", " + t + ")");
-            break;
-        case '^':
-            emit("pow16s(" + target + ", " + t + ")");
-            break;
-        case '<':
-            emit("shl16(" + target + ", " + t + ")");
-            break;
-        case '>':
-            emit("shr16(" + target + ", " + t + ")");
-            break;
-        default:
-            assert(0);
-        }
-
-        free_temp16(t);
+    case Expr::Type::BinOp:
+        emit_binary(e, target);
         break;
-    }
-    case Expr::Type::UnaryOp: {
-        // Evaluate inner into target
-        emit_expr(*e.unary_expr, target);
 
-        if (e.unary_op == '-') {
-            emit("neg16(" + target + ")");
-        }
-        // unary + does nothing
+    case Expr::Type::UnaryOp:
+        emit_unary(e, target);
         break;
+
+    default:
+        assert(0);
     }
+}
+
+void CodeGen::emit_unary(const Expr& e, const std::string& target) {
+    // Evaluate inner into target
+    emit_expr(*e.inner, target);
+
+    switch (e.op) {
+    case TokenType::Plus:
+        // no-op
+        break;
+
+    case TokenType::Minus:
+        emit("neg16(" + target + ")");
+        break;
+
+    case TokenType::Not:
+        // NOT x  ->  (x == 0)
+        emit("not16(" + target + ")");
+        break;
+
+    default:
+        assert(0);
     }
+}
+
+void CodeGen::emit_binary(const Expr& e, const std::string& target) {
+    // Evaluate left into target
+    emit_expr(*e.left, target);
+
+    // Evaluate right into a temp
+    std::string tmp = alloc_temp16();
+    emit_expr(*e.right, tmp);
+
+    switch (e.op) {
+
+    // Arithmetic
+    case TokenType::Plus:
+        emit("add16s(" + target + ", " + tmp + ")");
+        break;
+    case TokenType::Minus:
+        emit("sub16s(" + target + ", " + tmp + ")");
+        break;
+    case TokenType::Star:
+        emit("mul16s(" + target + ", " + tmp + ")");
+        break;
+    case TokenType::Slash:
+        emit("div16s(" + target + ", " + tmp + ")");
+        break;
+    case TokenType::Mod:
+        emit("mod16s(" + target + ", " + tmp + ")");
+        break;
+    case TokenType::Caret:
+        emit("pow16s(" + target + ", " + tmp + ")");
+        break;
+
+    // Shifts
+    case TokenType::Shl:
+        emit("shl16(" + target + ", " + tmp + ")");
+        break;
+    case TokenType::Shr:
+        emit("shr16(" + target + ", " + tmp + ")");
+        break;
+
+    // Relational (normalize to 0/1)
+    case TokenType::Equal:
+        emit("eq16s(" + target + ", " + tmp + ")");
+        break;
+    case TokenType::NotEqual:
+        emit("ne16s(" + target + ", " + tmp + ")");
+        break;
+    case TokenType::Less:
+        emit("lt16s(" + target + ", " + tmp + ")");
+        break;
+    case TokenType::LessEqual:
+        emit("le16s(" + target + ", " + tmp + ")");
+        break;
+    case TokenType::Greater:
+        emit("gt16s(" + target + ", " + tmp + ")");
+        break;
+    case TokenType::GreaterEqual:
+        emit("ge16s(" + target + ", " + tmp + ")");
+        break;
+
+    // Boolean logic (operates on 0/1)
+    case TokenType::And:
+        emit("and16(" + target + ", " + tmp + ")");
+        break;
+    case TokenType::Or:
+        emit("or16(" + target + ", " + tmp + ")");
+        break;
+    case TokenType::Xor:
+        emit("xor16(" + target + ", " + tmp + ")");
+        break;
+
+    default:
+        assert(0);
+    }
+
+    free_temp16(tmp);
 }

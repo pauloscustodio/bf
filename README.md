@@ -67,23 +67,22 @@ Supported statements (one per line; blank lines allowed):
 
 Expressions:
 - variables and decimal integers
-- operators
+- binary arithmetic: `+  -  *  /  \\  MOD  ^`
+- relational: `=  <>  <  <=  >  >=` (results are 0/1)
+- boolean logic: `AND  OR  XOR` (operates on 0/1)
 
 ## Expression operators and precedence
-The BASIC compiler supports these operators in expressions:
-
-- Power: `a ^ b` (right-associative)
-- Unary: `+x` (no-op), `-x` (negation)
-- Multiplicative: `*`, `/`, `\\` (same as `\`), `%` (modulo)
-- Additive: `+`, `-`
-- Shifts: `shl`, `shr`
-
 Precedence and associativity (highest to lowest):
-1. Power `^` (right-associative)
-2. Unary `+`, `-` (right-associative)
-3. Multiplicative `*`, `/`, `\\`, `%` (left-associative)
-4. Additive `+`, `-` (left-associative)
-5. Shifts `shl`, `shr` (left-associative)
+1. unary (`+`, `-`, `NOT`)
+2. power (`^`)
+3. multiplicative (`*`, `/`, `\`, `MOD`)
+4. additive (`+`, `-`)
+5. shift (`SHL`, `SHR`)
+6. relational (`=`, `<>`, `<`, `<=`, `>`, `>=`)
+7. logical AND (`AND`)
+8. logical XOR (`XOR`)
+9. logical OR (`OR`)
+
 
 Parentheses `(...)` can be used to override precedence.
 The compiler allocates variables automatically and emits `bfpp` code.

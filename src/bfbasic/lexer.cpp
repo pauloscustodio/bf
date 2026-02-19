@@ -24,6 +24,7 @@ std::vector<Token> Lexer::tokenize() {
         }
 
         char c = peek();
+        char n = peek_next();
 
         // newline as statement separator
         if (c == '\n') {
@@ -44,7 +45,43 @@ std::vector<Token> Lexer::tokenize() {
             continue;
         }
 
-        // operators
+        // Two-character operators first
+        if (c == '<' && n == '=') {
+            advance();
+            advance();
+            tokens.push_back(make(TokenType::LessEqual, "<=", 0));
+            continue;
+        }
+
+        if (c == '>' && n == '=') {
+            advance();
+            advance();
+            tokens.push_back(make(TokenType::GreaterEqual, ">=", 0));
+            continue;
+        }
+
+        if (c == '<' && n == '>') {
+            advance();
+            advance();
+            tokens.push_back(make(TokenType::NotEqual, "<>", 0));
+            continue;
+        }
+
+        if (c == '<' && n == '<') {
+            advance();
+            advance();
+            tokens.push_back(make(TokenType::Shl, "<<", 0));
+            continue;
+        }
+
+        if (c == '>' && n == '>') {
+            advance();
+            advance();
+            tokens.push_back(make(TokenType::Shr, ">>", 0));
+            continue;
+        }
+
+        // single character operators
         switch (c) {
         case '+':
             tokens.push_back(simple(TokenType::Plus));
@@ -65,6 +102,12 @@ std::vector<Token> Lexer::tokenize() {
         case '=':
             tokens.push_back(simple(TokenType::Equal));
             continue;
+        case '<':
+            tokens.push_back(simple(TokenType::Less));
+            continue;
+        case '>':
+            tokens.push_back(simple(TokenType::Greater));
+            continue;
         case '(':
             tokens.push_back(simple(TokenType::LParen));
             continue;
@@ -84,7 +127,17 @@ bool Lexer::eof() const {
 }
 
 char Lexer::peek() const {
+    if (pos >= src.size()) {
+        return '\0';
+    }
     return src[pos];
+}
+
+char Lexer::peek_next() const {
+    if (pos + 1 >= src.size()) {
+        return '\0';
+    }
+    return src[pos + 1];
 }
 
 char Lexer::advance() {
@@ -149,19 +202,27 @@ Token Lexer::identifier_or_keyword() {
     std::string upper = uppercase(text);
 
     if (upper == "LET")
-        return Token{ TokenType::KeywordLet, text, 0, line, start_col };
+        return Token{ TokenType::Let, text, 0, line, start_col };
     if (upper == "INPUT")
-        return Token{ TokenType::KeywordInput, text, 0, line, start_col };
+        return Token{ TokenType::Input, text, 0, line, start_col };
     if (upper == "PRINT")
-        return Token{ TokenType::KeywordPrint, text, 0, line, start_col };
+        return Token{ TokenType::Print, text, 0, line, start_col };
     if (upper == "MOD")
         return Token{ TokenType::Mod, text, 0, line, start_col };
     if (upper == "SHL")
         return Token{ TokenType::Shl, text, 0, line, start_col };
     if (upper == "SHR")
         return Token{ TokenType::Shr, text, 0, line, start_col };
+    if (upper == "NOT")
+        return Token{ TokenType::Not, text, 0, line, start_col };
+    if (upper == "AND")
+        return Token{ TokenType::And, text, 0, line, start_col };
+    if (upper == "OR")
+        return Token{ TokenType::Or, text, 0, line, start_col };
+    if (upper == "XOR")
+        return Token{ TokenType::Xor, text, 0, line, start_col };
 
-    // IDENTIFIER — store uppercase name in text
+    // IDENTIFIER - store uppercase name in text
     return Token{ TokenType::Identifier, upper, 0, line, start_col };
 }
 

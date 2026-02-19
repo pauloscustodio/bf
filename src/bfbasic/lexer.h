@@ -12,12 +12,14 @@
 enum class TokenType {
     Identifier,
     Number,
-    KeywordLet,
-    KeywordInput,
-    KeywordPrint,
-    Plus, Minus, Star, Slash, Equal, Caret,
+    Let,
+    Input,
+    Print,
+    Plus, Minus, Star, Slash, Caret,
+    Less, LessEqual, Greater, GreaterEqual, Equal, NotEqual,
     LParen, RParen,
     Mod, Shl, Shr,
+    Not, And, Or, Xor,
     Newline,
     EndOfFile
 };
@@ -42,6 +44,7 @@ private:
 
     bool eof() const;
     char peek() const;
+    char peek_next() const;
     char advance();
     [[noreturn]] void error_here(const std::string& msg) const;
     Token make(TokenType type, const std::string& text, int value) const;

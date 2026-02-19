@@ -71,13 +71,13 @@ const Token& Parser::expect(TokenType t, const std::string& msg) {
 }
 
 Stmt Parser::parse_statement() {
-    if (match(TokenType::KeywordLet)) {
+    if (match(TokenType::Let)) {
         return parse_let();
     }
-    if (match(TokenType::KeywordInput)) {
+    if (match(TokenType::Input)) {
         return parse_input();
     }
-    if (match(TokenType::KeywordPrint)) {
+    if (match(TokenType::Print)) {
         return parse_print();
     }
 
@@ -165,7 +165,65 @@ void Parser::consume_end_of_statement() {
 }
 
 Expr Parser::parse_expr() {
-    return parse_shift();
+    return parse_or();
+}
+
+Expr Parser::parse_or() {
+    Expr left = parse_xor();
+
+    while (match(TokenType::Or)) {
+        Token op = advance();
+        Expr right = parse_xor();
+        left = Expr::binop(op.type, std::move(left), std::move(right),
+        { op.line, op.column });
+    }
+
+    return left;
+}
+
+Expr Parser::parse_xor() {
+    Expr left = parse_and();
+
+    while (match(TokenType::Xor)) {
+        Token op = advance();
+        Expr right = parse_and();
+        left = Expr::binop(op.type, std::move(left), std::move(right),
+        { op.line, op.column });
+    }
+
+    return left;
+}
+
+Expr Parser::parse_and() {
+    Expr left = parse_relational();
+
+    while (match(TokenType::And)) {
+        Token op = advance();
+        Expr right = parse_relational();
+        left = Expr::binop(op.type, std::move(left), std::move(right),
+        { op.line, op.column });
+    }
+
+    return left;
+}
+
+Expr Parser::parse_relational() {
+    Expr left = parse_shift();
+
+    while (match(TokenType::Equal) ||
+            match(TokenType::NotEqual) ||
+            match(TokenType::Less) ||
+            match(TokenType::LessEqual) ||
+            match(TokenType::Greater) ||
+            match(TokenType::GreaterEqual)) {
+
+        Token op = advance();
+        Expr right = parse_shift();
+        left = Expr::binop(op.type, std::move(left), std::move(right),
+        { op.line, op.column });
+    }
+
+    return left;
 }
 
 Expr Parser::parse_shift() {
@@ -174,8 +232,7 @@ Expr Parser::parse_shift() {
     while (match(TokenType::Shl) || match(TokenType::Shr)) {
         Token op = advance();
         Expr right = parse_add();
-        left = Expr::binop(op.type == TokenType::Shl ? '<' : '>',
-                           std::move(left), std::move(right),
+        left = Expr::binop(op.type, std::move(left), std::move(right),
         { op.line, op.column });
     }
 
@@ -188,7 +245,7 @@ Expr Parser::parse_add() {
     while (match(TokenType::Plus) || match(TokenType::Minus)) {
         Token op = advance();
         Expr right = parse_mul();
-        left = Expr::binop(op.text[0], std::move(left), std::move(right),
+        left = Expr::binop(op.type, std::move(left), std::move(right),
         { op.line, op.column });
     }
 
@@ -202,19 +259,8 @@ Expr Parser::parse_mul() {
             match(TokenType::Slash) ||   // includes '\'
             match(TokenType::Mod)) {
         Token op = advance();
-        char opchar;
-        if (op.type == TokenType::Mod) {
-            opchar = '%';
-        }
-        else if (op.text[0] == '\\') {
-            opchar = '/';
-        }
-        else {
-            opchar = op.text[0];
-        }
-
         Expr right = parse_unary();
-        left = Expr::binop(opchar, std::move(left), std::move(right),
+        left = Expr::binop(op.type, std::move(left), std::move(right),
         { op.line, op.column });
     }
 
@@ -225,7 +271,13 @@ Expr Parser::parse_unary() {
     if (match(TokenType::Plus) || match(TokenType::Minus)) {
         Token op = advance();
         Expr inner = parse_unary();
-        return Expr::unary(op.text[0], std::move(inner),
+        return Expr::unary(op.type, std::move(inner),
+        { op.line, op.column });
+    }
+    if (match(TokenType::Not)) {
+        Token op = advance();
+        Expr inner = parse_unary();
+        return Expr::unary(op.type, std::move(inner),
         { op.line, op.column });
     }
     return parse_power();
@@ -233,15 +285,13 @@ Expr Parser::parse_unary() {
 
 Expr Parser::parse_power() {
     Expr left = parse_primary();
-
     if (match(TokenType::Caret)) {
         Token op = advance();
         // right-associative; no unary sign allowed directly on the exponent
         Expr right = parse_power();
-        left = Expr::binop('^', std::move(left), std::move(right),
+        left = Expr::binop(op.type, std::move(left), std::move(right),
         { op.line, op.column });
     }
-
     return left;
 }
 
