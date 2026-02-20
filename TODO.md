@@ -11,6 +11,7 @@
 - DO WHILE expr \n block \b LOOP
 - DO \n block \n LOOP UNTIL expr
 - FOR var = start TO end [STEP step] \n block \n NEXT [var]
+- DIM var(dimension); A(i)
 - SUB name(A, B, ...) \n block \n ENDSUB
 - FUNCTION name(A, B, ...) \n block \n name = return \n ENDFUNCTION
  
