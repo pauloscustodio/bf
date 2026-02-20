@@ -6,6 +6,7 @@
 - IF expr THEN \n block \n ENDIF
 - IF expr THEN statements ELSE statements
 - IF expr THEN \n block \n ELSE \n block ENDIF
+- IF expr THEN \n block \n ELSEIF expr \n block \n ELSE \n block ENDIF
 - WHILE expr \n block \n WEND
 - DO WHILE expr \n block \b LOOP
 - DO \n block \n LOOP UNTIL expr
