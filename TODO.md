@@ -8,8 +8,8 @@
 - IF expr THEN \n block \n ELSE \n block ENDIF
 - IF expr THEN \n block \n ELSEIF expr \n block \n ELSE \n block ENDIF
 - WHILE expr \n block \n WEND
-- DO WHILE expr \n block \b LOOP
-- DO \n block \n LOOP UNTIL expr
+- DO {UNTIL|WHILE} expr \n block \b LOOP
+- DO \n block \n LOOP {UNTIL|WHILE} expr
 - FOR var = start TO end [STEP step] \n block \n NEXT [var]
 - DIM var(dimension); A(i)
 - SUB name(A, B, ...) \n block \n ENDSUB
