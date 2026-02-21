@@ -60,9 +60,27 @@ struct StmtPrint {
     std::vector<PrintElem> elems;
 };
 
-struct Stmt {
-    enum class Type { Let, Input, Print } type;
+struct Stmt;
 
+struct StmtList {
+    std::vector<std::unique_ptr<Stmt>> statements;
+};
+
+struct StmtIf {
+    Expr condition;
+    StmtList then_block;
+    StmtList else_block;
+};
+
+enum class StmtType {
+    Let,
+    Input,
+    Print,
+    If,
+};
+
+struct Stmt {
+    StmtType type;
     SourceLoc loc;
 
     // LET and INPUT
@@ -71,6 +89,9 @@ struct Stmt {
 
     // PRINT ...
     StmtPrint print;
+
+    // IF ...
+    std::unique_ptr<StmtIf> if_stmt;
 };
 
 struct Program {

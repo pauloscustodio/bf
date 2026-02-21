@@ -243,6 +243,14 @@ Token Lexer::identifier_or_keyword() {
         return Token{ TokenType::KeywordInput, text, 0, line, start_col };
     if (upper == "PRINT")
         return Token{ TokenType::KeywordPrint, text, 0, line, start_col };
+    if (upper == "IF")
+        return Token{ TokenType::KeywordIf, text, 0, line, start_col };
+    if (upper == "THEN")
+        return Token{ TokenType::KeywordThen, text, 0, line, start_col };
+    if (upper == "ELSE")
+        return Token{ TokenType::KeywordElse, text, 0, line, start_col };
+    if (upper == "ENDIF")
+        return Token{ TokenType::KeywordEndIf, text, 0, line, start_col };
     if (upper == "MOD")
         return Token{ TokenType::KeywordMod, text, 0, line, start_col };
     if (upper == "SHL")

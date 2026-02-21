@@ -25,18 +25,24 @@ private:
     const Token& peek_next() const;
     bool eof() const;
     const Token& advance();
+    bool consume_any(std::initializer_list<TokenType> types);
     bool match(TokenType t) const;
+    bool match_any(std::initializer_list<TokenType> types) const;
     [[noreturn]] void error_here(const std::string& msg) const;
     const Token& expect(TokenType t, const std::string& msg);
 
     // --- Statements ----------------------------------------------------------
 
     Stmt parse_statement();
+    StmtList parse_statement_list_until(
+        std::initializer_list<TokenType> terminators);
     Stmt parse_let();
     Stmt parse_let_without_keyword();
     Stmt parse_input();
     Stmt parse_print();
     PrintElem parse_print_elems();
+    Stmt parse_if();
+    void parse_inline_stmt_list(StmtList& out);
     void consume_end_of_statement();
 
     // --- Expressions ---------------------------------------------------------

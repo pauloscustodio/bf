@@ -73,14 +73,17 @@ void CodeGen::emit_var_allocs() {
 
 void CodeGen::emit_stmt(const Stmt& s) {
     switch (s.type) {
-    case Stmt::Type::Let:
+    case StmtType::Let:
         emit_let(s);
         break;
-    case Stmt::Type::Input:
+    case StmtType::Input:
         emit_input(s);
         break;
-    case Stmt::Type::Print:
+    case StmtType::Print:
         emit_print(s);
+        break;
+    case StmtType::If:
+        emit_if(s);
         break;
     default:
         assert(0);
@@ -172,6 +175,36 @@ void CodeGen::emit_let(const Stmt& s) {
     emit_expr(*s.expr, t);
     emit("move16(" + t + ", " + var + ")");
     free_temp16(t);
+}
+
+void CodeGen::emit_if(const Stmt& s) {
+    const StmtIf& stmt_if = *s.if_stmt;
+
+    // 1. Evaluate condition into a temp cell
+    std::string cond = alloc_temp16();
+    emit_expr(stmt_if.condition, cond);
+
+    // 2. Begin IF
+    emit("if(" + cond + ")");
+
+    // 3. THEN block
+    for (auto& stmt : stmt_if.then_block.statements) {
+        emit_stmt(*stmt);
+    }
+
+    // 4. ELSE block (optional)
+    if (!stmt_if.else_block.statements.empty()) {
+        emit("else");
+        for (auto& stmt : stmt_if.else_block.statements) {
+            emit_stmt(*stmt);
+        }
+    }
+
+    // 5. ENDIF
+    emit("endif");
+
+    // 6. Free temp
+    free_temp16(cond);
 }
 
 // expr result goes into target (16-bit cell name)

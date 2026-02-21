@@ -9,6 +9,7 @@
 #include "lexer.h"
 #include "parser.h"
 #include "symbols.h"
+#include <cassert>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -47,26 +48,39 @@ void collect_expr_symbols(const Expr& e, SymbolTable& sym) {
 
 void collect_symbols_in_stmt(const Stmt& s, SymbolTable& sym) {
     switch (s.type) {
-    case Stmt::Type::Let:
+    case StmtType::Let:
         for (auto& v : s.vars) {
             sym.declare(v);
         }
         collect_expr_symbols(*s.expr, sym);
         break;
 
-    case Stmt::Type::Input:
+    case StmtType::Input:
         for (auto& v : s.vars) {
             sym.declare(v);
         }
         break;
 
-    case Stmt::Type::Print:
+    case StmtType::Print:
         for (const auto& item : s.print.elems) {
             if (item.type == PrintElemType::Expr) {
                 collect_expr_symbols(item.expr, sym);
             }
         }
         break;
+
+    case StmtType::If:
+        collect_expr_symbols(s.if_stmt->condition, sym);
+        for (const auto& stmt : s.if_stmt->then_block.statements) {
+            collect_symbols_in_stmt(*stmt, sym);
+        }
+        for (const auto& stmt : s.if_stmt->else_block.statements) {
+            collect_symbols_in_stmt(*stmt, sym);
+        }
+        break;
+
+    default:
+        assert(0);
     }
 }
 void collect_symbols(const Program& prog, SymbolTable& sym) {

@@ -66,6 +66,7 @@ Supported statements (one per line; blank lines allowed):
 - `[LET] var = expr` - assign integer expression to a variable.
 - `INPUT var1 [, var2]` - read integers into `varN`.
 - `PRINT [string|expr][,|;]...` - print values of expressions and strings
+- `IF expr THEN stmts [ELSE stmts]` - single line if-else.
 - a colon (`:`) can be used to separate statements in the same line.
 - a single `_` followed by newline is considered white space and ignored.
 
