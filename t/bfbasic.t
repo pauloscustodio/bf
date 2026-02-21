@@ -5427,5 +5427,15 @@ capture_ok("echo 27 | bf $test.bf", <<END);
 351 
 END
 
+# check the same BASIC program with colons
+spew("$test.bas", <<END);
+LET A = 10 : : LET B = A + 3 :
+
+INPUT X : LET Y = X * B : PRINT Y
+:
+END
+run_ok("bfbasic -o $test.bfpp $test.bas");
+check_text_file("$test.bfpp", $compiled);
+
 unlink_testfiles;
 done_testing;

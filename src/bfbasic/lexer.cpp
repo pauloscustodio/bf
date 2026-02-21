@@ -114,6 +114,9 @@ std::vector<Token> Lexer::tokenize() {
         case ')':
             tokens.push_back(simple(TokenType::RParen));
             continue;
+        case ':':
+            tokens.push_back(simple(TokenType::Colon));
+            continue;
         }
 
         error_here("Unexpected character '" + std::string(1, c) + "'");

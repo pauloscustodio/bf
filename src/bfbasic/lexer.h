@@ -20,7 +20,7 @@ enum class TokenType {
     LParen, RParen,
     Mod, Shl, Shr,
     Not, And, Or, Xor,
-    Newline,
+    Newline, Colon,
     EndOfFile
 };
 

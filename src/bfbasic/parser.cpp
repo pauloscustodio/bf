@@ -15,10 +15,13 @@ Program Parser::parse_program() {
     Program prog;
 
     while (!match(TokenType::EndOfFile)) {
-        if (match(TokenType::Newline)) {
+
+        // Skip blank lines or stray separators
+        if (match(TokenType::Newline) || match(TokenType::Colon)) {
             advance();
             continue;
         }
+
         Stmt s = parse_statement();
         prog.statements.push_back(std::move(s));
 
@@ -148,9 +151,10 @@ Stmt Parser::parse_print() {
 }
 
 void Parser::consume_end_of_statement() {
-    // Allow multiple newlines (blank lines)
-    if (match(TokenType::Newline)) {
-        while (match(TokenType::Newline)) {
+
+    // Allow any number of Newline or Colon tokens
+    if (match(TokenType::Newline) || match(TokenType::Colon)) {
+        while (match(TokenType::Newline) || match(TokenType::Colon)) {
             advance();
         }
         return;

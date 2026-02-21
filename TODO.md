@@ -1,4 +1,3 @@
-- colon as statement separator
 - single underscore as line continuation
 - PRINT strings, variables, semicolon and comma separators
 - INPUT list of variables
@@ -14,4 +13,4 @@
 - DIM var(dimension); A(i)
 - SUB name(A, B, ...) \n block \n ENDSUB
 - FUNCTION name(A, B, ...) \n block \n name = return \n ENDFUNCTION
- 
+- simplify expressions, e.g. -(-A), subexpressions with constants
