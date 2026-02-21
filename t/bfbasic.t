@@ -5437,5 +5437,42 @@ END
 run_ok("bfbasic -o $test.bfpp $test.bas");
 check_text_file("$test.bfpp", $compiled);
 
+# check the same BASIC program with _
+spew("$test.bas", <<END);
+LET _
+A _
+= _
+10 _
+: _
+: _
+LET _
+B _
+= _
+A _
++ _
+3 _
+: _
+INPUT _
+X _
+: _
+LET _
+Y _
+= _
+X _
+* _
+B _
+: _
+PRINT _
+Y _
+END
+run_ok("bfbasic -o $test.bfpp $test.bas");
+check_text_file("$test.bfpp", $compiled);
+
+# test final _ in the file
+spew("$test.bas", "LET A = 10 : LET B = A + 3 : INPUT X : LET Y = X * B : PRINT Y _");
+capture_nok("bfbasic -o $test.bfpp $test.bas", <<END);
+Error at line 1, column 64: Line continuation '_' must be followed by a newline
+END
+
 unlink_testfiles;
 done_testing;

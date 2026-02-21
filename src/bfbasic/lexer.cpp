@@ -33,6 +33,21 @@ std::vector<Token> Lexer::tokenize() {
             continue;
         }
 
+        // Line continuation: underscore followed by newline
+        if (c == '_') {
+            if (n == '\n') {
+                advance(); // skip '_'
+                advance(); // skip '\n'
+                continue;
+            }
+            else if (n == '\0') {
+                error_here("Line continuation '_' must be followed by a newline");
+            }
+            else {
+                error_here("Unexpected '_' in expression or statement");
+            }
+        }
+
         // identifiers or keywords
         if (is_alpha(c)) {
             tokens.push_back(identifier_or_keyword());

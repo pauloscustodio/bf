@@ -64,6 +64,8 @@ Supported statements (one per line; blank lines allowed):
 - `[LET] var = expr` - assign integer expression to a variable.
 - `INPUT var` - read an integer into `var`.
 - `PRINT var` - print the integer value of `var`.
+- a colon (`:`) can be used to separate statements in the same line.
+- a single `_` followed by newline is considered white space and ignored.
 
 Expressions:
 - variables and decimal integers

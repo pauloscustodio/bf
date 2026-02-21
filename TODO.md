@@ -1,4 +1,3 @@
-- single underscore as line continuation
 - PRINT strings, variables, semicolon and comma separators
 - INPUT list of variables
 - IF expr THEN statements
