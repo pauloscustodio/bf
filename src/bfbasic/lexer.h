@@ -12,15 +12,17 @@
 enum class TokenType {
     Identifier,
     Number,
-    Let,
-    Input,
-    Print,
+    StringLiteral,
+    KeywordLet,
+    KeywordInput,
+    KeywordPrint,
     Plus, Minus, Star, Slash, Caret,
     Less, LessEqual, Greater, GreaterEqual, Equal, NotEqual,
     LParen, RParen,
-    Mod, Shl, Shr,
-    Not, And, Or, Xor,
-    Newline, Colon,
+    KeywordMod, KeywordShl, KeywordShr,
+    KeywordNot, KeywordAnd, KeywordOr, KeywordXor,
+    Colon, Semicolon, Comma,
+    Newline,
     EndOfFile
 };
 
@@ -52,4 +54,5 @@ private:
     void skip_whitespace();
     Token identifier_or_keyword();
     Token number();
+    Token string_literal();
 };

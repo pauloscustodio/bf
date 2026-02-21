@@ -36,10 +36,12 @@ private:
     Stmt parse_let_without_keyword();
     Stmt parse_input();
     Stmt parse_print();
+    PrintElem parse_print_elems();
     void consume_end_of_statement();
 
     // --- Expressions ---------------------------------------------------------
 
+    bool starts_expression(const Token& t) const;
     Expr parse_expr();
     Expr parse_or();
     Expr parse_xor();

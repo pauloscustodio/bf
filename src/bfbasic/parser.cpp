@@ -74,13 +74,13 @@ const Token& Parser::expect(TokenType t, const std::string& msg) {
 }
 
 Stmt Parser::parse_statement() {
-    if (match(TokenType::Let)) {
+    if (match(TokenType::KeywordLet)) {
         return parse_let();
     }
-    if (match(TokenType::Input)) {
+    if (match(TokenType::KeywordInput)) {
         return parse_input();
     }
-    if (match(TokenType::Print)) {
+    if (match(TokenType::KeywordPrint)) {
         return parse_print();
     }
 
@@ -103,7 +103,7 @@ Stmt Parser::parse_let() {
     Stmt s;
     s.type = Stmt::Type::Let;
     s.loc = { kw.line, kw.column };
-    s.var = id.text;
+    s.vars = { id.text };
     s.expr = std::make_unique<Expr>(std::move(e));
 
     return s;
@@ -118,7 +118,7 @@ Stmt Parser::parse_let_without_keyword() {
     Stmt s;
     s.type = Stmt::Type::Let;
     s.loc = { id.line, id.column };
-    s.var = id.text;
+    s.vars = { id.text };
     s.expr = std::make_unique<Expr>(std::move(e));
 
     return s;
@@ -126,13 +126,18 @@ Stmt Parser::parse_let_without_keyword() {
 
 Stmt Parser::parse_input() {
     Token kw = advance(); // INPUT
-
     Token id = expect(TokenType::Identifier, "Expected variable name after INPUT");
 
     Stmt s;
     s.type = Stmt::Type::Input;
     s.loc = { kw.line, kw.column };
-    s.var = id.text;
+    s.vars = { id.text };
+
+    while (match(TokenType::Comma)) {
+        advance();
+        id = expect(TokenType::Identifier, "Expected variable name after ,");
+        s.vars.push_back(id.text);
+    }
 
     return s;
 }
@@ -140,14 +145,59 @@ Stmt Parser::parse_input() {
 Stmt Parser::parse_print() {
     Token kw = advance(); // PRINT
 
-    Token id = expect(TokenType::Identifier, "Expected variable name after PRINT");
-
     Stmt s;
     s.type = Stmt::Type::Print;
     s.loc = { kw.line, kw.column };
-    s.var = id.text;
+
+    while (true) {
+        // 1. Separator?
+        if (match(TokenType::Semicolon) || match(TokenType::Comma)) {
+            Token sep = advance();
+            PrintElem e;
+            e.type = PrintElemType::Separator;
+            e.sep = sep.type;
+            s.print.elems.push_back(std::move(e));
+            continue;
+        }
+
+        // 2. String literal?
+        if (match(TokenType::StringLiteral)) {
+            Token t = advance();
+            PrintElem e;
+            e.type = PrintElemType::String;
+            e.text = t.text;
+            s.print.elems.push_back(std::move(e));
+            continue;
+        }
+
+        // 3. Expression?
+        if (starts_expression(peek())) {
+            Expr ex = parse_expr();
+            PrintElem e;
+            e.type = PrintElemType::Expr;
+            e.expr = std::move(ex);
+            s.print.elems.push_back(std::move(e));
+            continue;
+        }
+
+        // 4. End of PRINT
+        break;
+    }
 
     return s;
+}
+
+PrintElem Parser::parse_print_elems() {
+    Token t = peek();
+
+    if (match(TokenType::StringLiteral)) {
+        advance();
+        return PrintElem::string(t.text);
+    }
+
+    // Otherwise, it's an expression
+    Expr e = parse_expr();
+    return PrintElem::expression(std::move(e));
 }
 
 void Parser::consume_end_of_statement() {
@@ -168,6 +218,25 @@ void Parser::consume_end_of_statement() {
     error_here("Unexpected token after statement");
 }
 
+bool Parser::starts_expression(const Token& t) const {
+    switch (t.type) {
+
+    case TokenType::Number:
+    case TokenType::Identifier:
+    case TokenType::LParen:
+        return true;
+
+    case TokenType::Plus:
+    case TokenType::Minus:
+    case TokenType::KeywordNot:
+        // unary operators
+        return true;
+
+    default:
+        return false;
+    }
+}
+
 Expr Parser::parse_expr() {
     return parse_or();
 }
@@ -175,7 +244,7 @@ Expr Parser::parse_expr() {
 Expr Parser::parse_or() {
     Expr left = parse_xor();
 
-    while (match(TokenType::Or)) {
+    while (match(TokenType::KeywordOr)) {
         Token op = advance();
         Expr right = parse_xor();
         left = Expr::binop(op.type, std::move(left), std::move(right),
@@ -188,7 +257,7 @@ Expr Parser::parse_or() {
 Expr Parser::parse_xor() {
     Expr left = parse_and();
 
-    while (match(TokenType::Xor)) {
+    while (match(TokenType::KeywordXor)) {
         Token op = advance();
         Expr right = parse_and();
         left = Expr::binop(op.type, std::move(left), std::move(right),
@@ -201,7 +270,7 @@ Expr Parser::parse_xor() {
 Expr Parser::parse_and() {
     Expr left = parse_relational();
 
-    while (match(TokenType::And)) {
+    while (match(TokenType::KeywordAnd)) {
         Token op = advance();
         Expr right = parse_relational();
         left = Expr::binop(op.type, std::move(left), std::move(right),
@@ -233,7 +302,7 @@ Expr Parser::parse_relational() {
 Expr Parser::parse_shift() {
     Expr left = parse_add();
 
-    while (match(TokenType::Shl) || match(TokenType::Shr)) {
+    while (match(TokenType::KeywordShl) || match(TokenType::KeywordShr)) {
         Token op = advance();
         Expr right = parse_add();
         left = Expr::binop(op.type, std::move(left), std::move(right),
@@ -261,7 +330,7 @@ Expr Parser::parse_mul() {
 
     while (match(TokenType::Star) ||
             match(TokenType::Slash) ||   // includes '\'
-            match(TokenType::Mod)) {
+            match(TokenType::KeywordMod)) {
         Token op = advance();
         Expr right = parse_unary();
         left = Expr::binop(op.type, std::move(left), std::move(right),
@@ -278,7 +347,7 @@ Expr Parser::parse_unary() {
         return Expr::unary(op.type, std::move(inner),
         { op.line, op.column });
     }
-    if (match(TokenType::Not)) {
+    if (match(TokenType::KeywordNot)) {
         Token op = advance();
         Expr inner = parse_unary();
         return Expr::unary(op.type, std::move(inner),

@@ -48,6 +48,12 @@ std::vector<Token> Lexer::tokenize() {
             }
         }
 
+        // string literals
+        if (c == '"') {
+            tokens.push_back(string_literal());
+            continue;
+        }
+
         // identifiers or keywords
         if (is_alpha(c)) {
             tokens.push_back(identifier_or_keyword());
@@ -85,14 +91,14 @@ std::vector<Token> Lexer::tokenize() {
         if (c == '<' && n == '<') {
             advance();
             advance();
-            tokens.push_back(make(TokenType::Shl, "<<", 0));
+            tokens.push_back(make(TokenType::KeywordShl, "<<", 0));
             continue;
         }
 
         if (c == '>' && n == '>') {
             advance();
             advance();
-            tokens.push_back(make(TokenType::Shr, ">>", 0));
+            tokens.push_back(make(TokenType::KeywordShr, ">>", 0));
             continue;
         }
 
@@ -131,6 +137,12 @@ std::vector<Token> Lexer::tokenize() {
             continue;
         case ':':
             tokens.push_back(simple(TokenType::Colon));
+            continue;
+        case ';':
+            tokens.push_back(simple(TokenType::Semicolon));
+            continue;
+        case ',':
+            tokens.push_back(simple(TokenType::Comma));
             continue;
         }
 
@@ -178,7 +190,13 @@ void Lexer::error_here(const std::string& msg) const {
 }
 
 Token Lexer::make(TokenType type, const std::string& text, int value) const {
-    return Token{ type, text, value, line, column };
+    Token t;
+    t.type = type;
+    t.text = text;
+    t.value = value;
+    t.line = line;
+    t.column = column;
+    return t;
 }
 
 Token Lexer::simple(TokenType type) {
@@ -220,25 +238,25 @@ Token Lexer::identifier_or_keyword() {
     std::string upper = uppercase(text);
 
     if (upper == "LET")
-        return Token{ TokenType::Let, text, 0, line, start_col };
+        return Token{ TokenType::KeywordLet, text, 0, line, start_col };
     if (upper == "INPUT")
-        return Token{ TokenType::Input, text, 0, line, start_col };
+        return Token{ TokenType::KeywordInput, text, 0, line, start_col };
     if (upper == "PRINT")
-        return Token{ TokenType::Print, text, 0, line, start_col };
+        return Token{ TokenType::KeywordPrint, text, 0, line, start_col };
     if (upper == "MOD")
-        return Token{ TokenType::Mod, text, 0, line, start_col };
+        return Token{ TokenType::KeywordMod, text, 0, line, start_col };
     if (upper == "SHL")
-        return Token{ TokenType::Shl, text, 0, line, start_col };
+        return Token{ TokenType::KeywordShl, text, 0, line, start_col };
     if (upper == "SHR")
-        return Token{ TokenType::Shr, text, 0, line, start_col };
+        return Token{ TokenType::KeywordShr, text, 0, line, start_col };
     if (upper == "NOT")
-        return Token{ TokenType::Not, text, 0, line, start_col };
+        return Token{ TokenType::KeywordNot, text, 0, line, start_col };
     if (upper == "AND")
-        return Token{ TokenType::And, text, 0, line, start_col };
+        return Token{ TokenType::KeywordAnd, text, 0, line, start_col };
     if (upper == "OR")
-        return Token{ TokenType::Or, text, 0, line, start_col };
+        return Token{ TokenType::KeywordOr, text, 0, line, start_col };
     if (upper == "XOR")
-        return Token{ TokenType::Xor, text, 0, line, start_col };
+        return Token{ TokenType::KeywordXor, text, 0, line, start_col };
 
     // IDENTIFIER - store uppercase name in text
     return Token{ TokenType::Identifier, upper, 0, line, start_col };
@@ -256,4 +274,29 @@ Token Lexer::number() {
     int value = std::stoi(text);
 
     return Token{ TokenType::Number, text, value, line, start_col };
+}
+
+Token Lexer::string_literal() {
+    advance(); // skip opening quote
+
+    std::string value;
+
+    while (!eof()) {
+        char c = advance();
+
+        if (c == '"') {
+            // Check for doubled quote
+            if (peek() == '"') {
+                advance(); // consume second quote
+                value.push_back('"');
+                continue;
+            }
+            // End of string
+            return make(TokenType::StringLiteral, value, 0);
+        }
+
+        value.push_back(c);
+    }
+
+    error_here("Unterminated string literal");
 }

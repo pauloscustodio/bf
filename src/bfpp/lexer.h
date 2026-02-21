@@ -45,30 +45,10 @@ struct Token {
     SourceLocation loc;
 
     Token() = default;
-    Token(TokenType t, const std::string& txt, const SourceLocation& loc)
-        : type(t), text(txt), loc(loc) {
-    }
-
-    bool is_comma() const {
-        return type == TokenType::BFInstr && text == ",";
-    }
-
-    static Token make_bf(char c, const SourceLocation& loc) {
-        Token t;
-        t.type = TokenType::BFInstr;
-        t.text.assign(1, c);
-        t.loc = loc;
-        return t;
-    }
-
-    static Token make_int(int value, const SourceLocation& loc) {
-        Token t;
-        t.type = TokenType::Integer;
-        t.int_value = value;
-        t.text = std::to_string(value);
-        t.loc = loc;
-        return t;
-    }
+    Token(TokenType t, const std::string& txt, const SourceLocation& loc);
+    bool is_comma() const;
+    static Token make_bf(char c, const SourceLocation& loc);
+    static Token make_int(int value, const SourceLocation& loc);
 };
 
 class TokenScanner {

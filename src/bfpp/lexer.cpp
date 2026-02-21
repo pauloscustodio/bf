@@ -89,6 +89,31 @@ bool CommentStripper::is_eof() const {
     return g_file_stack.is_eof();
 }
 
+Token::Token(TokenType t, const std::string& txt, const SourceLocation& loc)
+    : type(t), text(txt), loc(loc) {
+}
+
+bool Token::is_comma() const {
+    return type == TokenType::BFInstr && text == ",";
+}
+
+Token Token::make_bf(char c, const SourceLocation& loc) {
+    Token t;
+    t.type = TokenType::BFInstr;
+    t.text.assign(1, c);
+    t.loc = loc;
+    return t;
+}
+
+Token Token::make_int(int value, const SourceLocation& loc) {
+    Token t;
+    t.type = TokenType::Integer;
+    t.int_value = value;
+    t.text = std::to_string(value);
+    t.loc = loc;
+    return t;
+}
+
 void TokenScanner::scan_line(const std::string& text,
                              const std::string& filename,
                              int line_num,
@@ -155,8 +180,57 @@ void TokenScanner::scan_line(const std::string& text,
             ++p;
             std::string str;
             while (*p && *p != '"') {
-                str.push_back(*p);
-                ++p;
+                if (!in_directive && *p == '\\' && *(p + 1)) {
+                    // Process escape sequences (except in directives for path separators)
+                    ++p; // consume backslash
+                    switch (*p) {
+                    case 'n':
+                        str.push_back('\n');
+                        break;
+                    case 't':
+                        str.push_back('\t');
+                        break;
+                    case 'r':
+                        str.push_back('\r');
+                        break;
+                    case '\\':
+                        str.push_back('\\');
+                        break;
+                    case '"':
+                        str.push_back('"');
+                        break;
+                    case '\'':
+                        str.push_back('\'');
+                        break;
+                    case '0':
+                        str.push_back('\0');
+                        break;
+                    case 'a':
+                        str.push_back('\a');
+                        break;
+                    case 'b':
+                        str.push_back('\b');
+                        break;
+                    case 'f':
+                        str.push_back('\f');
+                        break;
+                    case 'v':
+                        str.push_back('\v');
+                        break;
+                    default:
+                        // Unknown escape: keep backslash and character
+                        g_error_reporter.report_error(loc,
+                                                      "unknown escape sequence '\\" + std::string(1, *p) + "'");
+                        str.push_back('\\');
+                        str.push_back(*p);
+                        break;
+                    }
+                    ++p;
+                }
+                else {
+                    str.push_back(*p);
+                    ++p;
+                }
             }
             if (*p != '"') {
                 g_error_reporter.report_error(loc,

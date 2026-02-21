@@ -40,3 +40,15 @@ Expr Expr::unary(TokenType op, Expr inner, SourceLoc loc) {
     e.loc = loc;
     return e;
 }
+
+PrintElem PrintElem::string(std::string s) {
+    return { PrintElemType::String, std::move(s), {}, {} };
+}
+
+PrintElem PrintElem::expression(Expr e) {
+    return { PrintElemType::Expr, "", std::move(e), {} };
+}
+
+PrintElem PrintElem::separator(TokenType t) {
+    return { PrintElemType::Expr, "", {}, t };
+}

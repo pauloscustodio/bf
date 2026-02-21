@@ -48,5 +48,25 @@ capture_ok("bfpp $test.in | bf", <<END);
 Hello
 END
 
+# print with quotes
+spew("$test.in", <<'END'); # Note: quoted 'END'
+print_string("Hello \"world\"")
+print_newline
+END
+capture_ok("bfpp $test.in | bf", <<END);
+Hello "world"
+END
+
+# print_string - print escape sequences
+spew("$test.in", <<'END'); # Note: quoted 'END'
+print_string("\n, \t, \r, \\, \", \', \0, \a, \b, \f, \v")
+END
+run_ok("bfpp $test.in | bf > $test.stdout"); 
+# Perl blurps on \v: Unrecognized escape \v passed through
+my $out = slurp("$test.stdout");
+$out =~ s/\r\n/\n/g;
+my $exp = "\n, \t, \r, \\, \", \', \0, \a, \b, \f, \x0b";
+is $out, $exp, "recognized escape sequences";
+
 unlink_testfiles;
 done_testing;

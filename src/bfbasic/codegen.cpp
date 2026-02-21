@@ -88,31 +88,89 @@ void CodeGen::emit_stmt(const Stmt& s) {
 }
 
 void CodeGen::emit_input(const Stmt& s) {
-    emit("scan_cell16s(" + s.var + ")");
+    for (auto& v : s.vars) {
+        emit("scan_cell16s(" + v + ")");
+    }
 }
 
 void CodeGen::emit_print(const Stmt& s) {
-    emit("print_cell16s(" + s.var + ")");
-    emit("print_newline");
+    const StmtPrint& p = s.print;
+    bool last_was_separator = false;
+
+    for (const auto& e : p.elems) {
+        switch (e.type) {
+
+        case PrintElemType::String:
+            emit("print_string(\"" + escape(e.text) + "\")");
+            last_was_separator = false;
+            break;
+
+        case PrintElemType::Expr: {
+            if (e.expr.type == Expr::Type::Var) {
+                emit("print_cell16s(" + e.expr.name + ")");
+            }
+            else {
+                std::string tmp = alloc_temp16();
+                emit_expr(e.expr, tmp);
+                emit("print_cell16s(" + tmp + ")");
+                free_temp16(tmp);
+            }
+            last_was_separator = false;
+            break;
+        }
+
+        case PrintElemType::Separator:
+            if (e.sep == TokenType::Comma) {
+                emit("print_char(9)");    // tab
+            }
+            // semicolon prints nothing
+            last_was_separator = true;
+            break;
+        }
+    }
+
+    // newline unless last element was a semicolon
+    if (!last_was_separator) {
+        emit("print_newline");
+    }
+}
+
+
+std::string CodeGen::escape(const std::string& s) {
+    std::string result;
+    result.reserve(s.size());
+    for (auto c : s) {
+        if (c == '"') {
+            result += "\\\"";
+        }
+        else {
+            result.push_back(c);
+        }
+    }
+
+    return result;
 }
 
 void CodeGen::emit_let(const Stmt& s) {
+    assert(s.vars.size() == 1); // only single-variable LET supported for now
+    std::string  var = s.vars[0];
+
     // Case 1: LET A = <constant>
     if (s.expr->type == Expr::Type::Number) {
-        emit("set16(" + s.var + ", " + std::to_string(s.expr->value) + ")");
+        emit("set16(" + var + ", " + std::to_string(s.expr->value) + ")");
         return;
     }
 
     // Case 2: LET A = B
     if (s.expr->type == Expr::Type::Var) {
-        emit("copy16(" + s.expr->name + ", " + s.var + ")");
+        emit("copy16(" + s.expr->name + ", " + var + ")");
         return;
     }
 
     // General case: LET A = <complex expression>
     std::string t = alloc_temp16();
     emit_expr(*s.expr, t);
-    emit("move16(" + t + ", " + s.var + ")");
+    emit("move16(" + t + ", " + var + ")");
     free_temp16(t);
 }
 
@@ -153,7 +211,7 @@ void CodeGen::emit_unary(const Expr& e, const std::string& target) {
         emit("neg16(" + target + ")");
         break;
 
-    case TokenType::Not:
+    case TokenType::KeywordNot:
         // NOT x  ->  (x == 0)
         emit("not16(" + target + ")");
         break;
@@ -186,7 +244,7 @@ void CodeGen::emit_binary(const Expr& e, const std::string& target) {
     case TokenType::Slash:
         emit("div16s(" + target + ", " + tmp + ")");
         break;
-    case TokenType::Mod:
+    case TokenType::KeywordMod:
         emit("mod16s(" + target + ", " + tmp + ")");
         break;
     case TokenType::Caret:
@@ -194,10 +252,10 @@ void CodeGen::emit_binary(const Expr& e, const std::string& target) {
         break;
 
     // Shifts
-    case TokenType::Shl:
+    case TokenType::KeywordShl:
         emit("shl16(" + target + ", " + tmp + ")");
         break;
-    case TokenType::Shr:
+    case TokenType::KeywordShr:
         emit("shr16(" + target + ", " + tmp + ")");
         break;
 
@@ -222,13 +280,13 @@ void CodeGen::emit_binary(const Expr& e, const std::string& target) {
         break;
 
     // Boolean logic (operates on 0/1)
-    case TokenType::And:
+    case TokenType::KeywordAnd:
         emit("and16(" + target + ", " + tmp + ")");
         break;
-    case TokenType::Or:
+    case TokenType::KeywordOr:
         emit("or16(" + target + ", " + tmp + ")");
         break;
-    case TokenType::Xor:
+    case TokenType::KeywordXor:
         emit("xor16(" + target + ", " + tmp + ")");
         break;
 

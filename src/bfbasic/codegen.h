@@ -35,6 +35,7 @@ private:
     void emit_stmt(const Stmt& s);
     void emit_input(const Stmt& s);
     void emit_print(const Stmt& s);
+    std::string escape(const std::string& s);
     void emit_let(const Stmt& s);
 
     // --- expressions ---------------------------------------------------------

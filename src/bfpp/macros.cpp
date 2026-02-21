@@ -4007,13 +4007,6 @@ bool MacroExpander::parse_string_arg(Parser& parser, const Token& tok,
     }
 
     text_out = args[0][0].text;
-    if (!text_out.empty() and text_out.front() == '"') {
-        text_out.erase(0);
-    }
-    if (!text_out.empty() and text_out.back() == '"') {
-        text_out.pop_back();
-    }
-
     return true;
 }
 

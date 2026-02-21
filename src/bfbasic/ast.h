@@ -39,18 +39,38 @@ struct Expr {
     static Expr unary(TokenType op, Expr inner, SourceLoc loc);
 };
 
+enum class PrintElemType {
+    String,
+    Expr,
+    Separator,
+};
+
+struct PrintElem {
+    PrintElemType type;
+    std::string text;   // for strings
+    Expr expr;          // for expressions
+    TokenType sep;      // for separators: Semicolon or Comma
+
+    static PrintElem string(std::string s);
+    static PrintElem expression(Expr e);
+    static PrintElem separator(TokenType t);
+};
+
+struct StmtPrint {
+    std::vector<PrintElem> elems;
+};
+
 struct Stmt {
     enum class Type { Let, Input, Print } type;
 
     SourceLoc loc;
 
-    // LET v = expr
-    std::string var;
-    std::unique_ptr<Expr> expr;
+    // LET and INPUT
+    std::vector<std::string> vars;
+    std::unique_ptr<Expr> expr; // only for LET
 
-    // INPUT v
-    // PRINT v
-    // (both use var)
+    // PRINT ...
+    StmtPrint print;
 };
 
 struct Program {

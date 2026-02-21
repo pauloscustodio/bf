@@ -1,5 +1,3 @@
-- PRINT strings, variables, semicolon and comma separators
-- INPUT list of variables
 - IF expr THEN statements
 - IF expr THEN \n block \n ENDIF
 - IF expr THEN statements ELSE statements

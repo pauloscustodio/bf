@@ -45,13 +45,33 @@ void collect_expr_symbols(const Expr& e, SymbolTable& sym) {
     }
 }
 
+void collect_symbols_in_stmt(const Stmt& s, SymbolTable& sym) {
+    switch (s.type) {
+    case Stmt::Type::Let:
+        for (auto& v : s.vars) {
+            sym.declare(v);
+        }
+        collect_expr_symbols(*s.expr, sym);
+        break;
+
+    case Stmt::Type::Input:
+        for (auto& v : s.vars) {
+            sym.declare(v);
+        }
+        break;
+
+    case Stmt::Type::Print:
+        for (const auto& item : s.print.elems) {
+            if (item.type == PrintElemType::Expr) {
+                collect_expr_symbols(item.expr, sym);
+            }
+        }
+        break;
+    }
+}
 void collect_symbols(const Program& prog, SymbolTable& sym) {
     for (const Stmt& s : prog.statements) {
-        sym.declare(s.var);
-
-        if (s.type == Stmt::Type::Let) {
-            collect_expr_symbols(*s.expr, sym);
-        }
+        collect_symbols_in_stmt(s, sym);
     }
 }
 
