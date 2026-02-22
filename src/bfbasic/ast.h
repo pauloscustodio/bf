@@ -71,11 +71,17 @@ struct StmtIf {
     StmtList else_block;
 };
 
+struct StmtWhile {
+    Expr condition;
+    StmtList body;
+};
+
 enum class StmtType {
     Let,
     Input,
     Print,
     If,
+    While,
 };
 
 struct Stmt {
@@ -91,6 +97,9 @@ struct Stmt {
 
     // IF ...
     std::unique_ptr<StmtIf> if_stmt;
+
+    // WHILE ...
+    std::unique_ptr<StmtWhile> while_stmt;
 };
 
 using Program = StmtList;

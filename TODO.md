@@ -1,9 +1,7 @@
-- IF expr THEN \n block \n ELSEIF expr \n block \n ELSE \n block ENDIF
-- WHILE expr \n block \n WEND
-- DO {UNTIL|WHILE} expr \n block \b LOOP
-- DO \n block \n LOOP {UNTIL|WHILE} expr
 - FOR var = start TO end [STEP step] \n block \n NEXT [var]
 - DIM var(dimension); A(i)
+- Single char string variables C$, INPUT C$, PRINT C$, A=ASC(C$), C$=CHR$(A), comparison
+- DIM var$(dimension); A$(i) - strings
 - SUB name(A, B, ...) \n block \n ENDSUB
 - FUNCTION name(A, B, ...) \n block \n name = return \n ENDFUNCTION
 - Simple strings: INPUT, PRINT, compare

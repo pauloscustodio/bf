@@ -49,6 +49,7 @@ private:
     StmtList parse_block_until(
         std::initializer_list<TokenType> terminators,
         const std::string& terminator_name);
+    Stmt parse_while();
     void consume_end_of_statement();
 
     // --- Expressions ---------------------------------------------------------

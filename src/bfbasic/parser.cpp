@@ -94,6 +94,7 @@ bool Parser::starts_statement(const Token& t) const {
     case TokenType::KeywordInput:
     case TokenType::KeywordPrint:
     case TokenType::KeywordIf:
+    case TokenType::KeywordWhile:
         return true;
 
     case TokenType::Identifier:
@@ -120,17 +121,23 @@ Stmt Parser::parse_single_statement() {
     if (match(TokenType::KeywordIf)) {
         return parse_if();
     }
+    if (match(TokenType::KeywordWhile)) {
+        return parse_while();
+    }
 
     // optional LET
     if (match(TokenType::Identifier) && peek_next().type == TokenType::Equal) {
         return parse_let_without_keyword();
     }
 
-    error_here("Expected LET, INPUT, PRINT or IF");
+    error_here("Expected LET, INPUT, PRINT, IF or WHILE");
 }
 
 void Parser::parse_statement_list_on_line(
     std::vector<std::unique_ptr<Stmt>>& out) {
+
+    bool parsed_any = false;
+
     while (starts_statement(peek()) || match(TokenType::Colon)) {
         // sequence of colons
         if (match(TokenType::Colon)) {
@@ -140,11 +147,17 @@ void Parser::parse_statement_list_on_line(
 
         // one statement
         out.push_back(std::make_unique<Stmt>(parse_single_statement()));
+        parsed_any = true;
 
         // optional colon to keep going on the same line
         if (!match(TokenType::Colon)) {
             break; // end of statement list on this line will be checked by caller
         }
+    }
+
+    // If we didn't parse any statements, force a call to get proper error
+    if (!parsed_any) {
+        parse_single_statement(); // Will error with specific message
     }
 }
 
@@ -397,6 +410,30 @@ StmtList Parser::parse_block_until(
     return list;
 }
 
+Stmt Parser::parse_while() {
+    Token kw = advance(); // WHILE
+
+    auto w = std::make_unique<StmtWhile>();
+    w->condition = parse_expr();
+
+    // Require newline after condition
+    expect(TokenType::Newline, "Expected newline after WHILE condition");
+
+    // Body until WEND
+    w->body = parse_block_until({ TokenType::KeywordWEnd }, "WEND");
+
+    // Consume WEND and its newline
+    expect(TokenType::KeywordWEnd, "Expected WEND");
+    if (!match(TokenType::Newline)) {
+        error_here("Expected newline after WEND");
+    }
+
+    Stmt s;
+    s.type = StmtType::While;
+    s.loc.line = kw.line;
+    s.while_stmt = std::move(w);
+    return s;
+}
 
 void Parser::consume_end_of_statement() {
     // Allow any number of Newline or Colon tokens

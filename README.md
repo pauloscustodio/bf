@@ -42,7 +42,7 @@ usage: bfpp [-o output_file] [-I include_path] [-D name=value] [-v] [input_file]
 - Comparisons: `eq8/eq8s/ne8/ne8s/lt8/lt8s/le8/le8s/gt8/gt8s/ge8/ge8s(a, b)` (+ `xx16`).
 - Control: `if(expr) ... else ... endif`, `while(expr) ... endwhile`, `repeat(count) ... endrepeat`.
 - Stack: `push8(source_cell)`, `push8i(immediate_value)`, `pop8(target_cell)` (+ `xx16`).
-- Global: `alloc_global16(COUNT)`, `free_global16`, `alloc_temp16(COUNT)`, `free_temp16`. Exressions can use `global(i)` and `temp(i)` to refer to these.
+- Global: `alloc_global16(COUNT)`, `free_global16`, `alloc_temp16(COUNT)`, `free_temp16`. Expressions can use `global(i)` and `temp(i)` to refer to these.
 - Stack frames: `enter_frame16(num_args16, num_locals16)` / `leave_frame16` to manage a call stack for temporary storage. `num_args16` are already on the stack when `enter_frame16` is called. `frame_alloc_temp16(count16)` can be used inside a frame to allocate temporary cells that will be automatically freed on `leave_frame16`. Expressions can use `arg(i)` to refer to arguments,  `local(i)` for local variables and `frame_temp(i)` for temporaries.
 - Arrays: `alloc_array16(NAME, dimensions)`, `free_array16(NAME)`, `put_array8(NAME, idx_cell, source_cell)`, `get_array8(NAME, idx_cell, target_cell)` (and `xx16` forms for put/get).
 - Output: `print_char(value)`, `print_char8(cell)`, `print_string(string)`; string supports common C escape sequences: `\n`, `\t`, `\r`, `\\`, `\"`, `\'`, `\0`, `\a`, `\b`, `\f`, `\v`;
@@ -68,6 +68,7 @@ Supported statements (one per line; blank lines allowed):
 - `PRINT [string|expr][,|;]...` - print values of expressions and strings
 - `IF expr THEN stmts [ELSE stmts]` - single line if-else.
 - `IF expr THEN`, ..., `[ELSE`, ..., `]ENDIF` - multi-line if-else.
+- `WHILE expr`, ..., `WEND` - loops controled on an expression.
 - a colon (`:`) can be used to separate statements in the same line.
 - a single `_` followed by newline is considered white space and ignored.
 

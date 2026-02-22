@@ -85,6 +85,9 @@ void CodeGen::emit_stmt(const Stmt& s) {
     case StmtType::If:
         emit_if(s);
         break;
+    case StmtType::While:
+        emit_while(s);
+        break;
     default:
         assert(0);
     }
@@ -204,6 +207,33 @@ void CodeGen::emit_if(const Stmt& s) {
     emit("endif");
 
     // 6. Free temp
+    free_temp16(cond);
+}
+
+void CodeGen::emit_while(const Stmt& s) {
+    const StmtWhile& stmt_while = *s.while_stmt;
+
+    // 1. Allocate temp for condition
+    std::string cond = alloc_temp16();
+
+    // 2. Initial evaluation
+    emit_expr(stmt_while.condition, cond);
+
+    // 3. While header
+    emit("while(" + cond + ")");
+
+    // 4. Body
+    for (auto& stmt : stmt_while.body.statements) {
+        emit_stmt(*stmt);
+    }
+
+    // 5. Re-evaluate condition at loop bottom
+    emit_expr(stmt_while.condition, cond);
+
+    // 6. End of loop
+    emit("endwhile");
+
+    // 7. Free temp
     free_temp16(cond);
 }
 

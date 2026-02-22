@@ -44,6 +44,10 @@ void collect_expr_symbols(const Expr& e, SymbolTable& sym) {
         collect_expr_symbols(*e.left, sym);
         collect_expr_symbols(*e.right, sym);
     }
+
+    if (e.type == Expr::Type::UnaryOp) {
+        collect_expr_symbols(*e.inner, sym);
+    }
 }
 
 void collect_symbols_in_stmt(const Stmt& s, SymbolTable& sym) {
@@ -79,10 +83,18 @@ void collect_symbols_in_stmt(const Stmt& s, SymbolTable& sym) {
         }
         break;
 
+    case StmtType::While:
+        collect_expr_symbols(s.while_stmt->condition, sym);
+        for (const auto& stmt : s.while_stmt->body.statements) {
+            collect_symbols_in_stmt(*stmt, sym);
+        }
+        break;
+
     default:
         assert(0);
     }
 }
+
 void collect_symbols(const Program& prog, SymbolTable& sym) {
     for (const auto& s : prog.statements) {
         collect_symbols_in_stmt(*s, sym);

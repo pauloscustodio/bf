@@ -17,6 +17,7 @@ enum class TokenType {
     KeywordInput,
     KeywordPrint,
     KeywordIf, KeywordThen, KeywordElse, KeywordEndIf,
+    KeywordWhile, KeywordWEnd,
     Plus, Minus, Star, Slash, Caret,
     Less, LessEqual, Greater, GreaterEqual, Equal, NotEqual,
     LParen, RParen,

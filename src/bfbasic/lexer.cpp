@@ -244,6 +244,10 @@ Token Lexer::identifier_or_keyword() {
         return Token{ TokenType::KeywordElse, text, 0, line };
     if (upper == "ENDIF")
         return Token{ TokenType::KeywordEndIf, text, 0, line };
+    if (upper == "WHILE")
+        return Token{ TokenType::KeywordWhile, text, 0, line };
+    if (upper == "WEND")
+        return Token{ TokenType::KeywordWEnd, text, 0, line };
     if (upper == "MOD")
         return Token{ TokenType::KeywordMod, text, 0, line };
     if (upper == "SHL")
