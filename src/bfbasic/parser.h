@@ -33,7 +33,9 @@ private:
 
     // --- Statements ----------------------------------------------------------
 
-    Stmt parse_statement();
+    bool starts_statement(const Token& t) const;
+    Stmt parse_single_statement();
+    void parse_statement_list_on_line(std::vector<std::unique_ptr<Stmt>>& out);
     StmtList parse_statement_list_until(
         std::initializer_list<TokenType> terminators);
     Stmt parse_let();
@@ -43,6 +45,10 @@ private:
     PrintElem parse_print_elems();
     Stmt parse_if();
     void parse_inline_stmt_list(StmtList& out);
+    Stmt parse_multiline_if(Expr condition);
+    StmtList parse_block_until(
+        std::initializer_list<TokenType> terminators,
+        const std::string& terminator_name);
     void consume_end_of_statement();
 
     // --- Expressions ---------------------------------------------------------

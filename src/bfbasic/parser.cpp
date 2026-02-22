@@ -15,16 +15,13 @@ Program Parser::parse_program() {
     Program prog;
 
     while (!match(TokenType::EndOfFile)) {
-
         // Skip blank lines or stray separators
         if (match(TokenType::Newline) || match(TokenType::Colon)) {
             advance();
             continue;
         }
 
-        Stmt s = parse_statement();
-        prog.statements.push_back(std::move(s));
-
+        parse_statement_list_on_line(prog.statements);
         consume_end_of_statement();
     }
 
@@ -91,7 +88,27 @@ const Token& Parser::expect(TokenType t, const std::string& msg) {
     return advance();
 }
 
-Stmt Parser::parse_statement() {
+bool Parser::starts_statement(const Token& t) const {
+    switch (t.type) {
+
+    case TokenType::KeywordLet:
+    case TokenType::KeywordInput:
+    case TokenType::KeywordPrint:
+    case TokenType::KeywordIf:
+        return true;
+
+    case TokenType::Identifier:
+        if(peek_next().type == TokenType::Equal) {
+            return true; // LET without keyword
+        }
+        return false;
+
+    default:
+        return false;
+    }
+}
+
+Stmt Parser::parse_single_statement() {
     if (match(TokenType::KeywordLet)) {
         return parse_let();
     }
@@ -113,6 +130,25 @@ Stmt Parser::parse_statement() {
     error_here("Expected LET, INPUT, PRINT or IF");
 }
 
+void Parser::parse_statement_list_on_line(
+    std::vector<std::unique_ptr<Stmt>>& out) {
+    while (starts_statement(peek()) || match(TokenType::Colon)) {
+        // sequence of colons
+        if (match(TokenType::Colon)) {
+            advance();
+            continue;
+        }
+
+        // one statement
+        out.push_back(std::make_unique<Stmt>(parse_single_statement()));
+
+        // optional colon to keep going on the same line
+        if (!match(TokenType::Colon)) {
+            break; // end of statement list on this line will be checked by caller
+        }
+    }
+}
+
 StmtList Parser::parse_statement_list_until(std::initializer_list<TokenType> terminators) {
     StmtList list;
 
@@ -122,9 +158,7 @@ StmtList Parser::parse_statement_list_until(std::initializer_list<TokenType> ter
             continue;
         }
 
-        list.statements.push_back(std::make_unique<Stmt>(parse_statement()));
-
-        // After each statement, consume separators
+        parse_statement_list_on_line(list.statements);
         consume_end_of_statement();
     }
 
@@ -248,14 +282,18 @@ Stmt Parser::parse_if() {
     s.if_stmt = std::make_unique<StmtIf>();
 
     // Parse condition
-    s.if_stmt->condition = parse_expr();
+    Expr condition = parse_expr();
 
     expect(TokenType::KeywordThen, "Expected THEN");
 
-    // THEN followed by newline -> multi-line IF (not yet supported)
-    if (match(TokenType::Newline) || match(TokenType::EndOfFile)) {
-        error_here("Multi-line IF blocks not yet supported");
+    // THEN followed by newline -> multi-line IF
+    if (match(TokenType::Newline)) {
+        advance(); // consume newline
+        return parse_multiline_if(std::move(condition));
     }
+
+    // single-line IF
+    s.if_stmt->condition = std::move(condition);
 
     // Parse THEN inline block
     parse_inline_stmt_list(s.if_stmt->then_block);
@@ -286,25 +324,80 @@ void Parser::parse_inline_stmt_list(StmtList& out) {
         error_here("Expected statement after THEN/ELSE");
     }
 
-    // First statement
-    out.statements.push_back(std::make_unique<Stmt>(parse_statement()));
+    // List of statements on the same line, separated by colons
+    parse_statement_list_on_line(out.statements);
+}
 
-    // Now skip colon-separated additional statements
-    while (match(TokenType::Colon)) {
-        advance();
+Stmt Parser::parse_multiline_if(Expr condition) {
+    auto if_stmt = std::make_unique<StmtIf>();
+    if_stmt->condition = std::move(condition);
 
-        // Skip multiple colons
-        while (match(TokenType::Colon)) {
+    // Parse THEN block until ELSE or ENDIF
+    if_stmt->then_block = parse_block_until(
+    { TokenType::KeywordElse, TokenType::KeywordEndIf }, "ENDIF");
+
+    // Optional ELSE
+    if (match(TokenType::KeywordElse)) {
+        advance(); // consume ELSE
+        expect(TokenType::Newline, "Expected newline after ELSE");
+        if_stmt->else_block = parse_block_until({ TokenType::KeywordEndIf }, "ENDIF");
+    }
+
+    // ENDIF
+    expect(TokenType::KeywordEndIf, "Expected ENDIF");
+
+    // ENDIF must be followed by newline
+    if (!match(TokenType::Newline)) {
+        error_here("Expected newline after ENDIF");
+    }
+
+    Stmt s;
+    s.type = StmtType::If;
+    s.if_stmt = std::move(if_stmt);
+    return s;
+}
+
+StmtList Parser::parse_block_until(
+    std::initializer_list<TokenType> terminators,
+    const std::string& terminator_name) {
+    StmtList list;
+
+    while (true) {
+        // If we reached a terminator, stop
+        if (match_any(terminators)) {
+            break;
+        }
+
+        // If we reached EOF before a terminator → missing ENDIF
+        if (match(TokenType::EndOfFile)) {
+            error_here("Missing " + terminator_name);
+        }
+
+        // Skip blank lines
+        if (match(TokenType::Newline)) {
+            advance();
+            continue;
+        }
+
+        // Parse all statements on this line
+        parse_statement_list_on_line(list.statements);
+
+        // After statements, we expect either newline or EOF
+        if (match(TokenType::Newline)) {
             advance();
         }
-
-        if (match(TokenType::Newline) || match(TokenType::EndOfFile)) {
-            error_here("Expected statement after ':'");
+        else if (match(TokenType::EndOfFile)) {
+            // EOF before terminator → missing ENDIF
+            error_here("Missing " + terminator_name);
         }
-
-        out.statements.push_back(std::make_unique<Stmt>(parse_statement()));
+        else {
+            error_here("Expected newline after statements");
+        }
     }
+
+    return list;
 }
+
 
 void Parser::consume_end_of_statement() {
     // Allow any number of Newline or Colon tokens

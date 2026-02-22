@@ -94,6 +94,4 @@ struct Stmt {
     std::unique_ptr<StmtIf> if_stmt;
 };
 
-struct Program {
-    std::vector<Stmt> statements;
-};
+using Program = StmtList;

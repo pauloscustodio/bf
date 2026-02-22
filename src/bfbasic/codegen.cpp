@@ -19,7 +19,7 @@ std::string CodeGen::generate(const Program& prog) {
     emit_var_allocs();
 
     for (const auto& s : prog.statements) {
-        emit_stmt(s);
+        emit_stmt(*s);
     }
 
     emit_postlude();

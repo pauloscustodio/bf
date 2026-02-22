@@ -1,7 +1,3 @@
-- IF expr THEN statements
-- IF expr THEN \n block \n ENDIF
-- IF expr THEN statements ELSE statements
-- IF expr THEN \n block \n ELSE \n block ENDIF
 - IF expr THEN \n block \n ELSEIF expr \n block \n ELSE \n block ENDIF
 - WHILE expr \n block \n WEND
 - DO {UNTIL|WHILE} expr \n block \b LOOP
@@ -10,4 +6,5 @@
 - DIM var(dimension); A(i)
 - SUB name(A, B, ...) \n block \n ENDSUB
 - FUNCTION name(A, B, ...) \n block \n name = return \n ENDFUNCTION
+- Simple strings: INPUT, PRINT, compare
 - simplify expressions, e.g. -(-A), subexpressions with constants

@@ -84,8 +84,8 @@ void collect_symbols_in_stmt(const Stmt& s, SymbolTable& sym) {
     }
 }
 void collect_symbols(const Program& prog, SymbolTable& sym) {
-    for (const Stmt& s : prog.statements) {
-        collect_symbols_in_stmt(s, sym);
+    for (const auto& s : prog.statements) {
+        collect_symbols_in_stmt(*s, sym);
     }
 }
 
