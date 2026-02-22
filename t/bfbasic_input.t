@@ -9,7 +9,7 @@ spew("$test.bas", <<END);
 INPUT
 END
 capture_nok("bfbasic -o $test.bfpp $test.bas", <<END);
-Parse error at line 2, column 1: Expected variable name after INPUT
+Parse error at line 2: Expected variable name after INPUT
 END
 
 # INPUT A,
@@ -17,7 +17,7 @@ spew("$test.bas", <<END);
 INPUT A,
 END
 capture_nok("bfbasic -o $test.bfpp $test.bas", <<END);
-Parse error at line 2, column 1: Expected variable name after ,
+Parse error at line 2: Expected variable name after ,
 END
 
 # INPUT A

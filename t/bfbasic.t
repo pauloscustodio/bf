@@ -5471,7 +5471,7 @@ check_text_file("$test.bfpp", $compiled);
 # test final _ in the file
 spew("$test.bas", "LET A = 10 : LET B = A + 3 : INPUT X : LET Y = X * B : PRINT Y _");
 capture_nok("bfbasic -o $test.bfpp $test.bas", <<END);
-Error at line 1, column 64: Line continuation '_' must be followed by a newline
+Error at line 1: Line continuation '_' must be followed by a newline
 END
 
 unlink_testfiles;

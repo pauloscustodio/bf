@@ -32,7 +32,6 @@ struct Token {
     std::string text;
     int value = 0;          // only for numbers
     int line = 0;
-    int column = 0;
 };
 
 class Lexer {
@@ -43,7 +42,7 @@ public:
 private:
     const std::string& src;
     size_t pos = 0;
-    int line = 0, column = 0;
+    int line = 0;
 
     bool eof() const;
     char peek() const;

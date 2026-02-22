@@ -13,7 +13,6 @@
 
 struct SourceLoc {
     int line;
-    int column;
 };
 
 struct Expr {

@@ -9,21 +9,21 @@ spew("$test.bas", <<END);
 IF
 END
 capture_nok("bfbasic -o $test.bfpp $test.bas", <<END);
-Parse error at line 2, column 1: Expected number, variable, unary operator, or '('
+Parse error at line 2: Expected number, variable, unary operator, or '('
 END
 
 spew("$test.bas", <<END);
 IF 1
 END
 capture_nok("bfbasic -o $test.bfpp $test.bas", <<END);
-Parse error at line 2, column 1: Expected THEN
+Parse error at line 2: Expected THEN
 END
 
 spew("$test.bas", <<END);
 IF 1 THEN
 END
 capture_nok("bfbasic -o $test.bfpp $test.bas", <<END);
-Parse error at line 2, column 1: Missing ENDIF
+Parse error at line 2: Missing ENDIF
 END
 
 spew("$test.bas", <<END);
@@ -31,7 +31,7 @@ IF 1 THEN
 ELSE
 END
 capture_nok("bfbasic -o $test.bfpp $test.bas", <<END);
-Parse error at line 3, column 1: Missing ENDIF
+Parse error at line 3: Missing ENDIF
 END
 
 # Test IF only

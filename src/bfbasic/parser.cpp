@@ -76,8 +76,7 @@ bool Parser::match_any(std::initializer_list<TokenType> types) const {
 [[noreturn]]
 void Parser::error_here(const std::string& msg) const {
     const Token& t = peek();
-    std::cerr << "Parse error at line " << t.line
-              << ", column " << t.column << ": " << msg << "\n";
+    std::cerr << "Parse error at line " << t.line << ": " << msg << "\n";
     exit(EXIT_FAILURE);
 }
 
@@ -175,7 +174,7 @@ Stmt Parser::parse_let() {
 
     Stmt s;
     s.type = StmtType::Let;
-    s.loc = { kw.line, kw.column };
+    s.loc.line = kw.line;
     s.vars = { id.text };
     s.expr = std::make_unique<Expr>(std::move(e));
 
@@ -190,7 +189,7 @@ Stmt Parser::parse_let_without_keyword() {
 
     Stmt s;
     s.type = StmtType::Let;
-    s.loc = { id.line, id.column };
+    s.loc.line = id.line;
     s.vars = { id.text };
     s.expr = std::make_unique<Expr>(std::move(e));
 
@@ -203,7 +202,7 @@ Stmt Parser::parse_input() {
 
     Stmt s;
     s.type = StmtType::Input;
-    s.loc = { kw.line, kw.column };
+    s.loc.line = kw.line;
     s.vars = { id.text };
 
     while (match(TokenType::Comma)) {
@@ -220,7 +219,7 @@ Stmt Parser::parse_print() {
 
     Stmt s;
     s.type = StmtType::Print;
-    s.loc = { kw.line, kw.column };
+    s.loc.line = kw.line;
 
     while (true) {
         // 1. Separator?
@@ -278,7 +277,7 @@ Stmt Parser::parse_if() {
 
     Stmt s;
     s.type = StmtType::If;
-    s.loc = { kw.line, kw.column };
+    s.loc.line = kw.line;
     s.if_stmt = std::make_unique<StmtIf>();
 
     // Parse condition
@@ -446,7 +445,7 @@ Expr Parser::parse_or() {
         Token op = advance();
         Expr right = parse_xor();
         left = Expr::binop(op.type, std::move(left), std::move(right),
-        { op.line, op.column });
+        { op.line });
     }
 
     return left;
@@ -459,7 +458,7 @@ Expr Parser::parse_xor() {
         Token op = advance();
         Expr right = parse_and();
         left = Expr::binop(op.type, std::move(left), std::move(right),
-        { op.line, op.column });
+        { op.line });
     }
 
     return left;
@@ -472,7 +471,7 @@ Expr Parser::parse_and() {
         Token op = advance();
         Expr right = parse_relational();
         left = Expr::binop(op.type, std::move(left), std::move(right),
-        { op.line, op.column });
+        { op.line });
     }
 
     return left;
@@ -491,7 +490,7 @@ Expr Parser::parse_relational() {
         Token op = advance();
         Expr right = parse_shift();
         left = Expr::binop(op.type, std::move(left), std::move(right),
-        { op.line, op.column });
+        { op.line });
     }
 
     return left;
@@ -504,7 +503,7 @@ Expr Parser::parse_shift() {
         Token op = advance();
         Expr right = parse_add();
         left = Expr::binop(op.type, std::move(left), std::move(right),
-        { op.line, op.column });
+        { op.line });
     }
 
     return left;
@@ -517,7 +516,7 @@ Expr Parser::parse_add() {
         Token op = advance();
         Expr right = parse_mul();
         left = Expr::binop(op.type, std::move(left), std::move(right),
-        { op.line, op.column });
+        { op.line });
     }
 
     return left;
@@ -532,7 +531,7 @@ Expr Parser::parse_mul() {
         Token op = advance();
         Expr right = parse_unary();
         left = Expr::binop(op.type, std::move(left), std::move(right),
-        { op.line, op.column });
+        { op.line });
     }
 
     return left;
@@ -543,13 +542,13 @@ Expr Parser::parse_unary() {
         Token op = advance();
         Expr inner = parse_unary();
         return Expr::unary(op.type, std::move(inner),
-        { op.line, op.column });
+        { op.line });
     }
     if (match(TokenType::KeywordNot)) {
         Token op = advance();
         Expr inner = parse_unary();
         return Expr::unary(op.type, std::move(inner),
-        { op.line, op.column });
+        { op.line });
     }
     return parse_power();
 }
@@ -561,7 +560,7 @@ Expr Parser::parse_power() {
         // right-associative; no unary sign allowed directly on the exponent
         Expr right = parse_power();
         left = Expr::binop(op.type, std::move(left), std::move(right),
-        { op.line, op.column });
+        { op.line });
     }
     return left;
 }
@@ -571,12 +570,12 @@ Expr Parser::parse_primary() {
 
     if (match(TokenType::Number)) {
         advance();
-        return Expr::number(t.value, { t.line, t.column });
+        return Expr::number(t.value, { t.line });
     }
 
     if (match(TokenType::Identifier)) {
         advance();
-        return Expr::var(t.text, { t.line, t.column });
+        return Expr::var(t.text, { t.line });
     }
 
     if (match(TokenType::LParen)) {

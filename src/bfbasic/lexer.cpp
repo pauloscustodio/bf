@@ -9,7 +9,7 @@
 #include <iostream>
 
 Lexer::Lexer(const std::string& src)
-    : src(src), pos(0), line(1), column(1) {
+    : src(src), pos(0), line(1) {
 }
 
 std::vector<Token> Lexer::tokenize() {
@@ -174,18 +174,13 @@ char Lexer::advance() {
     char c = src[pos++];
     if (c == '\n') {
         line++;
-        column = 1;
-    }
-    else {
-        column++;
     }
     return c;
 }
 
 [[noreturn]]
 void Lexer::error_here(const std::string& msg) const {
-    std::cerr << "Error at line " << line << ", column " << column
-              << ": " << msg << std::endl;
+    std::cerr << "Error at line " << line << ": " << msg << std::endl;
     exit(EXIT_FAILURE);
 }
 
@@ -195,7 +190,6 @@ Token Lexer::make(TokenType type, const std::string& text, int value) const {
     t.text = text;
     t.value = value;
     t.line = line;
-    t.column = column;
     return t;
 }
 
@@ -225,7 +219,6 @@ void Lexer::skip_whitespace() {
 }
 
 Token Lexer::identifier_or_keyword() {
-    int start_col = column;
     size_t start = pos;
 
     while (!eof() && (is_alnum(peek()) || peek() == '_')) {
@@ -238,40 +231,39 @@ Token Lexer::identifier_or_keyword() {
     std::string upper = uppercase(text);
 
     if (upper == "LET")
-        return Token{ TokenType::KeywordLet, text, 0, line, start_col };
+        return Token{ TokenType::KeywordLet, text, 0, line };
     if (upper == "INPUT")
-        return Token{ TokenType::KeywordInput, text, 0, line, start_col };
+        return Token{ TokenType::KeywordInput, text, 0, line };
     if (upper == "PRINT")
-        return Token{ TokenType::KeywordPrint, text, 0, line, start_col };
+        return Token{ TokenType::KeywordPrint, text, 0, line };
     if (upper == "IF")
-        return Token{ TokenType::KeywordIf, text, 0, line, start_col };
+        return Token{ TokenType::KeywordIf, text, 0, line };
     if (upper == "THEN")
-        return Token{ TokenType::KeywordThen, text, 0, line, start_col };
+        return Token{ TokenType::KeywordThen, text, 0, line };
     if (upper == "ELSE")
-        return Token{ TokenType::KeywordElse, text, 0, line, start_col };
+        return Token{ TokenType::KeywordElse, text, 0, line };
     if (upper == "ENDIF")
-        return Token{ TokenType::KeywordEndIf, text, 0, line, start_col };
+        return Token{ TokenType::KeywordEndIf, text, 0, line };
     if (upper == "MOD")
-        return Token{ TokenType::KeywordMod, text, 0, line, start_col };
+        return Token{ TokenType::KeywordMod, text, 0, line };
     if (upper == "SHL")
-        return Token{ TokenType::KeywordShl, text, 0, line, start_col };
+        return Token{ TokenType::KeywordShl, text, 0, line };
     if (upper == "SHR")
-        return Token{ TokenType::KeywordShr, text, 0, line, start_col };
+        return Token{ TokenType::KeywordShr, text, 0, line };
     if (upper == "NOT")
-        return Token{ TokenType::KeywordNot, text, 0, line, start_col };
+        return Token{ TokenType::KeywordNot, text, 0, line };
     if (upper == "AND")
-        return Token{ TokenType::KeywordAnd, text, 0, line, start_col };
+        return Token{ TokenType::KeywordAnd, text, 0, line };
     if (upper == "OR")
-        return Token{ TokenType::KeywordOr, text, 0, line, start_col };
+        return Token{ TokenType::KeywordOr, text, 0, line };
     if (upper == "XOR")
-        return Token{ TokenType::KeywordXor, text, 0, line, start_col };
+        return Token{ TokenType::KeywordXor, text, 0, line };
 
     // IDENTIFIER - store uppercase name in text
-    return Token{ TokenType::Identifier, upper, 0, line, start_col };
+    return Token{ TokenType::Identifier, upper, 0, line };
 }
 
 Token Lexer::number() {
-    int start_col = column;
     size_t start = pos;
 
     while (!eof() && is_digit(peek())) {
@@ -281,7 +273,7 @@ Token Lexer::number() {
     std::string text = src.substr(start, pos - start);
     int value = std::stoi(text);
 
-    return Token{ TokenType::Number, text, value, line, start_col };
+    return Token{ TokenType::Number, text, value, line };
 }
 
 Token Lexer::string_literal() {
