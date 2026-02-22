@@ -39,6 +39,7 @@ private:
     void emit_let(const Stmt& s);
     void emit_if(const Stmt& s);
     void emit_while(const Stmt& s);
+    void emit_for(const Stmt& s);
 
     // --- expressions ---------------------------------------------------------
 

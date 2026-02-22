@@ -1,4 +1,3 @@
-- FOR var = start TO end [STEP step] \n block \n NEXT [var]
 - DIM var(dimension); A(i)
 - Single char string variables C$, INPUT C$, PRINT C$, A=ASC(C$), C$=CHR$(A), comparison
 - DIM var$(dimension); A$(i) - strings
@@ -6,3 +5,4 @@
 - FUNCTION name(A, B, ...) \n block \n name = return \n ENDFUNCTION
 - Simple strings: INPUT, PRINT, compare
 - simplify expressions, e.g. -(-A), subexpressions with constants
+- FOR: optimizing away the direction test when step is constant

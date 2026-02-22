@@ -90,6 +90,16 @@ void collect_symbols_in_stmt(const Stmt& s, SymbolTable& sym) {
         }
         break;
 
+    case StmtType::For:
+        sym.declare(s.for_stmt->var);
+        collect_expr_symbols(s.for_stmt->start_expr, sym);
+        collect_expr_symbols(s.for_stmt->end_expr, sym);
+        collect_expr_symbols(s.for_stmt->step_expr, sym);
+        for (auto& stmt : s.for_stmt->body.statements) {
+            collect_symbols_in_stmt(*stmt, sym);
+        }
+        break;
+
     default:
         assert(0);
     }

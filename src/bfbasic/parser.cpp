@@ -95,6 +95,7 @@ bool Parser::starts_statement(const Token& t) const {
     case TokenType::KeywordPrint:
     case TokenType::KeywordIf:
     case TokenType::KeywordWhile:
+    case TokenType::KeywordFor:
         return true;
 
     case TokenType::Identifier:
@@ -124,13 +125,16 @@ Stmt Parser::parse_single_statement() {
     if (match(TokenType::KeywordWhile)) {
         return parse_while();
     }
+    if (match(TokenType::KeywordFor)) {
+        return parse_for();
+    }
 
     // optional LET
     if (match(TokenType::Identifier) && peek_next().type == TokenType::Equal) {
         return parse_let_without_keyword();
     }
 
-    error_here("Expected LET, INPUT, PRINT, IF or WHILE");
+    error_here("Expected LET, INPUT, PRINT, IF, WHILE or FOR");
 }
 
 void Parser::parse_statement_list_on_line(
@@ -432,6 +436,55 @@ Stmt Parser::parse_while() {
     s.type = StmtType::While;
     s.loc.line = kw.line;
     s.while_stmt = std::move(w);
+    return s;
+}
+
+Stmt Parser::parse_for() {
+    Token kw = advance(); // FOR
+
+    // Parse loop variable
+    Token var = expect(TokenType::Identifier, "Expected loop variable after FOR");
+    expect(TokenType::Equal, "Expected '=' after loop variable");
+
+    auto f = std::make_unique<StmtFor>();
+    f->var = var.text;
+
+    // start-expr
+    f->start_expr = parse_expr();
+
+    expect(TokenType::KeywordTo, "Expected TO");
+
+    // end-expr
+    f->end_expr = parse_expr();
+
+    // Optional STEP
+    if (match(TokenType::KeywordStep)) {
+        advance();
+        f->step_expr = parse_expr();
+    }
+    else {
+        // default step = 1
+        f->step_expr = Expr::number(1, { kw.line });
+    }
+
+    // newline required
+    if (!match(TokenType::Newline)) {
+        error_here("Expected newline after FOR header");
+    }
+
+    // Body until NEXT
+    f->body = parse_block_until({ TokenType::KeywordNext }, "NEXT");
+
+    // Consume NEXT + newline
+    expect(TokenType::KeywordNext, "Expected NEXT");
+    if (!match(TokenType::Newline)) {
+        error_here("Expected newline after NEXT");
+    }
+
+    Stmt s;
+    s.type = StmtType::For;
+    s.loc = { kw.line };
+    s.for_stmt = std::move(f);
     return s;
 }
 

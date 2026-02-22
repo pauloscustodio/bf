@@ -248,6 +248,14 @@ Token Lexer::identifier_or_keyword() {
         return Token{ TokenType::KeywordWhile, text, 0, line };
     if (upper == "WEND")
         return Token{ TokenType::KeywordWEnd, text, 0, line };
+    if (upper == "FOR")
+        return Token{ TokenType::KeywordFor, text, 0, line };
+    if (upper == "TO")
+        return Token{ TokenType::KeywordTo, text, 0, line };
+    if (upper == "STEP")
+        return Token{ TokenType::KeywordStep, text, 0, line };
+    if (upper == "NEXT")
+        return Token{ TokenType::KeywordNext, text, 0, line };
     if (upper == "MOD")
         return Token{ TokenType::KeywordMod, text, 0, line };
     if (upper == "SHL")

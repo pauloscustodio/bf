@@ -23,7 +23,7 @@ spew("$test.bas", <<END);
 WEND
 END
 capture_nok("bfbasic -o $test.bfpp $test.bas", <<END);
-Parse error at line 1: Expected LET, INPUT, PRINT, IF or WHILE
+Parse error at line 1: Expected LET, INPUT, PRINT, IF, WHILE or FOR
 END
 
 # Test WHILE - WEND

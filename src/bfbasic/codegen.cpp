@@ -88,6 +88,9 @@ void CodeGen::emit_stmt(const Stmt& s) {
     case StmtType::While:
         emit_while(s);
         break;
+    case StmtType::For:
+        emit_for(s);
+        break;
     default:
         assert(0);
     }
@@ -235,6 +238,62 @@ void CodeGen::emit_while(const Stmt& s) {
 
     // 7. Free temp
     free_temp16(cond);
+}
+
+void CodeGen::emit_for(const Stmt& s) {
+    const StmtFor& f = *s.for_stmt;
+
+    // Allocate temps
+    std::string t_start = alloc_temp16();
+    std::string t_end = alloc_temp16();
+    std::string t_step = alloc_temp16();
+    std::string t_cond = alloc_temp16();
+
+    // Evaluate start, end, step
+    emit_expr(f.start_expr, t_start);
+    emit_expr(f.end_expr, t_end);
+    emit_expr(f.step_expr, t_step);
+
+    // Initialize loop variable
+    emit("copy16(" + t_start + ", " + f.var + ")");
+
+    // Lambda to compute loop continuation condition
+    auto compute_condition = [&]() {
+        emit("copy16(" + t_step + ", " + t_cond + ")");
+        emit("sign16(" + t_cond + ")");
+        emit("if(" + t_cond + ")");
+        emit("copy16(" + f.var + ", " + t_cond + ")");
+        emit("ge16s(" + t_cond + ", " + t_end + ")");
+        emit("else");
+        emit("copy16(" + f.var + ", " + t_cond + ")");
+        emit("le16s(" + t_cond + ", " + t_end + ")");
+        emit("endif");
+    };
+
+    // Compute initial condition
+    compute_condition();
+
+    // WHILE
+    emit("while(" + t_cond + ")");
+
+    // Body
+    for (auto& stmt : f.body.statements) {
+        emit_stmt(*stmt);
+    }
+
+    // Increment
+    emit("add16s(" + f.var + ", " + t_step + ")");
+
+    // Recompute condition
+    compute_condition();
+
+    emit("endwhile");
+
+    // Free temps
+    free_temp16(t_start);
+    free_temp16(t_end);
+    free_temp16(t_step);
+    free_temp16(t_cond);
 }
 
 // expr result goes into target (16-bit cell name)

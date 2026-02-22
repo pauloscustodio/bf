@@ -76,12 +76,21 @@ struct StmtWhile {
     StmtList body;
 };
 
+struct StmtFor {
+    std::string var;      // loop variable
+    Expr start_expr;
+    Expr end_expr;
+    Expr step_expr;       // optional; default = 1
+    StmtList body;
+};
+
 enum class StmtType {
     Let,
     Input,
     Print,
     If,
     While,
+    For,
 };
 
 struct Stmt {
@@ -100,6 +109,9 @@ struct Stmt {
 
     // WHILE ...
     std::unique_ptr<StmtWhile> while_stmt;
+
+    // FOR ...
+    std::unique_ptr<StmtFor> for_stmt;
 };
 
 using Program = StmtList;

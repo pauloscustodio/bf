@@ -50,6 +50,7 @@ private:
         std::initializer_list<TokenType> terminators,
         const std::string& terminator_name);
     Stmt parse_while();
+    Stmt parse_for();
     void consume_end_of_statement();
 
     // --- Expressions ---------------------------------------------------------
