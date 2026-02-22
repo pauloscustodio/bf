@@ -6,18 +6,18 @@
 
 #pragma once
 
+#include "errors.h"
 #include "lexer.h"
 #include <memory>
 #include <string>
 #include <vector>
 
-struct SourceLoc {
-    int line;
+enum class ExprType {
+    Number, Var, BinOp, UnaryOp, ArrayAccess,
 };
 
 struct Expr {
-    enum class Type { Number, Var, BinOp, UnaryOp } type;
-
+    ExprType type;
     SourceLoc loc;
 
     // For Number
@@ -32,10 +32,15 @@ struct Expr {
     std::unique_ptr<Expr> right;
     std::unique_ptr<Expr> inner;
 
-    static Expr number(int v, SourceLoc loc);
-    static Expr var(const std::string& n, SourceLoc loc);
-    static Expr binop(TokenType op, Expr lhs, Expr rhs, SourceLoc loc);
-    static Expr unary(TokenType op, Expr inner, SourceLoc loc);
+    // For ArrayAccess
+    std::unique_ptr<Expr> index;
+
+    static Expr number(int v, const SourceLoc& loc);
+    static Expr var(const std::string& n, const SourceLoc& loc);
+    static Expr binop(TokenType op, Expr lhs, Expr rhs, const SourceLoc& loc);
+    static Expr unary(TokenType op, Expr inner, const SourceLoc& loc);
+    static Expr make_array_access(const std::string& n, std::unique_ptr<Expr> index,
+                                  const SourceLoc& loc);
 };
 
 enum class PrintElemType {
@@ -55,7 +60,7 @@ struct PrintElem {
     static PrintElem separator(TokenType t);
 };
 
-struct StmtPrint {
+struct PrintStmt {
     std::vector<PrintElem> elems;
 };
 
@@ -65,18 +70,18 @@ struct StmtList {
     std::vector<std::unique_ptr<Stmt>> statements;
 };
 
-struct StmtIf {
+struct IfStmt {
     Expr condition;
     StmtList then_block;
     StmtList else_block;
 };
 
-struct StmtWhile {
+struct WhileStmt {
     Expr condition;
     StmtList body;
 };
 
-struct StmtFor {
+struct ForStmt {
     std::string var;      // loop variable
     Expr start_expr;
     Expr end_expr;
@@ -84,8 +89,25 @@ struct StmtFor {
     StmtList body;
 };
 
+struct LetStmt {
+    bool is_array = false;
+    std::string var;
+    std::unique_ptr<Expr> index;   // only if is_array == true
+    Expr expr;
+};
+
+struct InputStmt {
+    std::vector<std::string> vars;
+};
+
+struct DimStmt {
+    std::string var;
+    std::unique_ptr<Expr> size_expr;
+};
+
 enum class StmtType {
     Let,
+    Dim,
     Input,
     Print,
     If,
@@ -97,21 +119,13 @@ struct Stmt {
     StmtType type;
     SourceLoc loc;
 
-    // LET and INPUT
-    std::vector<std::string> vars;
-    std::unique_ptr<Expr> expr; // only for LET
-
-    // PRINT ...
-    StmtPrint print;
-
-    // IF ...
-    std::unique_ptr<StmtIf> if_stmt;
-
-    // WHILE ...
-    std::unique_ptr<StmtWhile> while_stmt;
-
-    // FOR ...
-    std::unique_ptr<StmtFor> for_stmt;
+    std::unique_ptr<LetStmt> let_stmt;          // LET
+    std::unique_ptr<DimStmt> dim_stmt;          // DIM
+    std::unique_ptr<InputStmt> input_stmt;      // INPUT
+    std::unique_ptr <PrintStmt> print_stmt;     // PRINT
+    std::unique_ptr<IfStmt> if_stmt;            // IF
+    std::unique_ptr<WhileStmt> while_stmt;      // WHILE
+    std::unique_ptr<ForStmt> for_stmt;          // FOR
 };
 
 using Program = StmtList;

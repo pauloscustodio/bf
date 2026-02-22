@@ -8,6 +8,7 @@
 
 #include <string>
 #include <vector>
+#include "errors.h"
 
 enum class TokenType {
     Identifier,
@@ -19,6 +20,7 @@ enum class TokenType {
     KeywordIf, KeywordThen, KeywordElse, KeywordEndIf,
     KeywordFor, KeywordTo, KeywordStep, KeywordNext,
     KeywordWhile, KeywordWEnd,
+    KeywordDim,
     Plus, Minus, Star, Slash, Caret,
     Less, LessEqual, Greater, GreaterEqual, Equal, NotEqual,
     LParen, RParen,
@@ -33,7 +35,7 @@ struct Token {
     TokenType type = TokenType::EndOfFile;
     std::string text;
     int value = 0;          // only for numbers
-    int line = 0;
+    SourceLoc loc;
 };
 
 class Lexer {

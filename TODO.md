@@ -1,4 +1,3 @@
-- DIM var(dimension); A(i)
 - Single char string variables C$, INPUT C$, PRINT C$, A=ASC(C$), C$=CHR$(A), comparison
 - DIM var$(dimension); A$(i) - strings
 - SUB name(A, B, ...) \n block \n ENDSUB

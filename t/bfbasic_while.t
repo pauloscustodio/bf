@@ -9,21 +9,21 @@ spew("$test.bas", <<END);
 WHILE
 END
 capture_nok("bfbasic -o $test.bfpp $test.bas", <<END);
-Parse error at line 2: Expected number, variable, unary operator, or '('
+Error at line 2: Expected number, variable, unary operator, or '('
 END
 
 spew("$test.bas", <<END);
 WHILE 1
 END
 capture_nok("bfbasic -o $test.bfpp $test.bas", <<END);
-Parse error at line 2: Missing WEND
+Error at line 2: Missing WEND
 END
 
 spew("$test.bas", <<END);
 WEND
 END
 capture_nok("bfbasic -o $test.bfpp $test.bas", <<END);
-Parse error at line 1: Expected LET, INPUT, PRINT, IF, WHILE or FOR
+Error at line 1: Expected LET, INPUT, PRINT, IF, WHILE, FOR or DIM
 END
 
 # Test WHILE - WEND

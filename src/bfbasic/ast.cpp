@@ -6,25 +6,25 @@
 
 #include "ast.h"
 
-Expr Expr::number(int v, SourceLoc loc) {
+Expr Expr::number(int v, const SourceLoc& loc) {
     Expr e;
-    e.type = Type::Number;
+    e.type = ExprType::Number;
     e.value = v;
     e.loc = loc;
     return e;
 }
 
-Expr Expr::var(const std::string& n, SourceLoc loc) {
+Expr Expr::var(const std::string& n, const SourceLoc& loc) {
     Expr e;
-    e.type = Type::Var;
+    e.type = ExprType::Var;
     e.name = n;
     e.loc = loc;
     return e;
 }
 
-Expr Expr::binop(TokenType op, Expr lhs, Expr rhs, SourceLoc loc) {
+Expr Expr::binop(TokenType op, Expr lhs, Expr rhs, const SourceLoc& loc) {
     Expr e;
-    e.type = Type::BinOp;
+    e.type = ExprType::BinOp;
     e.op = op;
     e.left = std::make_unique<Expr>(std::move(lhs));
     e.right = std::make_unique<Expr>(std::move(rhs));
@@ -32,11 +32,21 @@ Expr Expr::binop(TokenType op, Expr lhs, Expr rhs, SourceLoc loc) {
     return e;
 }
 
-Expr Expr::unary(TokenType op, Expr inner, SourceLoc loc) {
+Expr Expr::unary(TokenType op, Expr inner, const SourceLoc& loc) {
     Expr e;
-    e.type = Type::UnaryOp;
+    e.type = ExprType::UnaryOp;
     e.op = op;
     e.inner = std::make_unique<Expr>(std::move(inner));
+    e.loc = loc;
+    return e;
+}
+
+Expr Expr::make_array_access(const std::string& n, std::unique_ptr<Expr> index,
+                             const SourceLoc& loc) {
+    Expr e;
+    e.type = ExprType::ArrayAccess;
+    e.name = n;
+    e.index = std::move(index);
     e.loc = loc;
     return e;
 }

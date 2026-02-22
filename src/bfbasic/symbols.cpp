@@ -4,18 +4,41 @@
 // License: The Artistic License 2.0, http ://www.perlfoundation.org/artistic_license_2_0
 //-----------------------------------------------------------------------------
 
+#include "errors.h"
 #include "symbols.h"
 #include <iostream>
 
 // returns true if symbol already existed
-bool SymbolTable::declare(const std::string& name) {
+void SymbolTable::declare_variable(const SourceLoc& loc, const std::string& name) {
     auto it = table.find(name);
     if (it != table.end()) {
-        return true;
+        if (it->second.is_array) {
+            error_at(loc, "Variable '" + name + "' already declared as array");
+        }
     }
+    else {
+        Symbol s;
+        s.name = name;
+        s.loc = loc;
+        s.is_array = false;
+        table[name] = std::move(s);
+    }
+}
 
-    table[name] = Symbol{ name, false };
-    return false;
+void SymbolTable::declare_array(const SourceLoc& loc, const std::string& name, int size) {
+    auto it = table.find(name);
+    if (it != table.end()) {
+        if (!it->second.is_array) {
+            error_at(loc, "Variable '" + name + "' already declared as simple variable");
+        }
+    }
+    else {
+        auto& s = table[name];
+        s.name = name;
+        s.loc = loc;
+        s.is_array = true;
+        s.array_size = size;
+    }
 }
 
 bool SymbolTable::exists(const std::string& name) const {

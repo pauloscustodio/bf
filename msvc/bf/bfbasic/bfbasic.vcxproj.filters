@@ -33,6 +33,9 @@
     <ClCompile Include="..\..\..\src\bfbasic\codegen.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\bfbasic\errors.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\bfbasic\lexer.h">
@@ -48,6 +51,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\bfbasic\codegen.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\bfbasic\errors.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

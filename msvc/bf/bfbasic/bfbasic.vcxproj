@@ -134,6 +134,7 @@
     <ClCompile Include="..\..\..\src\bfbasic\ast.cpp" />
     <ClCompile Include="..\..\..\src\bfbasic\bfbasic.cpp" />
     <ClCompile Include="..\..\..\src\bfbasic\codegen.cpp" />
+    <ClCompile Include="..\..\..\src\bfbasic\errors.cpp" />
     <ClCompile Include="..\..\..\src\bfbasic\lexer.cpp" />
     <ClCompile Include="..\..\..\src\bfbasic\parser.cpp" />
     <ClCompile Include="..\..\..\src\bfbasic\symbols.cpp" />
@@ -141,6 +142,7 @@
   <ItemGroup>
     <ClInclude Include="..\..\..\src\bfbasic\ast.h" />
     <ClInclude Include="..\..\..\src\bfbasic\codegen.h" />
+    <ClInclude Include="..\..\..\src\bfbasic\errors.h" />
     <ClInclude Include="..\..\..\src\bfbasic\lexer.h" />
     <ClInclude Include="..\..\..\src\bfbasic\parser.h" />
     <ClInclude Include="..\..\..\src\bfbasic\symbols.h" />

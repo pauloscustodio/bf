@@ -40,6 +40,7 @@ private:
         std::initializer_list<TokenType> terminators);
     Stmt parse_let();
     Stmt parse_let_without_keyword();
+    Stmt parse_let_common(const SourceLoc& loc);
     Stmt parse_input();
     Stmt parse_print();
     PrintElem parse_print_elems();
@@ -51,6 +52,7 @@ private:
         const std::string& terminator_name);
     Stmt parse_while();
     Stmt parse_for();
+    Stmt parse_dim();
     void consume_end_of_statement();
 
     // --- Expressions ---------------------------------------------------------

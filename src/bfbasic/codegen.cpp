@@ -65,7 +65,12 @@ void CodeGen::emit_var_allocs() {
     for (const auto& name : names) {
         const Symbol& s = sym.get(name);
         if (!s.allocated) {
-            emit("alloc_cell16(" + name + ")");
+            if (s.is_array) {
+                emit("alloc_array16(" + name + ", " + std::to_string(s.array_size) + ")");
+            }
+            else {
+                emit("alloc_cell16(" + name + ")");
+            }
             sym.mark_allocated(name);
         }
     }
@@ -75,6 +80,9 @@ void CodeGen::emit_stmt(const Stmt& s) {
     switch (s.type) {
     case StmtType::Let:
         emit_let(s);
+        break;
+    case StmtType::Dim:
+        emit_dim(s);
         break;
     case StmtType::Input:
         emit_input(s);
@@ -97,13 +105,13 @@ void CodeGen::emit_stmt(const Stmt& s) {
 }
 
 void CodeGen::emit_input(const Stmt& s) {
-    for (auto& v : s.vars) {
+    for (auto& v : s.input_stmt->vars) {
         emit("scan_cell16s(" + v + ")");
     }
 }
 
 void CodeGen::emit_print(const Stmt& s) {
-    const StmtPrint& p = s.print;
+    const PrintStmt& p = *s.print_stmt;
     bool last_was_separator = false;
 
     for (const auto& e : p.elems) {
@@ -115,7 +123,7 @@ void CodeGen::emit_print(const Stmt& s) {
             break;
 
         case PrintElemType::Expr: {
-            if (e.expr.type == Expr::Type::Var) {
+            if (e.expr.type == ExprType::Var) {
                 emit("print_cell16s(" + e.expr.name + ")");
             }
             else {
@@ -161,30 +169,45 @@ std::string CodeGen::escape(const std::string& s) {
 }
 
 void CodeGen::emit_let(const Stmt& s) {
-    assert(s.vars.size() == 1); // only single-variable LET supported for now
-    std::string  var = s.vars[0];
+    std::string var = s.let_stmt->var;
+    assert(sym.exists(var));
+    Symbol symbol = sym.get(var);
 
-    // Case 1: LET A = <constant>
-    if (s.expr->type == Expr::Type::Number) {
-        emit("set16(" + var + ", " + std::to_string(s.expr->value) + ")");
-        return;
+    if (symbol.is_array) {
+        std::string index = alloc_temp16();
+        std::string t = alloc_temp16();
+        emit_expr(*s.let_stmt->index, index);
+        emit_expr(s.let_stmt->expr, t);
+        emit("put_array16(" + var + ", " + index + ", " + t + ")");
+        free_temp16(index);
+        free_temp16(t);
     }
+    else {
+        // Case 1: LET A = <constant>
+        if (s.let_stmt->expr.type == ExprType::Number) {
+            emit("set16(" + var + ", " + std::to_string(s.let_stmt->expr.value) + ")");
+            return;
+        }
 
-    // Case 2: LET A = B
-    if (s.expr->type == Expr::Type::Var) {
-        emit("copy16(" + s.expr->name + ", " + var + ")");
-        return;
+        // Case 2: LET A = B
+        if (s.let_stmt->expr.type == ExprType::Var) {
+            emit("copy16(" + s.let_stmt->expr.name + ", " + var + ")");
+            return;
+        }
+
+        // General case: LET A = <complex expression>
+        std::string t = alloc_temp16();
+        emit_expr(s.let_stmt->expr, t);
+        emit("move16(" + t + ", " + var + ")");
+        free_temp16(t);
     }
+}
 
-    // General case: LET A = <complex expression>
-    std::string t = alloc_temp16();
-    emit_expr(*s.expr, t);
-    emit("move16(" + t + ", " + var + ")");
-    free_temp16(t);
+void CodeGen::emit_dim(const Stmt&) {
 }
 
 void CodeGen::emit_if(const Stmt& s) {
-    const StmtIf& stmt_if = *s.if_stmt;
+    const IfStmt& stmt_if = *s.if_stmt;
 
     // 1. Evaluate condition into a temp cell
     std::string cond = alloc_temp16();
@@ -214,7 +237,7 @@ void CodeGen::emit_if(const Stmt& s) {
 }
 
 void CodeGen::emit_while(const Stmt& s) {
-    const StmtWhile& stmt_while = *s.while_stmt;
+    const WhileStmt& stmt_while = *s.while_stmt;
 
     // 1. Allocate temp for condition
     std::string cond = alloc_temp16();
@@ -241,7 +264,7 @@ void CodeGen::emit_while(const Stmt& s) {
 }
 
 void CodeGen::emit_for(const Stmt& s) {
-    const StmtFor& f = *s.for_stmt;
+    const ForStmt& f = *s.for_stmt;
 
     // Allocate temps
     std::string t_start = alloc_temp16();
@@ -299,22 +322,29 @@ void CodeGen::emit_for(const Stmt& s) {
 // expr result goes into target (16-bit cell name)
 void CodeGen::emit_expr(const Expr& e, const std::string& target) {
     switch (e.type) {
-    case Expr::Type::Number:
+    case ExprType::Number:
         emit("set16(" + target + ", " + std::to_string(e.value) + ")");
         break;
 
-    case Expr::Type::Var:
+    case ExprType::Var:
         emit("copy16(" + e.name + ", " + target + ")");
         break;
 
-    case Expr::Type::BinOp:
+    case ExprType::BinOp:
         emit_binary(e, target);
         break;
 
-    case Expr::Type::UnaryOp:
+    case ExprType::UnaryOp:
         emit_unary(e, target);
         break;
 
+    case ExprType::ArrayAccess: {
+        std::string index = alloc_temp16();
+        emit_expr(*e.index, index);
+        emit("get_array16(" + e.name + ", " + index + ", " + target + ")");
+        free_temp16(index);
+        break;
+    }
     default:
         assert(0);
     }

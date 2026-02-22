@@ -6,19 +6,18 @@
 
 #include "ast.h"
 #include "codegen.h"
+#include "errors.h"
 #include "lexer.h"
 #include "parser.h"
 #include "symbols.h"
 #include <cassert>
 #include <fstream>
 #include <iostream>
+#include <optional>
 #include <sstream>
 #include <string>
 
-void error(const std::string& msg) {
-    std::cerr << "Error: " << msg << std::endl;
-    exit(EXIT_FAILURE);
-}
+std::optional<int> fold_constant_expr(const Expr& e);
 
 void usage_error() {
     std::cerr << "usage: bfbasic [-o output_file] input_file" << std::endl;
@@ -35,46 +34,83 @@ std::string read_file(const std::string& filename) {
     return ss.str();
 }
 
-void collect_expr_symbols(const Expr& e, SymbolTable& sym) {
-    if (e.type == Expr::Type::Var) {
-        sym.declare(e.name);
-    }
+void collect_symbols_in_expr(const Expr& e, SymbolTable& sym) {
+    switch (e.type) {
+    case ExprType::Number:
+        break;
 
-    if (e.type == Expr::Type::BinOp) {
-        collect_expr_symbols(*e.left, sym);
-        collect_expr_symbols(*e.right, sym);
-    }
+    case ExprType::Var:
+        sym.declare_variable(e.loc, e.name);
+        break;
 
-    if (e.type == Expr::Type::UnaryOp) {
-        collect_expr_symbols(*e.inner, sym);
+    case ExprType::BinOp:
+        collect_symbols_in_expr(*e.left, sym);
+        collect_symbols_in_expr(*e.right, sym);
+        break;
+
+    case ExprType::UnaryOp:
+        collect_symbols_in_expr(*e.inner, sym);
+        break;
+
+    case ExprType::ArrayAccess:
+        collect_symbols_in_expr(*e.index, sym);
+        break;
+
+    default:
+        assert(0);
     }
 }
 
 void collect_symbols_in_stmt(const Stmt& s, SymbolTable& sym) {
     switch (s.type) {
     case StmtType::Let:
-        for (auto& v : s.vars) {
-            sym.declare(v);
+        if (s.let_stmt->is_array) {
+            // must already have been declared
+            std::string name = s.let_stmt->var;
+            if (!sym.exists(name)) {
+                error_at(s.loc, "array '" + name + "' must be declared by DIM before used");
+            }
+            Symbol symbol = sym.get(name);
+            if (!symbol.is_array) {
+                error_at(s.loc, "variable '" + name + "' is not an array");
+            }
         }
-        collect_expr_symbols(*s.expr, sym);
+        else {
+            sym.declare_variable(s.loc, s.let_stmt->var);
+        }
+        collect_symbols_in_expr(s.let_stmt->expr, sym);
         break;
 
+    case StmtType::Dim: {
+        auto folded = fold_constant_expr(*s.dim_stmt->size_expr);
+        if (!folded) {
+            error_at(s.loc, "DIM size must be a constant expression");
+        }
+
+        int size = *folded;
+        if (size <= 0) {
+            error_at(s.loc, "DIM size must be > 0");
+        }
+
+        sym.declare_array(s.loc, s.dim_stmt->var, size + 1); // BASIC 1-based
+        break;
+    }
     case StmtType::Input:
-        for (auto& v : s.vars) {
-            sym.declare(v);
+        for (auto& v : s.input_stmt->vars) {
+            sym.declare_variable(s.loc, v);
         }
         break;
 
     case StmtType::Print:
-        for (const auto& item : s.print.elems) {
+        for (const auto& item : s.print_stmt->elems) {
             if (item.type == PrintElemType::Expr) {
-                collect_expr_symbols(item.expr, sym);
+                collect_symbols_in_expr(item.expr, sym);
             }
         }
         break;
 
     case StmtType::If:
-        collect_expr_symbols(s.if_stmt->condition, sym);
+        collect_symbols_in_expr(s.if_stmt->condition, sym);
         for (const auto& stmt : s.if_stmt->then_block.statements) {
             collect_symbols_in_stmt(*stmt, sym);
         }
@@ -84,17 +120,17 @@ void collect_symbols_in_stmt(const Stmt& s, SymbolTable& sym) {
         break;
 
     case StmtType::While:
-        collect_expr_symbols(s.while_stmt->condition, sym);
+        collect_symbols_in_expr(s.while_stmt->condition, sym);
         for (const auto& stmt : s.while_stmt->body.statements) {
             collect_symbols_in_stmt(*stmt, sym);
         }
         break;
 
     case StmtType::For:
-        sym.declare(s.for_stmt->var);
-        collect_expr_symbols(s.for_stmt->start_expr, sym);
-        collect_expr_symbols(s.for_stmt->end_expr, sym);
-        collect_expr_symbols(s.for_stmt->step_expr, sym);
+        sym.declare_variable(s.loc, s.for_stmt->var);
+        collect_symbols_in_expr(s.for_stmt->start_expr, sym);
+        collect_symbols_in_expr(s.for_stmt->end_expr, sym);
+        collect_symbols_in_expr(s.for_stmt->step_expr, sym);
         for (auto& stmt : s.for_stmt->body.statements) {
             collect_symbols_in_stmt(*stmt, sym);
         }
@@ -109,6 +145,107 @@ void collect_symbols(const Program& prog, SymbolTable& sym) {
     for (const auto& s : prog.statements) {
         collect_symbols_in_stmt(*s, sym);
     }
+}
+
+int ipow(int base, int exp) {
+    if (exp < 0) {
+        return 0; // or handle error for negative exponents
+    }
+
+    int result = 1;
+    while (exp > 0) {
+        if (exp & 1) {
+            result *= base;
+        }
+        base *= base;
+        exp >>= 1;
+    }
+    return result;
+}
+
+std::optional<int> fold_constant_expr(const Expr& e) {
+    switch (e.type) {
+
+    case ExprType::Number:
+        return e.value;
+
+    case ExprType::Var:
+    case ExprType::ArrayAccess:
+        return std::nullopt;   // variables are not constant
+
+    case ExprType::UnaryOp: {
+        auto inner = fold_constant_expr(*e.inner);
+        if (!inner) {
+            return std::nullopt;
+        }
+
+        switch (e.op) {
+        case TokenType::Minus:
+            return -(*inner);
+        case TokenType::Plus:
+            return +(*inner);
+        case TokenType::KeywordNot:
+            return (*inner == 0) ? 1 : 0;
+        default:
+            return std::nullopt;
+        }
+    }
+
+    case ExprType::BinOp: {
+        auto L = fold_constant_expr(*e.left);
+        auto R = fold_constant_expr(*e.right);
+        if (!L || !R) {
+            return std::nullopt;
+        }
+
+        switch (e.op) {
+        case TokenType::Plus:
+            return *L + *R;
+        case TokenType::Minus:
+            return *L - *R;
+        case TokenType::Star:
+            return *L * *R;
+        case TokenType::Slash:
+            if (*R == 0) {
+                error_at(e.loc, "Division by zero in constant expression");
+            }
+            return *L / *R;
+        case TokenType::KeywordMod:
+            if (*R == 0) {
+                error_at(e.loc, "Modulo by zero in constant expression");
+            }
+            return *L % *R;
+        case TokenType::Caret:
+            return ipow(*L, *R);
+        case TokenType::KeywordShl:
+            return *L << *R;
+        case TokenType::KeywordShr:
+            return *L >> *R;
+        case TokenType::Equal:
+            return (*L == *R) ? 1 : 0;
+        case TokenType::NotEqual:
+            return (*L != *R) ? 1 : 0;
+        case TokenType::Less:
+            return (*L <  *R) ? 1 : 0;
+        case TokenType::LessEqual:
+            return (*L <= *R) ? 1 : 0;
+        case TokenType::Greater:
+            return (*L >  *R) ? 1 : 0;
+        case TokenType::GreaterEqual:
+            return (*L >= *R) ? 1 : 0;
+        case TokenType::KeywordAnd:
+            return (*L && *R) ? 1 : 0;
+        case TokenType::KeywordOr:
+            return (*L || *R) ? 1 : 0;
+        case TokenType::KeywordXor:
+            return (!!*L != !!*R) ? 1 : 0;
+        default:
+            return std::nullopt;
+        }
+    }
+    }
+
+    return std::nullopt;
 }
 
 std::string compile(const std::string& source) {

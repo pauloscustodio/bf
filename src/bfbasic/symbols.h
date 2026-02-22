@@ -8,16 +8,21 @@
 
 #include <string>
 #include <unordered_map>
+#include "errors.h"
 
 struct Symbol {
-    std::string name;   // uppercase BASIC name
+    std::string name;       // uppercase BASIC name
+    SourceLoc loc;
+    bool is_array = false;
+    int array_size = 0;     // only valid if is_array == true
     bool allocated = false;
 };
 
 class SymbolTable {
 public:
     // returns true if symbol already existed
-    bool declare(const std::string& name);
+    void declare_variable(const SourceLoc& loc, const std::string& name);
+    void declare_array(const SourceLoc& loc, const std::string& name, int size);
     bool exists(const std::string& name) const;
     void mark_allocated(const std::string& name);
     bool is_allocated(const std::string& name) const;

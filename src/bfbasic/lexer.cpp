@@ -4,9 +4,10 @@
 // License: The Artistic License 2.0, http ://www.perlfoundation.org/artistic_license_2_0
 //-----------------------------------------------------------------------------
 
+#include "errors.h"
 #include "lexer.h"
 #include "utils.h"
-#include <iostream>
+#include <unordered_map>
 
 Lexer::Lexer(const std::string& src)
     : src(src), pos(0), line(1) {
@@ -180,8 +181,7 @@ char Lexer::advance() {
 
 [[noreturn]]
 void Lexer::error_here(const std::string& msg) const {
-    std::cerr << "Error at line " << line << ": " << msg << std::endl;
-    exit(EXIT_FAILURE);
+    error_at(SourceLoc(line), msg);
 }
 
 Token Lexer::make(TokenType type, const std::string& text, int value) const {
@@ -189,7 +189,7 @@ Token Lexer::make(TokenType type, const std::string& text, int value) const {
     t.type = type;
     t.text = text;
     t.value = value;
-    t.line = line;
+    t.loc = SourceLoc(line);
     return t;
 }
 
@@ -219,6 +219,32 @@ void Lexer::skip_whitespace() {
 }
 
 Token Lexer::identifier_or_keyword() {
+    // Keyword lookup table
+    static const std::unordered_map<std::string, TokenType> keywords = {
+        {"LET", TokenType::KeywordLet},
+        {"INPUT", TokenType::KeywordInput},
+        {"PRINT", TokenType::KeywordPrint},
+        {"IF", TokenType::KeywordIf},
+        {"THEN", TokenType::KeywordThen},
+        {"ELSE", TokenType::KeywordElse},
+        {"ENDIF", TokenType::KeywordEndIf},
+        {"WHILE", TokenType::KeywordWhile},
+        {"WEND", TokenType::KeywordWEnd},
+        {"FOR", TokenType::KeywordFor},
+        {"TO", TokenType::KeywordTo},
+        {"STEP", TokenType::KeywordStep},
+        {"NEXT", TokenType::KeywordNext},
+        {"DIM", TokenType::KeywordDim},
+        {"MOD", TokenType::KeywordMod},
+        {"SHL", TokenType::KeywordShl},
+        {"SHR", TokenType::KeywordShr},
+        {"NOT", TokenType::KeywordNot},
+        {"AND", TokenType::KeywordAnd},
+        {"OR", TokenType::KeywordOr},
+        {"XOR", TokenType::KeywordXor}
+    };
+
+    // IDENTIFIER - store uppercase name in text
     size_t start = pos;
 
     while (!eof() && (is_alnum(peek()) || peek() == '_')) {
@@ -229,47 +255,10 @@ Token Lexer::identifier_or_keyword() {
 
     // uppercase for keyword matching AND variable normalization
     std::string upper = uppercase(text);
-
-    if (upper == "LET")
-        return Token{ TokenType::KeywordLet, text, 0, line };
-    if (upper == "INPUT")
-        return Token{ TokenType::KeywordInput, text, 0, line };
-    if (upper == "PRINT")
-        return Token{ TokenType::KeywordPrint, text, 0, line };
-    if (upper == "IF")
-        return Token{ TokenType::KeywordIf, text, 0, line };
-    if (upper == "THEN")
-        return Token{ TokenType::KeywordThen, text, 0, line };
-    if (upper == "ELSE")
-        return Token{ TokenType::KeywordElse, text, 0, line };
-    if (upper == "ENDIF")
-        return Token{ TokenType::KeywordEndIf, text, 0, line };
-    if (upper == "WHILE")
-        return Token{ TokenType::KeywordWhile, text, 0, line };
-    if (upper == "WEND")
-        return Token{ TokenType::KeywordWEnd, text, 0, line };
-    if (upper == "FOR")
-        return Token{ TokenType::KeywordFor, text, 0, line };
-    if (upper == "TO")
-        return Token{ TokenType::KeywordTo, text, 0, line };
-    if (upper == "STEP")
-        return Token{ TokenType::KeywordStep, text, 0, line };
-    if (upper == "NEXT")
-        return Token{ TokenType::KeywordNext, text, 0, line };
-    if (upper == "MOD")
-        return Token{ TokenType::KeywordMod, text, 0, line };
-    if (upper == "SHL")
-        return Token{ TokenType::KeywordShl, text, 0, line };
-    if (upper == "SHR")
-        return Token{ TokenType::KeywordShr, text, 0, line };
-    if (upper == "NOT")
-        return Token{ TokenType::KeywordNot, text, 0, line };
-    if (upper == "AND")
-        return Token{ TokenType::KeywordAnd, text, 0, line };
-    if (upper == "OR")
-        return Token{ TokenType::KeywordOr, text, 0, line };
-    if (upper == "XOR")
-        return Token{ TokenType::KeywordXor, text, 0, line };
+    auto it = keywords.find(upper);
+    if (it != keywords.end()) {
+        return Token{ it->second, text, 0, line };
+    }
 
     // IDENTIFIER - store uppercase name in text
     return Token{ TokenType::Identifier, upper, 0, line };
