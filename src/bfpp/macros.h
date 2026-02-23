@@ -212,8 +212,12 @@ private:
     bool handle_scan_cellXs(Parser& parser, const Token& tok, int width);
     bool handle_scan_cell8s(Parser& parser, const Token& tok);
     bool handle_scan_cell16s(Parser& parser, const Token& tok);
+    bool handle_alloc_array8(Parser& parser, const Token& tok);
+    bool handle_free_array8(Parser& parser, const Token& tok);
     bool handle_alloc_array16(Parser& parser, const Token& tok);
     bool handle_free_array16(Parser& parser, const Token& tok);
+    bool handle_alloc_arrayN(Parser& parser, const Token& tok, int width);
+    bool handle_free_arrayN(Parser& parser, const Token& tok, int width);
     bool handle_put_array8(Parser& parser, const Token& tok);
     bool handle_put_array16(Parser& parser, const Token& tok);
     bool handle_get_array8(Parser& parser, const Token& tok);
@@ -233,7 +237,7 @@ private:
                                    const std::string& macro_name);
     bool parse_array_get_put_args(Parser& parser, const Token& tok,
                                   Array*& array, int& idx_cell, int& cell);
-    std::string clear_memory_area(int addr, int size16);
+    std::string clear_memory_area(int addr, int num_cells);
     std::vector<Token> substitute_body(const Macro& macro,
                                        const std::vector<std::vector<Token>>& args);
 };

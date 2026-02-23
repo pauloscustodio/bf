@@ -4,9 +4,10 @@
 // License: The Artistic License 2.0, http ://www.perlfoundation.org/artistic_license_2_0
 //-----------------------------------------------------------------------------
 
-#include "output.h"
 #include "errors.h"
+#include "output.h"
 #include <algorithm>
+#include <cassert>
 
 int StackFrame::size() const {
     return 2 * (num_args16 + num_locals16 + num_temps16);
@@ -554,16 +555,36 @@ int BFOutput::frame_temp_address(const Token& tok, int n) {
     return addr;
 }
 
-int BFOutput::alloc_array(const Token& tok, int cells16) {
+int BFOutput::alloc_array8(const Token& tok, int cells8) {
+    return alloc_arrayN(tok, cells8, 8);
+}
+
+void BFOutput::free_array8(const Token& tok, int base_addr) {
+    free_arrayN(tok, base_addr);
+}
+
+int BFOutput::alloc_array16(const Token& tok, int cells16) {
+    return alloc_arrayN(tok, cells16, 16);
+}
+
+void BFOutput::free_array16(const Token& tok, int base_addr) {
+    free_arrayN(tok, base_addr);
+}
+
+int BFOutput::alloc_arrayN(const Token& tok, int num_elems, int width) {
+    assert(width == 8 || width == 16);
+    int elem_size = width / 8;
+
     Array array;
     array.loc = tok.loc;
-    array.num_elems16 = cells16;
-    array.base_addr = alloc_cells(2 * cells16);
+    array.num_elems = num_elems;
+    array.elem_size = elem_size;
+    array.base_addr = alloc_cells(num_elems * elem_size);
     arrays_[array.base_addr] = array;
     return array.base_addr;
 }
 
-void BFOutput::free_array(const Token& tok, int base_addr) {
+void BFOutput::free_arrayN(const Token& tok, int base_addr) {
     Array* array = get_array(base_addr);
     if (array == nullptr) {
         g_error_reporter.report_error(

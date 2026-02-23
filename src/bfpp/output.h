@@ -25,7 +25,8 @@ struct StackFrame {
 struct Array {
     SourceLocation loc;
     int base_addr = 0;
-    int num_elems16 = 0;
+    int num_elems = 0;
+    int elem_size = 1;  // 1 or 2
 };
 
 class BFOutput {
@@ -64,8 +65,12 @@ public:
     int frame_temp_address(const Token& tok, int n);
 
     // allocate arrays
-    int alloc_array(const Token& tok, int cells16);
-    void free_array(const Token& tok, int base_addr);
+    int alloc_array8(const Token& tok, int cells8);
+    void free_array8(const Token& tok, int base_addr);
+    int alloc_array16(const Token& tok, int cells16);
+    void free_array16(const Token& tok, int base_addr);
+    int alloc_arrayN(const Token& tok, int num_elems, int width);
+    void free_arrayN(const Token& tok, int base_addr);
     Array* get_array(int base_addr);
 
     // optimize tape movements by combining consecutive < and >

@@ -127,6 +127,8 @@ const std::unordered_map<std::string, MacroExpander::BuiltinHandler> MacroExpand
     { "scan_cell16",        &MacroExpander::handle_scan_cell16        },
     { "scan_cell8s",        &MacroExpander::handle_scan_cell8s        },
     { "scan_cell16s",       &MacroExpander::handle_scan_cell16s       },
+    { "alloc_array8",       &MacroExpander::handle_alloc_array8       },
+    { "free_array8",        &MacroExpander::handle_free_array8        },
     { "alloc_array16",      &MacroExpander::handle_alloc_array16      },
     { "free_array16",       &MacroExpander::handle_free_array16       },
     { "put_array8",         &MacroExpander::handle_put_array8         },
@@ -3174,7 +3176,7 @@ bool MacroExpander::handle_alloc_global16(Parser& parser, const Token& tok) {
     }
     int count16 = vals[0];
     int addr = parser.output().alloc_global(func_tok, count16);
-    std::string clear_code = clear_memory_area(addr, count16);
+    std::string clear_code = clear_memory_area(addr, count16 * 2);
 
     TokenScanner scanner;
     std::string mock_filename = "(alloc_global16)";
@@ -3200,7 +3202,7 @@ bool MacroExpander::handle_alloc_temp16(Parser& parser, const Token& tok) {
     }
     int count16 = vals[0];
     int addr = parser.output().alloc_temp(func_tok, count16);
-    std::string clear_code = clear_memory_area(addr, count16);
+    std::string clear_code = clear_memory_area(addr, count16 * 2);
 
     TokenScanner scanner;
     std::string mock_filename = "(alloc_temp16)";
@@ -3769,7 +3771,28 @@ bool MacroExpander::handle_scan_cell16s(Parser& parser, const Token& tok) {
     return handle_scan_cellXs(parser, tok, 16);
 }
 
+bool MacroExpander::handle_alloc_array8(Parser& parser, const Token& tok) {
+    return handle_alloc_arrayN(parser, tok, 8);
+}
+
+bool MacroExpander::handle_free_array8(Parser& parser, const Token& tok) {
+    return handle_free_arrayN(parser, tok, 8);
+}
+
 bool MacroExpander::handle_alloc_array16(Parser& parser, const Token& tok) {
+    return handle_alloc_arrayN(parser, tok, 16);
+}
+
+bool MacroExpander::handle_free_array16(Parser& parser, const Token& tok) {
+    return handle_free_arrayN(parser, tok, 16);
+}
+
+bool MacroExpander::handle_alloc_arrayN(Parser& parser, const Token& tok,
+                                        int width) {
+    assert(width == 8 || width == 16);
+    std::string X = std::to_string(width);
+    int elem_size = width / 8;
+
     Token macro_tok = tok;
     Macro fake;
     fake.name = macro_tok.text;
@@ -3798,10 +3821,10 @@ bool MacroExpander::handle_alloc_array16(Parser& parser, const Token& tok) {
     // collect dimension
     ArrayTokenSource source(args[1]);
     ExpressionParser expr(source, parser_, /*undefined_as_zero=*/false);
-    int num_cells16 = expr.parse_expression();
+    int num_elems = expr.parse_expression();
 
     // create array
-    int base_addr = parser.output().alloc_array(macro_tok, num_cells16);
+    int base_addr = parser.output().alloc_arrayN(macro_tok, num_elems, width);
 
     // create macro with base address
     Macro m;
@@ -3810,10 +3833,22 @@ bool MacroExpander::handle_alloc_array16(Parser& parser, const Token& tok) {
     m.body = { Token::make_int(base_addr, tok.loc) };
     g_macro_table.define(m);
 
+    TokenScanner scanner;
+    std::string mock_filename = "(alloc_array" + X + ")";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            clear_memory_area(base_addr, num_elems * elem_size),
+            mock_filename));
+
     return true;
 }
 
-bool MacroExpander::handle_free_array16(Parser& parser, const Token& tok) {
+bool MacroExpander::handle_free_arrayN(Parser& parser, const Token& tok,
+                                       int width) {
+    assert(width == 8 || width == 16);
+    std::string X = std::to_string(width);
+
     Token macro_tok = tok;
     std::string macro_name;
     if (!parse_ident_arg(parser, tok, macro_name)) {
@@ -3827,14 +3862,14 @@ bool MacroExpander::handle_free_array16(Parser& parser, const Token& tok) {
 
     g_macro_table.undef(macro_name);
     int base_addr = array->base_addr;
-    parser.output().free_array(macro_tok, base_addr);
+    parser.output().free_arrayN(macro_tok, base_addr);
 
     TokenScanner scanner;
-    std::string mock_filename = "(free_array16)";
+    std::string mock_filename = "(free_array" + X + ")";
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(
-            clear_memory_area(base_addr, array->num_elems16),
+            clear_memory_area(base_addr, array->num_elems * array->elem_size),
             mock_filename));
 
     return true;
@@ -3880,8 +3915,8 @@ bool MacroExpander::handle_pg_arrayX(Parser& parser, const Token& tok,
         "{ alloc_cell8(" + t_cond + ") "
         "  alloc_cell8(" + t_num + ") ";
 
-    for (int i = 0; i < array->num_elems16; i++) {
-        int array_addr = array->base_addr + 2 * i;
+    for (int i = 0; i < array->num_elems; i++) {
+        int array_addr = array->base_addr + array->elem_size * i;
         impl +=
             "  set8(" + t_num + ", " + std::to_string(i) + ") "
             "  copy8(" + std::to_string(idx_cell) + ", " + t_cond + ") "
@@ -3903,7 +3938,7 @@ bool MacroExpander::handle_pg_arrayX(Parser& parser, const Token& tok,
             "  else ";
     }
 
-    for (int i = 0; i < array->num_elems16; i++) {
+    for (int i = 0; i < array->num_elems; i++) {
         impl +=
             "  endif ";
     }
@@ -4021,7 +4056,7 @@ Array* MacroExpander::validate_array_name_arg(Parser& parser, const Token& tok,
     }
 
     if (!m->params.empty() || m->body.size() != 1 || m->body[0].type != TokenType::Integer) {
-        g_error_reporter.report_error(tok.loc, "array16: '" + macro_name + "' is not an alloc_array16 result");
+        g_error_reporter.report_error(tok.loc, "array '" + macro_name + "' is not an alloc_array result");
         return nullptr;
     }
 
@@ -4029,7 +4064,7 @@ Array* MacroExpander::validate_array_name_arg(Parser& parser, const Token& tok,
     Array* array = parser.output().get_array(base_addr);
 
     if (array == nullptr) {
-        g_error_reporter.report_error(tok.loc, "array16: '" + macro_name + "' is not an alloc_array16 result");
+        g_error_reporter.report_error(tok.loc, "array '" + macro_name + "' is not an alloc_array result");
         return nullptr;
     }
 
@@ -4081,9 +4116,9 @@ bool MacroExpander::parse_array_get_put_args(Parser& parser, const Token& tok,
     return true;
 }
 
-std::string MacroExpander::clear_memory_area(int addr, int size16) {
+std::string MacroExpander::clear_memory_area(int addr, int num_cells) {
     std::string code_impl = "{ >" + std::to_string(addr) + " ";
-    for (int i = 0; i < size16 * 2; ++i) {
+    for (int i = 0; i < num_cells; ++i) {
         code_impl += "[-] > ";
     }
     code_impl += "}";
