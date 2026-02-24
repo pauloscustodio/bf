@@ -60,3 +60,7 @@ private:
     Token number();
     Token string_literal();
 };
+
+/*
+bool is_string_var(const std::string& name);
+*/

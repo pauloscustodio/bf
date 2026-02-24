@@ -1,5 +1,9 @@
-- Single char string variables C$, INPUT C$, PRINT C$, A=ASC(C$), C$=CHR$(A), comparison
-- DIM var$(dimension); A$(i) - strings
+- Strings:
+	- DIM A$(10) - string of max 10 chars, length in array position 0
+	- used as A$; must be DIMmensioned with DIM
+	- A$ = "text" - initialize
+	- A$ = B$ - assign
+	- A$ < <= = <> >= > B$ - compare
 - SUB name(A, B, ...) \n block \n ENDSUB
 - FUNCTION name(A, B, ...) \n block \n name = return \n ENDFUNCTION
 - Simple strings: INPUT, PRINT, compare

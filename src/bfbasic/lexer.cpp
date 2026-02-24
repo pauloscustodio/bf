@@ -250,6 +250,10 @@ Token Lexer::identifier_or_keyword() {
     while (!eof() && (is_alnum(peek()) || peek() == '_')) {
         advance();
     }
+    /*
+    if (!eof() && peek() == '$')
+        advance();          // string variable
+    */
 
     std::string text = src.substr(start, pos - start);
 
@@ -301,3 +305,9 @@ Token Lexer::string_literal() {
 
     error_here("Unterminated string literal");
 }
+
+/*
+bool is_string_var(const std::string& name) {
+    return (!name.empty() && name.back() == '$');
+}
+*/

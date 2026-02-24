@@ -156,8 +156,8 @@ void TokenScanner::scan_line(const std::string& text,
             continue;
         }
 
-        if (is_alpha(*p) || *p == '_') {
-            while (is_alnum(*p) || *p == '_') {
+        if (is_alpha(*p) || *p == '_' || *p == '$') {
+            while (is_alnum(*p) || *p == '_' || *p == '$') {
                 ++p;
             }
             std::string ident(start, p - start);
@@ -409,11 +409,11 @@ bool is_identifier(const std::string& ident) {
     if (ident.empty()) {
         return false;
     }
-    if (!is_alpha(ident[0]) && ident[0] != '_') {
+    if (!is_alpha(ident[0]) && ident[0] != '_' && ident[0] != '$') {
         return false;
     }
     for (char c : ident) {
-        if (!is_alnum(c) && c != '_') {
+        if (!is_alnum(c) && c != '_' && c != '$') {
             return false;
         }
     }
