@@ -135,6 +135,7 @@ const std::unordered_map<std::string, MacroExpander::BuiltinHandler> MacroExpand
     { "put_array16",        &MacroExpander::handle_put_array16        },
     { "get_array8",         &MacroExpander::handle_get_array8         },
     { "get_array16",        &MacroExpander::handle_get_array16        },
+    { "set_string",         &MacroExpander::handle_set_string         },
 };
 
 void MacroTable::clear() {
@@ -3950,6 +3951,70 @@ bool MacroExpander::handle_pg_arrayX(Parser& parser, const Token& tok,
 
     TokenScanner scanner;
     std::string mock_filename = "(" + F + "_array" + X + ")";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            impl, mock_filename));
+
+    return true;
+}
+
+bool MacroExpander::handle_set_string(Parser& parser, const Token& tok) {
+    const std::string macro_name = tok.text;
+
+    Macro fake;
+    fake.name = macro_name;
+    fake.params = { "string", "text" };
+
+    std::vector<std::vector<Token>> args;
+    if (!collect_args(parser, fake, args)) {
+        return false; // error already reported
+    }
+
+    if (args.size() != 2) {
+        g_error_reporter.report_error(tok.loc,
+                                      "macro '" + macro_name + "' expects one address and one string");
+        return false;
+    }
+
+    // evaluate first argument - array location
+    ArrayTokenSource source(args[0]);
+    ExpressionParser expr(source, parser_, /*undefined_as_zero=*/false);
+    int base_addr = expr.parse_expression();
+
+    // get second argument - init text
+    if (args[1].size() != 1 ||
+            args[1][0].type != TokenType::String) {
+        g_error_reporter.report_error(tok.loc,
+                                      "macro '" + macro_name + "' expects one address and one string");
+        return false;
+    }
+    std::string text = args[1][0].text;
+
+    // get array
+    Array* array = parser.output().get_array(base_addr);
+    if (array == nullptr || array->elem_size != 1) {
+        g_error_reporter.report_error(
+            tok.loc, "address " + std::to_string(base_addr) +
+            " is not a base of a alloc_array8() array"
+        );
+        return false;
+    }
+
+    // produce code to init array from text
+    int copy_size = std::min(array->num_elems - 1,
+                             static_cast<int>(text.size()));
+    std::string impl =
+        "set8(" + std::to_string(base_addr) + ", " +
+        std::to_string(copy_size) + ") ";
+    for (int i = 0; i < copy_size; i++) {
+        impl +=
+            "set8(" + std::to_string(base_addr + 1 + i) + ", " +
+            std::to_string(static_cast<int>(text[i])) + ") ";
+    }
+
+    TokenScanner scanner;
+    std::string mock_filename = "(set_string)";
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(

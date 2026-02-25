@@ -45,6 +45,7 @@ usage: bfpp [-o output_file] [-I include_path] [-D name=value] [-v] [input_file]
 - Global: `alloc_global16(COUNT)`, `free_global16`, `alloc_temp16(COUNT)`, `free_temp16`. Expressions can use `global(i)` and `temp(i)` to refer to these.
 - Stack frames: `enter_frame16(num_args16, num_locals16)` / `leave_frame16` to manage a call stack for temporary storage. `num_args16` are already on the stack when `enter_frame16` is called. `frame_alloc_temp16(count16)` can be used inside a frame to allocate temporary cells that will be automatically freed on `leave_frame16`. Expressions can use `arg(i)` to refer to arguments,  `local(i)` for local variables and `frame_temp(i)` for temporaries.
 - Arrays: `alloc_array8(NAME, dimensions)`, `free_array8(NAME)`, `put_array8(NAME, idx_cell, source_cell)`, `get_array8(NAME, idx_cell, target_cell)` (and `xx16` forms).
+- Strings: allocated with `alloc_array8`, item 0 holds length, item 1 first character. `set_string(STR, "string")`, `copy_string(SRC, DST)`, `cmp_string(result_cell, STR1, STR2)`, `print_string(STR)`, `read_word_string(STR)`.
 - Output: `print_char(value)`, `print_char8(cell)`, `print_string(string)`; string supports common C escape sequences: `\n`, `\t`, `\r`, `\\`, `\"`, `\'`, `\0`, `\a`, `\b`, `\f`, `\v`;
   `print_newline`, `print_cell8(cell)`, `print_cell16(cell)`, `print_cell8s(cell)`, `print_cell16s(cell)`.
 - Input: `scan_spaces`, `scan_char8(cell)`, `unscan_char8(cell)`, `scan_cell8(cell)`, `scan_cell8s(cell)`, `scan_cell16(cell)`, `scan_cell16s(cell)`.
