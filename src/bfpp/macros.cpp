@@ -84,6 +84,14 @@ const std::unordered_map<std::string, MacroExpander::BuiltinHandler> MacroExpand
     { "ge16",               &MacroExpander::handle_ge16               },
     { "ge8s",               &MacroExpander::handle_ge8s               },
     { "ge16s",              &MacroExpander::handle_ge16s              },
+    { "min8",               &MacroExpander::handle_min8               },
+    { "min16",              &MacroExpander::handle_min16              },
+    { "min8s",              &MacroExpander::handle_min8s              },
+    { "min16s",             &MacroExpander::handle_min16s             },
+    { "max8",               &MacroExpander::handle_max8               },
+    { "max16",              &MacroExpander::handle_max16              },
+    { "max8s",              &MacroExpander::handle_max8s              },
+    { "max16s",             &MacroExpander::handle_max16s             },
     { "shr8",               &MacroExpander::handle_shr8               },
     { "shr16",              &MacroExpander::handle_shr16              },
     { "shl8",               &MacroExpander::handle_shl8               },
@@ -2577,6 +2585,104 @@ bool MacroExpander::handle_ge16s(Parser& parser, const Token& tok) {
             "  free_cell16(" + t_sa + ") "
             "  free_cell16(" + t_sb + ") "
             "  free_cell16(" + t_tmp + ") "
+            "}",
+            mock_filename));
+
+    return true;
+}
+
+bool MacroExpander::handle_min8(Parser& parser, const Token& tok) {
+    return handle_minX(parser, tok, 8, /*signed_version=*/false);
+}
+
+bool MacroExpander::handle_min16(Parser& parser, const Token& tok) {
+    return handle_minX(parser, tok, 16, /*signed_version=*/false);
+}
+
+bool MacroExpander::handle_min8s(Parser& parser, const Token& tok) {
+    return handle_minX(parser, tok, 8, /*signed_version=*/true);
+}
+
+bool MacroExpander::handle_min16s(Parser& parser, const Token& tok) {
+    return handle_minX(parser, tok, 16, /*signed_version=*/true);
+}
+
+bool MacroExpander::handle_minX(Parser& parser, const Token& tok,
+                                int width, bool signed_version) {
+    assert(width == 8 || width == 16);
+    std::string X = std::to_string(width);
+    std::string S = signed_version ? "s" : "";
+    std::string mock_filename = "(min" + X + S + ")";
+
+    std::vector<int> vals;
+    if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
+        return true;
+    }
+    int a = vals[0];
+    int b = vals[1];
+
+    std::string T_cond = make_temp_name();
+
+    TokenScanner scanner;
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            "{ alloc_cell" + X + "(" + T_cond + ") "
+            "  copy" + X + "(" + std::to_string(a) + ", " + T_cond + ") "
+            "  gt" + X + S + "(" + T_cond + ", " + std::to_string(b) + ") "
+            "  if(" + T_cond + ") "
+            "    copy" + X + "(" + std::to_string(b) + ", " + std::to_string(a) + ") "
+            "  endif "
+            "  free_cell" + X + "(" + T_cond + ") "
+            "}",
+            mock_filename));
+
+    return true;
+}
+
+bool MacroExpander::handle_max8(Parser& parser, const Token& tok) {
+    return handle_maxX(parser, tok, 8, /*signed_version=*/false);
+}
+
+bool MacroExpander::handle_max16(Parser& parser, const Token& tok) {
+    return handle_maxX(parser, tok, 16, /*signed_version=*/false);
+}
+
+bool MacroExpander::handle_max8s(Parser& parser, const Token& tok) {
+    return handle_maxX(parser, tok, 8, /*signed_version=*/true);
+}
+
+bool MacroExpander::handle_max16s(Parser& parser, const Token& tok) {
+    return handle_maxX(parser, tok, 16, /*signed_version=*/true);
+}
+
+bool MacroExpander::handle_maxX(Parser& parser, const Token& tok,
+                                int width, bool signed_version) {
+    assert(width == 8 || width == 16);
+    std::string X = std::to_string(width);
+    std::string S = signed_version ? "s" : "";
+    std::string mock_filename = "(min" + X + S + ")";
+
+    std::vector<int> vals;
+    if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
+        return true;
+    }
+    int a = vals[0];
+    int b = vals[1];
+
+    std::string T_cond = make_temp_name();
+
+    TokenScanner scanner;
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            "{ alloc_cell" + X + "(" + T_cond + ") "
+            "  copy" + X + "(" + std::to_string(a) + ", " + T_cond + ") "
+            "  lt" + X + S + "(" + T_cond + ", " + std::to_string(b) + ") "
+            "  if(" + T_cond + ") "
+            "    copy" + X + "(" + std::to_string(b) + ", " + std::to_string(a) + ") "
+            "  endif "
+            "  free_cell" + X + "(" + T_cond + ") "
             "}",
             mock_filename));
 

@@ -39,7 +39,7 @@ usage: bfpp [-o output_file] [-I include_path] [-D name=value] [-v] [input_file]
 - Cell ops: `clear8(a)`, `set8(a, v)`, `move8(a, b)`, `copy8(a, b)`. (+ `xx16`).
 - Logic: `not8(a)`, `and8(a, b)`, `or8(a, b)`, `xor8(a, b)`, `shr8(a, b)`, `shl8(a, b)` (and `xx16` forms).
 - Arithmetic: `add8/add8s/sub8/sub8s/mul8/mul8s/div8/div8s/mod8/mod8s/pow8/pow8s(a, b)`, `neg8/sign8/abs8(a)` (+ `xx16`).
-- Comparisons: `eq8/eq8s/ne8/ne8s/lt8/lt8s/le8/le8s/gt8/gt8s/ge8/ge8s(a, b)` (+ `xx16`).
+- Comparisons: `eq8/eq8s/ne8/ne8s/lt8/lt8s/le8/le8s/gt8/gt8s/ge8/ge8s(a, b)`, `min8/min8s/max8/max8s(a, b)` (+ `xx16`).
 - Control: `if(expr) ... else ... endif`, `while(expr) ... endwhile`, `repeat(count) ... endrepeat`.
 - Stack: `push8(source_cell)`, `push8i(immediate_value)`, `pop8(target_cell)` (+ `xx16`).
 - Global: `alloc_global16(COUNT)`, `free_global16`, `alloc_temp16(COUNT)`, `free_temp16`. Expressions can use `global(i)` and `temp(i)` to refer to these.

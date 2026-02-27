@@ -163,6 +163,18 @@ private:
     bool handle_ge16(Parser& parser, const Token& tok);
     bool handle_ge8s(Parser& parser, const Token& tok);
     bool handle_ge16s(Parser& parser, const Token& tok);
+    bool handle_min8(Parser& parser, const Token& tok);
+    bool handle_min16(Parser& parser, const Token& tok);
+    bool handle_min8s(Parser& parser, const Token& tok);
+    bool handle_min16s(Parser& parser, const Token& tok);
+    bool handle_minX(Parser& parser, const Token& tok,
+                     int width, bool signed_version);
+    bool handle_max8(Parser& parser, const Token& tok);
+    bool handle_max16(Parser& parser, const Token& tok);
+    bool handle_max8s(Parser& parser, const Token& tok);
+    bool handle_max16s(Parser& parser, const Token& tok);
+    bool handle_maxX(Parser& parser, const Token& tok,
+                     int width, bool signed_version);
     bool handle_shr8(Parser& parser, const Token& tok);
     bool handle_shr16(Parser& parser, const Token& tok);
     bool handle_shl8(Parser& parser, const Token& tok);
