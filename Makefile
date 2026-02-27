@@ -50,7 +50,7 @@ clean:
 	      bfpp$(_EXE) $(BFPP_OBJS) \
 		  bfbasic$(_EXE) $(BFBASIC_OBJS) \
 		  $(COMMON_OBJS) $(DEPENDS) \
-		  $(foreach dir,src/bf src/bfpp src/bfbasic,$(wildcard $(dir)/*.orig))
+		  $(foreach dir,src/bf src/bfpp src/bfbasic t,$(wildcard $(dir)/*.orig $(dir)/*.bak))
 
 test: bf$(_EXE) bfpp$(_EXE) bfbasic$(_EXE)
 	perl -S prove -j9 --state=slow,save $(wildcard t/*.t)
