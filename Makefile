@@ -53,6 +53,6 @@ clean:
 		  $(foreach dir,src/bf src/bfpp src/bfbasic t,$(wildcard $(dir)/*.orig $(dir)/*.bak))
 
 test: bf$(_EXE) bfpp$(_EXE) bfbasic$(_EXE)
-	perl -S prove -j9 --state=slow,save $(wildcard t/*.t)
+	perl -S prove -j9 --state=slow,save t/*.t
 
 -include $(DEPENDS)

@@ -12,16 +12,6 @@
 #include <vector>
 #include <unordered_map>
 
-struct StackFrame {
-    SourceLocation loc;
-    int start_stack_ptr = 0;
-    int num_args16 = 0;
-    int num_locals16 = 0;
-    int num_temps16 = 0;
-
-    int size() const;
-};
-
 struct Array {
     SourceLocation loc;
     int base_addr = 0;
@@ -41,28 +31,6 @@ public:
     // allocate cells on the heap, heap grows upwards
     int alloc_cells(int count);
     void free_cells(int addr);
-
-    // allocate globals and temps on the heap
-    // they are not freed until the end of the program
-    int alloc_global(const Token& tok, int count16);
-    void free_global();
-    int alloc_temp(const Token& tok, int count16);
-    void free_temp();
-    int global_address(const Token& tok, int n);
-    int temp_address(const Token& tok, int n);
-
-    // allocate cells on the stack, stack grows downwards
-    int alloc_stack(int count);
-    void free_stack(int count);
-    int stack_ptr() const;
-
-    // frames for function context
-    void enter_frame(const Token& tok, int args16, int locals16);
-    void leave_frame(const Token& tok);
-    void frame_alloc_temp(const Token& tok, int temp16);
-    int frame_arg_address(const Token& tok, int n);
-    int frame_local_address(const Token& tok, int n);
-    int frame_temp_address(const Token& tok, int n);
 
     // allocate arrays
     int alloc_array8(const Token& tok, int cells8);
@@ -91,12 +59,7 @@ private:
     int stack_base_ = kInitialStackBase;
     int stack_ptr_ = kInitialStackBase;
     int min_stack_ptr_ = kInitialStackBase;
-    int global_ptr_ = -1;
-    int global_count16_ = 0;
-    int temp_ptr_ = -1;
-    int temp_count16_ = 0;
     int input_buffer_ = -1;
-    std::vector<StackFrame> frame_stack_;
     std::unordered_map<int, Array> arrays_;
     std::vector<SourceLocation> loop_stack_;
     std::vector<Token> output_;

@@ -107,19 +107,6 @@ const std::unordered_map<std::string, MacroExpander::BuiltinHandler> MacroExpand
     { "endwhile",           &MacroExpander::handle_endwhile           },
     { "repeat",             &MacroExpander::handle_repeat             },
     { "endrepeat",          &MacroExpander::handle_endrepeat          },
-    { "push8",              &MacroExpander::handle_push8              },
-    { "push16",             &MacroExpander::handle_push16             },
-    { "push8i",             &MacroExpander::handle_push8i             },
-    { "push16i",            &MacroExpander::handle_push16i            },
-    { "pop8",               &MacroExpander::handle_pop8               },
-    { "pop16",              &MacroExpander::handle_pop16              },
-    { "alloc_global16",     &MacroExpander::handle_alloc_global16     },
-    { "free_global16",      &MacroExpander::handle_free_global16      },
-    { "alloc_temp16",       &MacroExpander::handle_alloc_temp16       },
-    { "free_temp16",        &MacroExpander::handle_free_temp16        },
-    { "enter_frame16",      &MacroExpander::handle_enter_frame16      },
-    { "leave_frame16",      &MacroExpander::handle_leave_frame16      },
-    { "frame_alloc_temp16", &MacroExpander::handle_frame_alloc_temp16 },
     { "print_char",         &MacroExpander::handle_print_char         },
     { "print_char8",        &MacroExpander::handle_print_char8        },
     { "print_string",       &MacroExpander::handle_print_string       },
@@ -144,6 +131,9 @@ const std::unordered_map<std::string, MacroExpander::BuiltinHandler> MacroExpand
     { "get_array8",         &MacroExpander::handle_get_array8         },
     { "get_array16",        &MacroExpander::handle_get_array16        },
     { "set_string",         &MacroExpander::handle_set_string         },
+    /*
+    { "clear_string",       &MacroExpander::handle_clear_string       },
+    */
 };
 
 void MacroTable::clear() {
@@ -3165,198 +3155,6 @@ bool MacroExpander::handle_endrepeat(Parser& parser, const Token& tok) {
     return true;
 }
 
-bool MacroExpander::handle_push8(Parser& parser, const Token& tok) {
-    std::vector<int> vals;
-    if (!parse_expr_args(parser, tok, { "source_cell" }, vals)) {
-        return true;
-    }
-    int source = vals[0];
-    int target = parser.output().alloc_stack(2);
-
-    TokenScanner scanner;
-    std::string mock_filename = "(push8)";
-    parser.push_macro_expansion(
-        mock_filename,
-        scanner.scan_string(
-            "copy8(" + std::to_string(source) + ", " + std::to_string(target) + ") ",
-            mock_filename));
-    return true;
-}
-
-bool MacroExpander::handle_push16(Parser& parser, const Token& tok) {
-    std::vector<int> vals;
-    if (!parse_expr_args(parser, tok, { "source_cell" }, vals)) {
-        return true;
-    }
-    int source = vals[0];
-    int target = parser.output().alloc_stack(2);
-
-    TokenScanner scanner;
-    std::string mock_filename = "(push16)";
-    parser.push_macro_expansion(
-        mock_filename,
-        scanner.scan_string(
-            "copy16(" + std::to_string(source) + ", " + std::to_string(target) + ") ",
-            mock_filename));
-    return true;
-}
-
-bool MacroExpander::handle_push8i(Parser& parser, const Token& tok) {
-    std::vector<int> vals;
-    if (!parse_expr_args(parser, tok, { "value" }, vals)) {
-        return true;
-    }
-    int value = vals[0];
-    int target = parser.output().alloc_stack(2);
-
-    TokenScanner scanner;
-    std::string mock_filename = "(push8i)";
-    parser.push_macro_expansion(
-        mock_filename,
-        scanner.scan_string(
-            "set8(" + std::to_string(target) + ", " + std::to_string(value) + ") ",
-            mock_filename));
-    return true;
-}
-
-bool MacroExpander::handle_push16i(Parser& parser, const Token& tok) {
-    std::vector<int> vals;
-    if (!parse_expr_args(parser, tok, { "value" }, vals)) {
-        return true;
-    }
-    int value = vals[0];
-    int target = parser.output().alloc_stack(2);
-
-    TokenScanner scanner;
-    std::string mock_filename = "(push16i)";
-    parser.push_macro_expansion(
-        mock_filename,
-        scanner.scan_string(
-            "set16(" + std::to_string(target) + ", " + std::to_string(value) + ") ",
-            mock_filename));
-    return true;
-}
-
-bool MacroExpander::handle_pop8(Parser& parser, const Token& tok) {
-    std::vector<int> vals;
-    if (!parse_expr_args(parser, tok, { "target_cell" }, vals)) {
-        return true;
-    }
-    int target = vals[0];
-    int source = parser.output().stack_ptr();
-    parser.output().free_stack(2);
-
-    TokenScanner scanner;
-    std::string mock_filename = "(pop8)";
-    parser.push_macro_expansion(
-        mock_filename,
-        scanner.scan_string(
-            "move8(" + std::to_string(source) + ", " + std::to_string(target) + ") ",
-            mock_filename));
-    return true;
-}
-
-bool MacroExpander::handle_pop16(Parser& parser, const Token& tok) {
-    std::vector<int> vals;
-    if (!parse_expr_args(parser, tok, { "target_cell" }, vals)) {
-        return true;
-    }
-    int target = vals[0];
-    int source = parser.output().stack_ptr();
-    parser.output().free_stack(2);
-
-    TokenScanner scanner;
-    std::string mock_filename = "(pop16)";
-    parser.push_macro_expansion(
-        mock_filename,
-        scanner.scan_string(
-            "move16(" + std::to_string(source) + ", " + std::to_string(target) + ") ",
-            mock_filename));
-    return true;
-}
-
-bool MacroExpander::handle_alloc_global16(Parser& parser, const Token& tok) {
-    Token func_tok = tok;
-    std::vector<int> vals;
-    if (!parse_expr_args(parser, tok, { "count" }, vals)) {
-        return true;
-    }
-    int count16 = vals[0];
-    int addr = parser.output().alloc_global(func_tok, count16);
-    std::string clear_code = clear_memory_area(addr, count16 * 2);
-
-    TokenScanner scanner;
-    std::string mock_filename = "(alloc_global16)";
-    parser.push_macro_expansion(
-        mock_filename,
-        scanner.scan_string(
-            clear_code,
-            mock_filename));
-    return true;
-}
-
-bool MacroExpander::handle_free_global16(Parser& parser, const Token&) {
-    parser.advance(); // skip macro name
-    parser.output().free_global();
-    return true;
-}
-
-bool MacroExpander::handle_alloc_temp16(Parser& parser, const Token& tok) {
-    Token func_tok = tok;
-    std::vector<int> vals;
-    if (!parse_expr_args(parser, tok, { "count" }, vals)) {
-        return true;
-    }
-    int count16 = vals[0];
-    int addr = parser.output().alloc_temp(func_tok, count16);
-    std::string clear_code = clear_memory_area(addr, count16 * 2);
-
-    TokenScanner scanner;
-    std::string mock_filename = "(alloc_temp16)";
-    parser.push_macro_expansion(
-        mock_filename,
-        scanner.scan_string(
-            clear_code,
-            mock_filename));
-    return true;
-}
-
-bool MacroExpander::handle_free_temp16(Parser& parser, const Token&) {
-    parser.advance(); // skip macro name
-    parser.output().free_temp();
-    return true;
-}
-
-bool MacroExpander::handle_enter_frame16(Parser& parser, const Token& tok) {
-    Token func_tok = tok;
-    std::vector<int> vals;
-    if (!parse_expr_args(parser, tok, { "args16", "locals16"}, vals)) {
-        return true;
-    }
-    int args16 = vals[0];
-    int locals16 = vals[1];
-    parser.output().enter_frame(func_tok, args16, locals16);
-    return true;
-}
-
-bool MacroExpander::handle_leave_frame16(Parser& parser, const Token& tok) {
-    Token func_tok = tok;
-    parser.advance(); // skip macro name
-    parser.output().leave_frame(func_tok);
-    return true;
-}
-
-bool MacroExpander::handle_frame_alloc_temp16(Parser& parser, const Token& tok) {
-    Token func_tok = tok;
-    std::vector<int> vals;
-    if (!parse_expr_args(parser, tok, { "temp16" }, vals)) {
-        return true;
-    }
-    int temp16 = vals[0];
-    parser.output().frame_alloc_temp(func_tok, temp16);
-    return true;
-}
-
 bool MacroExpander::handle_print_char(Parser& parser, const Token& tok) {
     Token func_tok = tok;
     std::vector<int> vals;
@@ -3903,7 +3701,7 @@ bool MacroExpander::handle_alloc_arrayN(Parser& parser, const Token& tok,
     Token macro_tok = tok;
     Macro fake;
     fake.name = macro_tok.text;
-    fake.params = { "name", "dimensions" };
+    fake.params = { "name", "num_elems" };
 
     std::vector<std::vector<Token>> args;
     if (!collect_args(parser, fake, args)) {
@@ -4129,6 +3927,12 @@ bool MacroExpander::handle_set_string(Parser& parser, const Token& tok) {
     return true;
 }
 
+/*
+bool MacroExpander::handle_clear_string(Parser& parser, const Token& tok) {
+    return true;
+}
+*/
+
 bool MacroExpander::parse_expr_args(Parser& parser,
                                     const Token& tok,
                                     const std::vector<std::string>& param_names,
@@ -4222,7 +4026,7 @@ Array* MacroExpander::validate_array_name_arg(Parser& parser, const Token& tok,
     const Macro* m = g_macro_table.lookup(macro_name);
 
     if (!m) {
-        g_error_reporter.report_error(tok.loc, "array16: macro '" + macro_name + "' not defined");
+        g_error_reporter.report_error(tok.loc, "array '" + macro_name + "' not defined");
         return nullptr;
     }
 
@@ -4333,8 +4137,7 @@ bool is_reserved_keyword(const std::string& name) {
            name == "include" ||
            name == "define" ||
            name == "undef" ||
-           MacroExpander::is_builtin_name(name) ||
-           ExpressionParser::is_function_name(name);
+           MacroExpander::is_builtin_name(name);
 }
 
 // temporary names generated for macro expansions

@@ -9,10 +9,6 @@
 #include <algorithm>
 #include <cassert>
 
-int StackFrame::size() const {
-    return 2 * (num_args16 + num_locals16 + num_temps16);
-}
-
 BFOutput::BFOutput() {
     reset();
 }
@@ -90,12 +86,6 @@ void BFOutput::check_structures() const {
         g_error_reporter.report_error(
             it,
             "unmatched '[' instruction"
-        );
-    }
-    for (auto& it : frame_stack_) {
-        g_error_reporter.report_error(
-            it.loc,
-            "unmatched enter_frame16 instruction"
         );
     }
 }
@@ -292,269 +282,6 @@ void BFOutput::free_cells(int addr) {
     add_free_block(addr, len);
 }
 
-int BFOutput::alloc_global(const Token& tok, int count16) {
-    if (count16 <= 0) {
-        return -1; // no-op, but defined behavior
-    }
-    if (global_ptr_ == -1) {
-        global_ptr_ = alloc_cells(count16 * 2);
-        global_count16_ = count16;
-        return global_ptr_;
-    }
-    else {
-        g_error_reporter.report_error(
-            tok.loc,
-            "alloc_global16 already called"
-        );
-        return -1;
-    }
-}
-
-void BFOutput::free_global() {
-    if (global_ptr_ == -1) {
-        return; // no-op, but defined behavior
-    }
-    free_cells(global_ptr_);
-    global_ptr_ = -1;
-    global_count16_ = 0;
-}
-
-int BFOutput::alloc_temp(const Token& tok, int count16) {
-    if (count16 <= 0) {
-        return -1; // no-op, but defined behavior
-    }
-    if (temp_ptr_ == -1) {
-        temp_ptr_ = alloc_cells(count16 * 2);
-        temp_count16_ = count16;
-        return temp_ptr_;
-    }
-    else {
-        g_error_reporter.report_error(
-            tok.loc,
-            "alloc_temp16 already called"
-        );
-        return -1;
-    }
-}
-
-void BFOutput::free_temp() {
-    if (temp_ptr_ == -1) {
-        return; // no-op, but defined behavior
-    }
-    free_cells(temp_ptr_);
-    temp_ptr_ = -1;
-    temp_count16_ = 0;
-}
-
-int BFOutput::global_address(const Token& tok, int n) {
-    if (global_ptr_ == -1) {
-        g_error_reporter.report_error(
-            tok.loc,
-            "global() called before alloc_global16"
-        );
-        return -1;
-    }
-    if (n < 0 || n >= global_count16_) {
-        g_error_reporter.report_error(
-            tok.loc,
-            "global(" + std::to_string(n) + ") overflow"
-        );
-        return -1;
-    }
-    return global_ptr_ + 2 * n;
-}
-
-int BFOutput::temp_address(const Token& tok, int n) {
-    if (temp_ptr_ == -1) {
-        g_error_reporter.report_error(
-            tok.loc,
-            "temp() called before alloc_temp16"
-        );
-        return -1;
-    }
-    if (n < 0 || n >= temp_count16_) {
-        g_error_reporter.report_error(
-            tok.loc,
-            "temp(" + std::to_string(n) + ") overflow"
-        );
-        return -1;
-    }
-    return temp_ptr_ + 2 * n;
-}
-
-int BFOutput::alloc_stack(int count) {
-    if (count <= 0) {
-        return stack_ptr_; // no-op, but defined behavior
-    }
-    if (stack_ptr_ - count < heap_size_) {
-        g_error_reporter.report_error(
-            SourceLocation(),
-            "stack overflow: not enough space between heap and stack for allocation of " + std::to_string(count) + " cells"
-        );
-        return stack_ptr_; // return current top as fallback
-    }
-
-    stack_ptr_ -= count;
-    min_stack_ptr_ = std::min(min_stack_ptr_, stack_ptr_);
-    return stack_ptr_;
-}
-
-void BFOutput::free_stack(int count) {
-    if (count <= 0) {
-        return; // no-op, but defined behavior
-    }
-    if (stack_ptr_ + count > stack_base_) {
-        g_error_reporter.report_error(
-            SourceLocation(),
-            "stack underflow: attempt to free more stack cells than allocated"
-        );
-        return;
-    }
-
-    stack_ptr_ += count;
-}
-
-int BFOutput::stack_ptr() const {
-    return stack_ptr_;
-}
-
-void BFOutput::enter_frame(const Token& tok, int args16, int locals16) {
-    if (args16 < 0 || locals16 < 0) {
-        return; // no-op, but defined behavior
-    }
-
-    // Ensure the arguments are already present on the stack.
-    // Each arg is 16-bit => 2 cells.
-    int args_cells = 2 * args16;
-    int available = stack_base_ - stack_ptr_;
-    if (available < args_cells) {
-        g_error_reporter.report_error(
-            tok.loc,
-            "enter_frame16: not enough arguments on stack (expected " +
-            std::to_string(args16) + " x16-bit)"
-        );
-        return;
-    }
-
-    // reserve arg0 for return value
-    if (args16 == 0) {
-        alloc_stack(2);
-        args16++;
-        args_cells = 2 * args16;
-    }
-
-    // create frame
-    StackFrame frame;
-    frame.loc = tok.loc;
-    frame.start_stack_ptr = stack_ptr_;
-    frame.num_args16 = args16;
-    frame.num_locals16 = locals16;
-    frame.num_temps16 = 0;
-    frame_stack_.push_back(frame);
-
-    // space to reserve on stack: whole frame less args16, these are
-    // already on the stack when enter_frame() is called
-    int reserve_size = frame.size() - args_cells;
-    alloc_stack(reserve_size);
-}
-
-void BFOutput::leave_frame(const Token& tok) {
-    if (frame_stack_.empty()) {
-        g_error_reporter.report_error(
-            tok.loc,
-            "unmatched leave_frame16 instruction"
-        );
-        return;
-    }
-
-    // drop frame, keep arg0 on the stack - return value
-    StackFrame frame = frame_stack_.back();
-    frame_stack_.pop_back();
-
-    int free_size = frame.size() - 2; // keep return address
-    free_stack(free_size);
-}
-
-void BFOutput::frame_alloc_temp(const Token& tok, int temp16) {
-    if (frame_stack_.empty()) {
-        g_error_reporter.report_error(
-            tok.loc,
-            "alloc_temp16 instruction outside alloc_frame16"
-        );
-        return;
-    }
-
-    StackFrame& frame = frame_stack_.back();
-    frame.num_temps16 += temp16;
-    alloc_stack(2 * temp16);
-}
-
-int BFOutput::frame_arg_address(const Token& tok, int n) {
-    if (frame_stack_.empty()) {
-        g_error_reporter.report_error(
-            tok.loc,
-            "arg() instruction outside alloc_frame16"
-        );
-        return -1;
-    }
-
-    StackFrame& frame = frame_stack_.back();
-    if (n < 0 || n >= frame.num_args16) {
-        g_error_reporter.report_error(
-            tok.loc,
-            "arg(" + std::to_string(n) + ") overflow"
-        );
-        return -1;
-    }
-
-    int addr = frame.start_stack_ptr + 2 * (frame.num_args16 - n - 1);
-    return addr;
-}
-
-int BFOutput::frame_local_address(const Token& tok, int n) {
-    if (frame_stack_.empty()) {
-        g_error_reporter.report_error(
-            tok.loc,
-            "local() instruction outside alloc_frame16"
-        );
-        return -1;
-    }
-
-    StackFrame& frame = frame_stack_.back();
-    if (n < 0 || n >= frame.num_locals16) {
-        g_error_reporter.report_error(
-            tok.loc,
-            "local(" + std::to_string(n) + ") overflow"
-        );
-        return -1;
-    }
-
-    int addr = frame.start_stack_ptr - 2 * (n + 1);
-    return addr;
-}
-
-int BFOutput::frame_temp_address(const Token& tok, int n) {
-    if (frame_stack_.empty()) {
-        g_error_reporter.report_error(
-            tok.loc,
-            "frame_temp() instruction outside alloc_frame16"
-        );
-        return -1;
-    }
-
-    StackFrame& frame = frame_stack_.back();
-    if (n < 0 || n >= frame.num_temps16) {
-        g_error_reporter.report_error(
-            tok.loc,
-            "frame_temp(" + std::to_string(n) + ") overflow"
-        );
-        return -1;
-    }
-
-    int addr = frame.start_stack_ptr - 2 * (frame.num_locals16 + n + 1);
-    return addr;
-}
-
 int BFOutput::alloc_array8(const Token& tok, int cells8) {
     return alloc_arrayN(tok, cells8, 8);
 }
@@ -609,7 +336,6 @@ Array* BFOutput::get_array(int base_addr) {
 
 void BFOutput::reset() {
     output_.clear();
-    frame_stack_.clear();
     arrays_.clear();
     loop_stack_.clear();
     free_list_.clear();
@@ -618,10 +344,6 @@ void BFOutput::reset() {
     max_tape_ptr_ = 0;
     heap_size_ = 0;
     stack_base_ = stack_ptr_ = min_stack_ptr_ = kInitialStackBase;
-    global_ptr_ = -1;
-    global_count16_ = 0;
-    temp_ptr_ = -1;
-    temp_count16_ = 0;
     input_buffer_ = -1;
 }
 

@@ -35,20 +35,21 @@ usage: bfpp [-o output_file] [-I include_path] [-D name=value] [-v] [input_file]
 - `#if / #elsif / #else / #endif` : conditional assembly on expressions.
 
 ### Built-in macros (8-bit; `xx16` variants treat two cells little-endian)
-- Allocation: `alloc_cell8(NAME)`, `free_cell8(NAME)`. (+ `xx16`).
-- Cell ops: `clear8(a)`, `set8(a, v)`, `move8(a, b)`, `copy8(a, b)`. (+ `xx16`).
-- Logic: `not8(a)`, `and8(a, b)`, `or8(a, b)`, `xor8(a, b)`, `shr8(a, b)`, `shl8(a, b)` (and `xx16` forms).
-- Arithmetic: `add8/add8s/sub8/sub8s/mul8/mul8s/div8/div8s/mod8/mod8s/pow8/pow8s(a, b)`, `neg8/sign8/abs8(a)` (+ `xx16`).
-- Comparisons: `eq8/eq8s/ne8/ne8s/lt8/lt8s/le8/le8s/gt8/gt8s/ge8/ge8s(a, b)`, `min8/min8s/max8/max8s(a, b)` (+ `xx16`).
+- Allocation: `alloc_cellX(NAME)`, `free_cellX(NAME)`. (X=`8`, `16`).
+- Cell ops: `clearX(a)`, `setX(a, v)`, `moveX(a, b)`, `copyX(a, b)`. (X=`8`, `16`).
+- Logic: `notX(a)`, `andX(a, b)`, `orX(a, b)`, `xorX(a, b)`, `shrX(a, b)`, `shlX(a, b)`. (X=`8`, `16`).
+- Arithmetic: `addX(a, b)`, `subX(a, b)`, `mulX(a, b)`, `divX(a, b)`, `modX(a, b)`, `powX(a, b)`. (X=`8`, `8s`, `16`, `16s`).
+  `negX(a)`, `signX(a)`, `absX(a)`. (X=`8`, `16`).
+- Comparisons: `eqX(a, b)`, `neX(a, b)`, `ltX(a, b)`, `leX(a, b)`, `gtX(a, b)`, `geX(a, b)`, `minX(a, b)`, `maxX(a, b)`. (X=`8`, `8s`, `16`, `16s`).
 - Control: `if(expr) ... else ... endif`, `while(expr) ... endwhile`, `repeat(count) ... endrepeat`.
-- Stack: `push8(source_cell)`, `push8i(immediate_value)`, `pop8(target_cell)` (+ `xx16`).
-- Global: `alloc_global16(COUNT)`, `free_global16`, `alloc_temp16(COUNT)`, `free_temp16`. Expressions can use `global(i)` and `temp(i)` to refer to these.
-- Stack frames: `enter_frame16(num_args16, num_locals16)` / `leave_frame16` to manage a call stack for temporary storage. `num_args16` are already on the stack when `enter_frame16` is called. `frame_alloc_temp16(count16)` can be used inside a frame to allocate temporary cells that will be automatically freed on `leave_frame16`. Expressions can use `arg(i)` to refer to arguments,  `local(i)` for local variables and `frame_temp(i)` for temporaries.
-- Arrays: `alloc_array8(NAME, dimensions)`, `free_array8(NAME)`, `put_array8(NAME, idx_cell, source_cell)`, `get_array8(NAME, idx_cell, target_cell)` (and `xx16` forms).
-- Strings: allocated with `alloc_array8`, item 0 holds length, item 1 first character. `set_string(STR, "string")`, `copy_string(SRC, DST)`, `cmp_string(result_cell, STR1, STR2)`, `print_string(STR)`, `read_word_string(STR)`.
-- Output: `print_char(value)`, `print_char8(cell)`, `print_string(string)`; string supports common C escape sequences: `\n`, `\t`, `\r`, `\\`, `\"`, `\'`, `\0`, `\a`, `\b`, `\f`, `\v`;
-  `print_newline`, `print_cell8(cell)`, `print_cell16(cell)`, `print_cell8s(cell)`, `print_cell16s(cell)`.
-- Input: `scan_spaces`, `scan_char8(cell)`, `unscan_char8(cell)`, `scan_cell8(cell)`, `scan_cell8s(cell)`, `scan_cell16(cell)`, `scan_cell16s(cell)`.
+- Arrays: `alloc_arrayX(NAME, size)`, `free_arrayX(NAME)`, `put_arrayX(NAME, idx_cell, source_cell)`, `get_arrayX(NAME, idx_cell, target_cell)`. (X=`8`, `16`).
+- Strings: allocated with `alloc_array8`, item 0 holds length, item 1 first character. `set_string(STR, "string")`, `clear_string(STR)`, `copy_string(SRC, DST)`, `cmp_string(result_cell, STR1, STR2)`, `print_string(STR)`, `read_word_string(STR)`.
+- Output: `print_char(value)`, `print_char8(cell)`.  
+  `print_string("string")`. string supports common C escape sequences: `\n`, `\t`, `\r`, `\\`, `\"`, `\'`, `\0`, `\a`, `\b`, `\f`, `\v`.
+  `print_newline`.
+  `print_cellX(cell)`. (X=`8`, `8s`, `16`, `16s`).
+- Input: `scan_spaces`, `scan_char8(cell)`, `unscan_char8(cell)`.  
+  `scan_cellX(cell)`. (X=`8`, `8s`, `16`, `16s`).
 
 Notes:
 - Allocation reserves cells from 0 upward and zeroes them.

@@ -76,12 +76,7 @@ public:
         return output_;
     }
 
-    static bool is_function_name(const std::string& name);
-
 private:
-    using FunctionHandler = int (ExpressionParser::*)(const Token&, int);
-    static const std::unordered_map<std::string, FunctionHandler> kFunctions;
-
     TokenSource& source_;  // Single interface for both contexts
     Parser* parser_ = nullptr;
     BFOutput* output_ = nullptr;
@@ -103,10 +98,4 @@ private:
     int value_of_identifier(const Token& tok);
     int eval_macro_recursive(const Token& tok,
                              std::unordered_set<std::string>& expanding);
-
-    int handle_global(const Token& tok, int argument);
-    int handle_temp(const Token& tok, int argument);
-    int handle_arg(const Token& tok, int argument);
-    int handle_local(const Token& tok, int argument);
-    int handle_frame_temp(const Token& tok, int argument);
 };
