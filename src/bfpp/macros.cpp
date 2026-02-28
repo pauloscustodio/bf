@@ -136,6 +136,7 @@ const std::unordered_map<std::string, MacroExpander::BuiltinHandler> MacroExpand
     { "left_string",        &MacroExpander::handle_left_string        },
     { "mid_string",         &MacroExpander::handle_mid_string         },
     { "right_string",       &MacroExpander::handle_right_string       },
+    { "cmp_string",         &MacroExpander::handle_cmp_string         },
 };
 
 void MacroTable::clear() {
@@ -4513,6 +4514,165 @@ bool MacroExpander::handle_right_string(Parser& parser, const Token& tok) {
             "  free_cell8(" + t_dst_idx + ") "
             "  free_cell8(" + t_num_free + ") "
             "  free_cell8(" + t_num_copy + ") "
+            "  free_cell8(" + t_0 + ") "
+            "  free_cell8(" + t_1 + ") "
+            "} ",
+            mock_filename));
+
+    return true;
+}
+
+bool MacroExpander::handle_cmp_string(Parser& parser, const Token& tok) {
+    Token macro_tok = tok;
+    std::string macro_name = tok.text;
+
+    std::vector<int> vals;
+    Macro fake;
+    fake.name = macro_name;
+    fake.params = { "str1", "str2", "result" };
+
+    std::vector<std::vector<Token>> args;
+    if (!collect_args(parser, fake, args)) {
+        return false; // error already reported
+    }
+
+    if (args.size() != 3) {
+        g_error_reporter.report_error(
+            tok.loc, "macro '" + macro_name + "' expects STR1, STR2 strings and result");
+        return false;
+    }
+
+    // evaluate first argument - destination identifier
+    if (args[0].size() != 1 ||
+            args[0][0].type != TokenType::Identifier) {
+        g_error_reporter.report_error(
+            tok.loc, "macro '" + macro_name + "' expects STR1, STR2 strings and result");
+        return false;
+    }
+
+    std::string str1_string_name = args[0][0].text;
+    Array* str1_array = validate_array_name_arg(parser, macro_tok, str1_string_name);
+    if (str1_array == nullptr) {
+        return false; // error already reported
+    }
+    if (str1_array->elem_size != 1) {
+        g_error_reporter.report_error(
+            tok.loc, "array '" + str1_string_name + "' is not a alloc_array8() array"
+        );
+        return false;
+    }
+
+    // evaluate second argument - source identifier
+    if (args[1].size() != 1 ||
+            args[1][0].type != TokenType::Identifier) {
+        g_error_reporter.report_error(
+            tok.loc, "macro '" + macro_name + "' expects STR1, STR2 strings and result");
+        return false;
+    }
+
+    std::string str2_string_name = args[1][0].text;
+    Array* str2_array = validate_array_name_arg(parser, macro_tok, str2_string_name);
+    if (str2_array == nullptr) {
+        return false; // error already reported
+    }
+    if (str2_array->elem_size != 1) {
+        g_error_reporter.report_error(
+            tok.loc, "array '" + str2_string_name + "' is not a alloc_array8() array"
+        );
+        return false;
+    }
+
+    // evaluate third argument - result
+    ArrayTokenSource source2(args[2]);
+    ExpressionParser expr2(source2, parser_, /*undefined_as_zero=*/false);
+    int result = expr2.parse_expression();
+
+    // make copy substring string code
+    std::string t_cond = make_temp_name();
+    std::string t_cond_str1 = make_temp_name();
+    std::string t_cond_str2 = make_temp_name();
+    std::string t_cond_str1_or_str2 = make_temp_name();
+    std::string t_done = make_temp_name();
+    std::string t_idx = make_temp_name();
+    std::string t_ch_str1 = make_temp_name();
+    std::string t_ch_str2 = make_temp_name();
+    std::string t_0 = make_temp_name();
+    std::string t_1 = make_temp_name();
+
+    TokenScanner scanner;
+    std::string mock_filename = "(cmp_string)";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            // allocate temps
+            "{ alloc_cell8(" + t_cond + ") "
+            "  alloc_cell8(" + t_cond_str1 + ") "
+            "  alloc_cell8(" + t_cond_str2 + ") "
+            "  alloc_cell8(" + t_cond_str1_or_str2 + ") "
+            "  alloc_cell8(" + t_done + ") "
+            "  alloc_cell8(" + t_idx + ") "
+            "  alloc_cell8(" + t_ch_str1 + ") "
+            "  alloc_cell8(" + t_ch_str2 + ") "
+            "  alloc_cell8(" + t_0 + ") "
+            "  alloc_cell8(" + t_1 + ") "
+            "  set8(" + t_1 + ", 1) "
+            // init index to 1 and result to 0
+            "  set8(" + t_idx + ", 1) "
+            "  clear8(" + std::to_string(result) + ") "
+            // while condition: !done && (idx <= str1_len || idx <= str2_len)
+            "  copy8(" + t_idx + ", " + t_cond_str1 + ") "
+            "  le8s(" + t_cond_str1 + ", " + str1_string_name + ") "
+            "  copy8(" + t_idx + ", " + t_cond_str2 + ") "
+            "  le8s(" + t_cond_str2 + ", " + str2_string_name + ") "
+            "  copy8(" + t_cond_str1 + ", " + t_cond_str1_or_str2 + ") "
+            "  or8(" + t_cond_str1_or_str2 + ", " + t_cond_str2 + ") "
+            "  copy8(" + t_done + ", " + t_cond + ") "
+            "  not8(" + t_cond + ") "
+            "  and8(" + t_cond + ", " + t_cond_str1_or_str2 + ") "
+            "  while(" + t_cond + ") "
+            //   get characters or 0 if index is past end of string
+            "    set8(" + t_ch_str1 + ", 0) "
+            "    if (" + t_cond_str1 + ") "
+            "      get_array8(" + str1_string_name + ", " + t_idx + ", " + t_ch_str1 + ") "
+            "    endif "
+            "    set8(" + t_ch_str2 + ", 0) "
+            "    if (" + t_cond_str2 + ") "
+            "      get_array8(" + str2_string_name + ", " + t_idx + ", " + t_ch_str2 + ") "
+            "    endif "
+            //   if characters are different, set result to -1 or 1 and break loop
+            "    copy8(" + t_ch_str1 + ", " + t_cond + ") "
+            "    ne8(" + t_cond + ", " + t_ch_str2 + ") "
+            "    if (" + t_cond + ") "
+            "      copy8(" + t_ch_str1 + ", " + t_cond + ") "
+            "      lt8s(" + t_cond + ", " + t_ch_str2 + ") "
+            "      if(" + t_cond + ") "
+            "        set8(" + std::to_string(result) + ", -1) "
+            "      else "
+            "        set8(" + std::to_string(result) + ", 1) "
+            "      endif "
+            "      set8(" + t_done + ", 1) "
+            "    endif "
+            //   increment index and recompute loop condition
+            "    add8(" + t_idx + ", " + t_1 + ") "
+            "    copy8(" + t_idx + ", " + t_cond_str1 + ") "
+            "    le8s(" + t_cond_str1 + ", " + str1_string_name + ") "
+            "    copy8(" + t_idx + ", " + t_cond_str2 + ") "
+            "    le8s(" + t_cond_str2 + ", " + str2_string_name + ") "
+            "    copy8(" + t_cond_str1 + ", " + t_cond_str1_or_str2 + ") "
+            "    or8(" + t_cond_str1_or_str2 + ", " + t_cond_str2 + ") "
+            "    copy8(" + t_done + ", " + t_cond + ") "
+            "    not8(" + t_cond + ") "
+            "    and8(" + t_cond + ", " + t_cond_str1_or_str2 + ") "
+            "  endwhile "
+            // free temps
+            "  free_cell8(" + t_cond + ") "
+            "  free_cell8(" + t_cond_str1 + ") "
+            "  free_cell8(" + t_cond_str2 + ") "
+            "  free_cell8(" + t_cond_str1_or_str2 + ") "
+            "  free_cell8(" + t_done + ") "
+            "  free_cell8(" + t_idx + ") "
+            "  free_cell8(" + t_ch_str1 + ") "
+            "  free_cell8(" + t_ch_str2 + ") "
             "  free_cell8(" + t_0 + ") "
             "  free_cell8(" + t_1 + ") "
             "} ",
