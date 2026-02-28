@@ -131,9 +131,7 @@ const std::unordered_map<std::string, MacroExpander::BuiltinHandler> MacroExpand
     { "get_array8",         &MacroExpander::handle_get_array8         },
     { "get_array16",        &MacroExpander::handle_get_array16        },
     { "set_string",         &MacroExpander::handle_set_string         },
-    /*
     { "clear_string",       &MacroExpander::handle_clear_string       },
-    */
 };
 
 void MacroTable::clear() {
@@ -3927,11 +3925,32 @@ bool MacroExpander::handle_set_string(Parser& parser, const Token& tok) {
     return true;
 }
 
-/*
 bool MacroExpander::handle_clear_string(Parser& parser, const Token& tok) {
+    Token macro_name = tok;
+
+    std::vector<int> vals;
+    if (!parse_expr_args(parser, tok, { "str" }, vals)) {
+        return true;
+    }
+    int base_addr = vals[0];
+
+    Array* array = parser.output().get_array(base_addr);
+    if (array == nullptr) {
+        g_error_reporter.report_error(tok.loc,
+                                      "address " + std::to_string(base_addr) + " is not an alloc_array result");
+        return false;
+    }
+
+    TokenScanner scanner;
+    std::string mock_filename = "(clear_string)";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            clear_memory_area(base_addr, array->num_elems * array->elem_size),
+            mock_filename));
+
     return true;
 }
-*/
 
 bool MacroExpander::parse_expr_args(Parser& parser,
                                     const Token& tok,

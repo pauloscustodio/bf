@@ -224,9 +224,7 @@ private:
     bool handle_pg_arrayX(Parser& parser, const Token& tok,
                           int width, bool put);
     bool handle_set_string(Parser& parser, const Token& tok);
-    /*
     bool handle_clear_string(Parser& parser, const Token& tok);
-    */
 
     bool parse_expr_args(Parser& parser,
                          const Token& tok,
