@@ -195,6 +195,8 @@ private:
     bool handle_print_char(Parser& parser, const Token& tok);
     bool handle_print_char8(Parser& parser, const Token& tok);
     bool handle_print_string(Parser& parser, const Token& tok);
+    bool handle_print_string_immediate(Parser& parser, const Token& tok, const std::string& text);
+    bool handle_print_string_identifier(Parser& parser, const Token& tok, const std::string& name);
     bool handle_print_newline(Parser& parser, const Token& tok);
     bool handle_print_cellX(Parser& parser, const Token& tok, int width);
     bool handle_print_cell8(Parser& parser, const Token& tok);

@@ -3203,11 +3203,40 @@ bool MacroExpander::handle_print_char8(Parser& parser, const Token& tok) {
 }
 
 bool MacroExpander::handle_print_string(Parser& parser, const Token& tok) {
-    std::string text;
-    if (!parse_string_arg(parser, tok, text)) {
-        return true; // error already reported
+    // argument may be a literal string or an identifier of a string
+    Token macro_tok = tok;
+    std::string macro_name = tok.text;
+
+    Macro fake;
+    fake.name = macro_name;
+    fake.params = { "string" };
+
+    std::vector<std::vector<Token>> args;
+    if (!collect_args(parser, fake, args)) {
+        return false; // error already reported
     }
 
+    if (args.size() != 1 || args[0].size() != 1) {
+        g_error_reporter.report_error(
+            tok.loc, "macro '" + macro_name + "' expects one string");
+        return false;
+    }
+
+    if (args[0][0].type == TokenType::String) {
+        return handle_print_string_immediate(parser, macro_tok, args[0][0].text);
+    }
+
+    if (args[0][0].type == TokenType::Identifier) {
+        return handle_print_string_identifier(parser, macro_tok, args[0][0].text);
+    }
+
+    g_error_reporter.report_error(
+        tok.loc, "macro '" + macro_name + "' expects one string");
+    return false;
+}
+
+bool MacroExpander::handle_print_string_immediate(Parser& parser, const Token&,
+        const std::string& text) {
     std::string impl_code = "{ ";
     for (auto c : text) {
         impl_code += "print_char(" + std::to_string(static_cast<int>(c)) + ") ";
@@ -3219,6 +3248,61 @@ bool MacroExpander::handle_print_string(Parser& parser, const Token& tok) {
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(impl_code, mock_filename));
+    return true;
+}
+
+bool MacroExpander::handle_print_string_identifier(Parser& parser, const Token& tok,
+        const std::string& name) {
+    Array* array = validate_array_name_arg(parser, tok, name);
+    if (array == nullptr) {
+        return false; // error already reported
+    }
+    if (array->elem_size != 1) {
+        g_error_reporter.report_error(
+            tok.loc, "array '" + name + "' is not a alloc_array8() array"
+        );
+        return false;
+    }
+
+    std::string t_cond = make_temp_name();
+    std::string t_idx = make_temp_name();
+    std::string t_ch = make_temp_name();
+    std::string t_1 = make_temp_name();
+
+    TokenScanner scanner;
+    std::string mock_filename = "(print_string)";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            // alloc temps
+            "{ alloc_cell8(" + t_cond + ") "
+            "  alloc_cell8(" + t_idx + ") "
+            "  alloc_cell8(" + t_ch + ") "
+            "  alloc_cell8(" + t_1 + ") "
+            "  set8(" + t_1 + ", 1) "
+            // initialize index
+            "  set8(" + t_idx + ", 1) "
+            // while t_idx <= length
+            "  copy8(" + t_idx + ", " + t_cond + ") "
+            "  le8s(" + t_cond + ", " + name + ") "
+            "  while(" + t_cond + ") "
+            // get character and print it
+            "    get_array8(" + name + ", " + t_idx + ", " + t_ch + ") "
+            "    print_char8(" + t_ch + ") "
+            //   advance index
+            "    add8(" + t_idx + ", " + t_1 + ") "
+            //   reevaluate condition
+            "    copy8(" + t_idx + ", " + t_cond + ") "
+            "    le8s(" + t_cond + ", " + name + ") "
+            "  endwhile "
+            // free temps
+            "  free_cell8(" + t_cond + ") "
+            "  free_cell8(" + t_idx + ") "
+            "  free_cell8(" + t_ch + ") "
+            "  free_cell8(" + t_1 + ") "
+            "} ",
+            mock_filename));
+
     return true;
 }
 

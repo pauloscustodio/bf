@@ -68,5 +68,36 @@ $out =~ s/\r\n/\n/g;
 my $exp = "\n, \t, \r, \\, \", \', \0, \a, \b, \f, \x0b";
 is $out, $exp, "recognized escape sequences";
 
+# print stored string
+spew("$test.in", <<'END'); # Note: quoted 'END'
+alloc_array8(S, 10)  
+set_string(S, "")
+print_string(S) 
+print_newline
+END
+capture_ok("bfpp $test.in | bf", <<END);
+
+END
+
+spew("$test.in", <<'END'); # Note: quoted 'END'
+alloc_array8(S, 16)  
+set_string(S, "Hello world!")
+print_string(S) 
+print_newline
+END
+capture_ok("bfpp $test.in | bf", <<END);
+Hello world!
+END
+
+spew("$test.in", <<'END'); # Note: quoted 'END'
+alloc_array8(S, 16)  
+set_string(S, "Hello \"world\"")
+print_string(S) 
+print_newline
+END
+capture_ok("bfpp $test.in | bf", <<END);
+Hello "world"
+END
+
 unlink_testfiles;
 done_testing;
