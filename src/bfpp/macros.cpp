@@ -122,6 +122,7 @@ const std::unordered_map<std::string, MacroExpander::BuiltinHandler> MacroExpand
     { "scan_cell16",        &MacroExpander::handle_scan_cell16        },
     { "scan_cell8s",        &MacroExpander::handle_scan_cell8s        },
     { "scan_cell16s",       &MacroExpander::handle_scan_cell16s       },
+    { "scan_word",          &MacroExpander::handle_scan_word          },
     { "alloc_array8",       &MacroExpander::handle_alloc_array8       },
     { "free_array8",        &MacroExpander::handle_free_array8        },
     { "alloc_array16",      &MacroExpander::handle_alloc_array16      },
@@ -3761,6 +3762,127 @@ bool MacroExpander::handle_scan_cell8s(Parser& parser, const Token& tok) {
 
 bool MacroExpander::handle_scan_cell16s(Parser& parser, const Token& tok) {
     return handle_scan_cellXs(parser, tok, 16);
+}
+
+bool MacroExpander::handle_scan_word(Parser& parser, const Token& tok) {
+    Token macro_tok = tok;
+    std::string macro_name = tok.text;
+
+    std::vector<int> vals;
+    Macro fake;
+    fake.name = macro_name;
+    fake.params = { "string" };
+
+    std::vector<std::vector<Token>> args;
+    if (!collect_args(parser, fake, args)) {
+        return false; // error already reported
+    }
+
+    if (args.size() != 1) {
+        g_error_reporter.report_error(tok.loc,
+                                      "macro '" + macro_name + "' expects one NAME");
+        return false;
+    }
+
+    // evaluate first argument - identifier
+    if (args[0].size() != 1 ||
+            args[0][0].type != TokenType::Identifier) {
+        g_error_reporter.report_error(tok.loc,
+                                      "macro '" + macro_name + "' expects one NAME");
+        return false;
+    }
+
+    std::string string_name = args[0][0].text;
+    Array* array = validate_array_name_arg(parser, macro_tok, string_name);
+    if (array == nullptr) {
+        return false; // error already reported
+    }
+    if (array->elem_size != 1) {
+        g_error_reporter.report_error(
+            tok.loc, "array '" + string_name + "' is not a alloc_array8() array"
+        );
+        return false;
+    }
+
+    // temps
+    std::string t_char = make_temp_name();
+    std::string t_cond = make_temp_name();
+    std::string t_cond_eof = make_temp_name();
+    std::string t_cond_space = make_temp_name();
+    std::string t_cond_size = make_temp_name();
+    std::string t_idx = make_temp_name();
+    std::string t_max_idx = make_temp_name();
+    std::string t_space = make_temp_name();
+    std::string t_eof = make_temp_name();
+    std::string t_1 = make_temp_name();
+
+    TokenScanner scanner;
+    std::string mock_filename = "(scan_word)";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            // allocate temps
+            "{ alloc_cell8(" + t_char + ") "
+            "  alloc_cell8(" + t_cond + ") "
+            "  alloc_cell8(" + t_cond_eof + ") "
+            "  alloc_cell8(" + t_cond_space + ") "
+            "  alloc_cell8(" + t_cond_size + ") "
+            "  alloc_cell8(" + t_idx + ") "
+            "  alloc_cell8(" + t_max_idx + ") "
+            "  alloc_cell8(" + t_space + ") set8(" + t_space + ", 32) "
+            "  alloc_cell8(" + t_eof + ")   set8(" + t_eof + ", 255) "
+            "  alloc_cell8(" + t_1 + ")     set8(" + t_1 + ", 1) "
+            // init size of string and index
+            "  clear_string(" + string_name + ") "
+            "  set8(" + t_idx + ", 1) "
+            "  set8(" + t_max_idx + ", " + std::to_string(array->num_elems - 1) + ") "
+            // skip white space, get first char
+            "  scan_spaces "
+            "  scan_char8(" + t_char + ") "
+            // while char != eof && char >= space && idx <= array-size
+            "  copy8(" + t_char + ", " + t_cond_eof + ") "
+            "  ne8(" + t_cond_eof + ", " + t_eof + ") "
+            "  copy8(" + t_char + ", " + t_cond_space + ") "
+            "  gt8(" + t_cond_space + ", " + t_space + ") "
+            "  copy8(" + t_idx + ", " + t_cond_size + ") "
+            "  le8(" + t_cond_size + ", " + t_max_idx + ") "
+            "  copy8(" + t_cond_eof + ", " + t_cond + ") "
+            "  and8(" + t_cond + ", " + t_cond_space + ") "
+            "  and8(" + t_cond + ", " + t_cond_size + ") "
+            "  while(" + t_cond + ") "
+            //   store char in array
+            "    put_array8(" + string_name + ", " + t_idx + ", " + t_char + ") "
+            //   advance index and string size
+            "    add8(" + t_idx + ", " + t_1 + ") "
+            "    add8(" + string_name + ", " + t_1 + ") "
+            //   get next char and recompute while condition
+            "    scan_char8(" + t_char + ") "
+            "    copy8(" + t_char + ", " + t_cond_eof + ") "
+            "    ne8(" + t_cond_eof + ", " + t_eof + ") "
+            "    copy8(" + t_char + ", " + t_cond_space + ") "
+            "    gt8(" + t_cond_space + ", " + t_space + ") "
+            "    copy8(" + t_idx + ", " + t_cond_size + ") "
+            "    le8(" + t_cond_size + ", " + t_max_idx + ") "
+            "    copy8(" + t_cond_eof + ", " + t_cond + ") "
+            "    and8(" + t_cond + ", " + t_cond_space + ") "
+            "    and8(" + t_cond + ", " + t_cond_size + ") "
+            "  endwhile "
+            // put back last char that caused loop exit (eof or space or size limit)
+            "  unscan_char8(" + t_char + ") "
+            // free temps
+            "  free_cell8(" + t_char + ") "
+            "  free_cell8(" + t_cond + ") "
+            "  free_cell8(" + t_cond_eof + ") "
+            "  free_cell8(" + t_cond_space + ") "
+            "  free_cell8(" + t_cond_size + ") "
+            "  free_cell8(" + t_idx + ") "
+            "  free_cell8(" + t_max_idx + ") "
+            "  free_cell8(" + t_space + ") "
+            "  free_cell8(" + t_eof + ") "
+            "  free_cell8(" + t_1 + ") "
+            "} ",
+            mock_filename));
+    return true;
 }
 
 bool MacroExpander::handle_alloc_array8(Parser& parser, const Token& tok) {

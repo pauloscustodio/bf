@@ -213,6 +213,7 @@ private:
     bool handle_scan_cellXs(Parser& parser, const Token& tok, int width);
     bool handle_scan_cell8s(Parser& parser, const Token& tok);
     bool handle_scan_cell16s(Parser& parser, const Token& tok);
+    bool handle_scan_word(Parser& parser, const Token& tok);
     bool handle_alloc_array8(Parser& parser, const Token& tok);
     bool handle_free_array8(Parser& parser, const Token& tok);
     bool handle_alloc_array16(Parser& parser, const Token& tok);
