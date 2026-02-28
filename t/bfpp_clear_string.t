@@ -13,7 +13,7 @@ END
 # clear_string - error empty arguments
 spew("$test.in", "clear_string()");
 capture_nok("bfpp $test.in", <<END);
-$test.in:1:15: error: macro 'clear_string' expects 1 argument
+$test.in:1:15: error: macro 'clear_string' expects one NAME
 END
 
 # clear_string - error too many arguments
@@ -25,7 +25,19 @@ END
 # clear_string - wrong type of arguments
 spew("$test.in", "clear_string(1)");
 capture_nok("bfpp $test.in", <<END);
-$test.in:1:16: error: address 1 is not an alloc_array result
+$test.in:1:16: error: macro 'clear_string' expects one NAME
+END
+
+# clear_string - wrong type of arguments
+spew("$test.in", "alloc_cell8(A) clear_string(A)");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:16: error: array 'A' is not an alloc_array result
+END
+
+# clear_string - wrong type of arguments
+spew("$test.in", "alloc_array16(A, 10) clear_string(A)");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:37: error: array 'A' is not a alloc_array8() array
 END
 
 # clear_string - use as reserved word

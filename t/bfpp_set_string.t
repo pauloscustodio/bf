@@ -13,7 +13,7 @@ END
 # set_string - error empty arguments
 spew("$test.in", "set_string()");
 capture_nok("bfpp $test.in", <<END);
-$test.in:1:13: error: macro 'set_string' expects one address and one string
+$test.in:1:13: error: macro 'set_string' expects one NAME and one string
 END
 
 # set_string - error too many arguments
@@ -37,7 +37,19 @@ END
 # set_string - wrong type of arguments
 spew("$test.in", "set_string(1, \"hello\")");
 capture_nok("bfpp $test.in", <<END);
-$test.in:1:23: error: address 1 is not a base of a alloc_array8() array
+$test.in:1:23: error: macro 'set_string' expects one NAME and one string
+END
+
+# set_string - wrong type of arguments
+spew("$test.in", "alloc_cell8(A) set_string(A, \"hello\")");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:16: error: array 'A' is not an alloc_array result
+END
+
+# set_string - wrong type of arguments
+spew("$test.in", "alloc_array16(A,10) set_string(A, \"hello\")");
+capture_nok("bfpp $test.in", <<END);
+$test.in:1:43: error: array 'A' is not a alloc_array8() array
 END
 
 # set_string - use as reserved word

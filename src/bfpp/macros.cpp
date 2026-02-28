@@ -132,6 +132,7 @@ const std::unordered_map<std::string, MacroExpander::BuiltinHandler> MacroExpand
     { "get_array16",        &MacroExpander::handle_get_array16        },
     { "set_string",         &MacroExpander::handle_set_string         },
     { "clear_string",       &MacroExpander::handle_clear_string       },
+    { "append_string",      &MacroExpander::handle_append_string       },
 };
 
 void MacroTable::clear() {
@@ -3862,7 +3863,8 @@ bool MacroExpander::handle_pg_arrayX(Parser& parser, const Token& tok,
 }
 
 bool MacroExpander::handle_set_string(Parser& parser, const Token& tok) {
-    const std::string macro_name = tok.text;
+    Token macro_tok = tok;
+    std::string macro_name = tok.text;
 
     Macro fake;
     fake.name = macro_name;
@@ -3875,43 +3877,48 @@ bool MacroExpander::handle_set_string(Parser& parser, const Token& tok) {
 
     if (args.size() != 2) {
         g_error_reporter.report_error(tok.loc,
-                                      "macro '" + macro_name + "' expects one address and one string");
+                                      "macro '" + macro_name + "' expects one NAME and one string");
         return false;
     }
 
-    // evaluate first argument - array location
-    ArrayTokenSource source(args[0]);
-    ExpressionParser expr(source, parser_, /*undefined_as_zero=*/false);
-    int base_addr = expr.parse_expression();
+    // evaluate first argument - identifier
+    if (args[0].size() != 1 ||
+            args[0][0].type != TokenType::Identifier) {
+        g_error_reporter.report_error(tok.loc,
+                                      "macro '" + macro_name + "' expects one NAME and one string");
+        return false;
+    }
+
+    std::string string_name = args[0][0].text;
+    Array* array = validate_array_name_arg(parser, macro_tok, string_name);
+    if (array == nullptr) {
+        return false; // error already reported
+    }
+    if (array->elem_size != 1) {
+        g_error_reporter.report_error(
+            tok.loc, "array '" + string_name + "' is not a alloc_array8() array"
+        );
+        return false;
+    }
 
     // get second argument - init text
     if (args[1].size() != 1 ||
             args[1][0].type != TokenType::String) {
         g_error_reporter.report_error(tok.loc,
-                                      "macro '" + macro_name + "' expects one address and one string");
+                                      "macro '" + macro_name + "' expects one NAME and one string");
         return false;
     }
     std::string text = args[1][0].text;
-
-    // get array
-    Array* array = parser.output().get_array(base_addr);
-    if (array == nullptr || array->elem_size != 1) {
-        g_error_reporter.report_error(
-            tok.loc, "address " + std::to_string(base_addr) +
-            " is not a base of a alloc_array8() array"
-        );
-        return false;
-    }
 
     // produce code to init array from text
     int copy_size = std::min(array->num_elems - 1,
                              static_cast<int>(text.size()));
     std::string impl =
-        "set8(" + std::to_string(base_addr) + ", " +
+        "set8(" + std::to_string(array->base_addr) + ", " +
         std::to_string(copy_size) + ") ";
     for (int i = 0; i < copy_size; i++) {
         impl +=
-            "set8(" + std::to_string(base_addr + 1 + i) + ", " +
+            "set8(" + std::to_string(array->base_addr + 1 + i) + ", " +
             std::to_string(static_cast<int>(text[i])) + ") ";
     }
 
@@ -3926,18 +3933,42 @@ bool MacroExpander::handle_set_string(Parser& parser, const Token& tok) {
 }
 
 bool MacroExpander::handle_clear_string(Parser& parser, const Token& tok) {
-    Token macro_name = tok;
+    Token macro_tok = tok;
+    std::string macro_name = tok.text;
 
     std::vector<int> vals;
-    if (!parse_expr_args(parser, tok, { "str" }, vals)) {
-        return true;
-    }
-    int base_addr = vals[0];
+    Macro fake;
+    fake.name = macro_name;
+    fake.params = { "string" };
 
-    Array* array = parser.output().get_array(base_addr);
-    if (array == nullptr) {
+    std::vector<std::vector<Token>> args;
+    if (!collect_args(parser, fake, args)) {
+        return false; // error already reported
+    }
+
+    if (args.size() != 1) {
         g_error_reporter.report_error(tok.loc,
-                                      "address " + std::to_string(base_addr) + " is not an alloc_array result");
+                                      "macro '" + macro_name + "' expects one NAME");
+        return false;
+    }
+
+    // evaluate first argument - identifier
+    if (args[0].size() != 1 ||
+            args[0][0].type != TokenType::Identifier) {
+        g_error_reporter.report_error(tok.loc,
+                                      "macro '" + macro_name + "' expects one NAME");
+        return false;
+    }
+
+    std::string string_name = args[0][0].text;
+    Array* array = validate_array_name_arg(parser, macro_tok, string_name);
+    if (array == nullptr) {
+        return false; // error already reported
+    }
+    if (array->elem_size != 1) {
+        g_error_reporter.report_error(
+            tok.loc, "array '" + string_name + "' is not a alloc_array8() array"
+        );
         return false;
     }
 
@@ -3946,7 +3977,133 @@ bool MacroExpander::handle_clear_string(Parser& parser, const Token& tok) {
     parser.push_macro_expansion(
         mock_filename,
         scanner.scan_string(
-            clear_memory_area(base_addr, array->num_elems * array->elem_size),
+            clear_memory_area(array->base_addr, array->num_elems * array->elem_size),
+            mock_filename));
+
+    return true;
+}
+
+bool MacroExpander::handle_append_string(Parser& parser, const Token& tok) {
+    Token macro_tok = tok;
+    std::string macro_name = tok.text;
+
+    std::vector<int> vals;
+    Macro fake;
+    fake.name = macro_name;
+    fake.params = { "dst", "src" };
+
+    std::vector<std::vector<Token>> args;
+    if (!collect_args(parser, fake, args)) {
+        return false; // error already reported
+    }
+
+    if (args.size() != 2) {
+        g_error_reporter.report_error(tok.loc,
+                                      "macro '" + macro_name + "' expects DST and SRC strings");
+        return false;
+    }
+
+    // evaluate first argument - destination identifier
+    if (args[0].size() != 1 ||
+            args[0][0].type != TokenType::Identifier) {
+        g_error_reporter.report_error(tok.loc,
+                                      "macro '" + macro_name + "' expects DST and SRC strings");
+        return false;
+    }
+
+    std::string dst_string_name = args[0][0].text;
+    Array* dst_array = validate_array_name_arg(parser, macro_tok, dst_string_name);
+    if (dst_array == nullptr) {
+        return false; // error already reported
+    }
+    if (dst_array->elem_size != 1) {
+        g_error_reporter.report_error(
+            tok.loc, "array '" + dst_string_name + "' is not a alloc_array8() array"
+        );
+        return false;
+    }
+
+    // evaluate second argument - source identifier
+    if (args[1].size() != 1 ||
+            args[1][0].type != TokenType::Identifier) {
+        g_error_reporter.report_error(tok.loc,
+                                      "macro '" + macro_name + "' expects DST and SRC strings");
+        return false;
+    }
+
+    std::string src_string_name = args[1][0].text;
+    Array* src_array = validate_array_name_arg(parser, macro_tok, src_string_name);
+    if (src_array == nullptr) {
+        return false; // error already reported
+    }
+    if (src_array->elem_size != 1) {
+        g_error_reporter.report_error(
+            tok.loc, "array '" + src_string_name + "' is not a alloc_array8() array"
+        );
+        return false;
+    }
+
+    // make copy string code
+    std::string t_cond = make_temp_name();
+    std::string t_temp = make_temp_name();
+    std::string t_src_idx = make_temp_name();
+    std::string t_dst_idx = make_temp_name();
+    std::string t_num_free = make_temp_name();
+    std::string t_num_copy = make_temp_name();
+    std::string t_0 = make_temp_name();
+    std::string t_1 = make_temp_name();
+
+    TokenScanner scanner;
+    std::string mock_filename = "(clear_string)";
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(
+            // allocate temps
+            "{ alloc_cell8(" + t_cond + ") "
+            "  alloc_cell8(" + t_temp + ") "
+            "  alloc_cell8(" + t_src_idx + ") "
+            "  alloc_cell8(" + t_dst_idx + ") "
+            "  alloc_cell8(" + t_num_free + ") "
+            "  alloc_cell8(" + t_num_copy + ") "
+            "  alloc_cell8(" + t_0 + ") "
+            "  alloc_cell8(" + t_1 + ") set8(" + t_1 + ", 1) "
+            // get dst free space
+            "  set8(" + t_num_free + ", " + std::to_string(dst_array->num_elems - 1) + ") "
+            "  sub8s(" + t_num_free + ", " + dst_string_name + ") "
+            // get copy size = min(src_len, dst_free)
+            "  copy8(" + src_string_name + ", " + t_num_copy + ") "
+            "  min8s(" + t_num_copy + ", " + t_num_free + ") "
+            // init src index
+            "  set8(" + t_src_idx + ", 1) "
+            // init dst index to end of current string
+            "  copy8(" + dst_string_name + ", " + t_dst_idx + ") "
+            "  add8s(" + t_dst_idx + ", " + t_1 + ") "
+            // compute loop condition: num_copy > 0
+            "  copy8(" + t_num_copy + ", " + t_cond + ") "
+            "  gt8s(" + t_cond + ", " + t_0 + ") "
+            "  while(" + t_cond + ") "
+            //   copy src[src_idx] to dst[dst_idx]
+            "    get_array8(" + src_string_name + ", " + t_src_idx + ", " + t_temp + ") "
+            "    put_array8(" + dst_string_name + ", " + t_dst_idx + ", " + t_temp + ") "
+            //   increment length and indices
+            "    add8(" + t_src_idx + ", " + t_1 + ") "
+            "    add8(" + t_dst_idx + ", " + t_1 + ") "
+            "    add8(" + dst_string_name + ", " + t_1 + ") "
+            //   decrement num_copy and recompute loop condition
+            "    sub8(" + t_num_copy + ", " + t_1 + ") "
+            "    copy8(" + t_num_copy + ", " + t_cond + ") "
+            "    gt8s(" + t_cond + ", " + t_0 + ") "
+            "  endwhile "
+            // free temps
+            "  free_cell8(" + t_cond + ") "
+            "  free_cell8(" + t_temp + ") "
+            "  free_cell8(" + t_src_idx + ") "
+            "  free_cell8(" + t_dst_idx + ") "
+            "  free_cell8(" + t_num_free + ") "
+            "  free_cell8(" + t_num_copy + ") "
+            "  free_cell8(" + t_0 + ") "
+            "  free_cell8(" + t_1 + ") "
+            "} ",
             mock_filename));
 
     return true;
