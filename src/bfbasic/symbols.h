@@ -11,9 +11,10 @@
 #include "errors.h"
 
 struct Symbol {
-    std::string name;       // uppercase BASIC name
+    std::string name;       // uppercase BASIC name, possibly with final $
     SourceLoc loc;
     bool is_array = false;
+    bool is_string = false;
     int array_size = 0;     // only valid if is_array == true
     bool allocated = false;
 };

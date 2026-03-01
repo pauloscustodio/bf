@@ -12,19 +12,35 @@
 #include <string>
 #include <vector>
 
+enum class ValueType {
+    Int,
+    String
+};
+
 enum class ExprType {
-    Number, Var, BinOp, UnaryOp, ArrayAccess,
+    Number,
+    Var,
+    BinOp,
+    UnaryOp,
+    ArrayAccess,     // A(i) or A$(i)
+    StringLiteral,   // "hello"
+    Concat,          // B$ & C$
+    Call             // LEFT$(...), MID$(...), RIGHT$(...)
 };
 
 struct Expr {
-    ExprType type;
+    ExprType expr_type = ExprType::Number;   // filled in by parser
+    ValueType value_type = ValueType::Int;   // filled in by semantic pass
     SourceLoc loc;
 
     // For Number
-    int value = 0;
+    int int_value = 0;
 
     // For Var
     std::string name;
+
+    // For StringLiteral
+    std::string string_value;
 
     // For operators
     TokenType op = TokenType::EndOfFile;
@@ -34,13 +50,23 @@ struct Expr {
 
     // For ArrayAccess
     std::unique_ptr<Expr> index;
+    bool is_string_array = false;  // filled by semantic pass
+
+
+    // For function call
+    std::string func_name; // "LEFT$", "MID$", "RIGHT$", "STR$", "LEN", "VAL", "CHR", "ASC"
+    std::vector<std::unique_ptr<Expr>> args;
 
     static Expr number(int v, const SourceLoc& loc);
     static Expr var(const std::string& n, const SourceLoc& loc);
     static Expr binop(TokenType op, Expr lhs, Expr rhs, const SourceLoc& loc);
     static Expr unary(TokenType op, Expr inner, const SourceLoc& loc);
-    static Expr make_array_access(const std::string& n, std::unique_ptr<Expr> index,
-                                  const SourceLoc& loc);
+    static Expr array_access(const std::string& n, std::unique_ptr<Expr> index,
+                             const SourceLoc& loc);
+    static Expr string_literal(std::string s, const SourceLoc& loc);
+    static Expr concat(Expr lhs, Expr rhs, const SourceLoc& loc);
+    static Expr call(std::string fname, std::vector<std::unique_ptr<Expr>> args,
+                     const SourceLoc& loc);
 };
 
 enum class PrintElemType {
@@ -91,9 +117,10 @@ struct ForStmt {
 
 struct LetStmt {
     bool is_array = false;
+    bool is_string = false;
     std::string var;
-    std::unique_ptr<Expr> index;   // only if is_array == true
-    Expr expr;
+    std::unique_ptr<Expr> index;    // for A(i) or A$(i)
+    Expr expr;                      // RHS
 };
 
 struct InputStmt {
@@ -101,6 +128,7 @@ struct InputStmt {
 };
 
 struct DimStmt {
+    bool is_string = false;
     std::string var;
     std::unique_ptr<Expr> size_expr;
 };

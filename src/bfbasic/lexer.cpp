@@ -121,6 +121,9 @@ std::vector<Token> Lexer::tokenize() {
         case '^':
             tokens.push_back(simple(TokenType::Caret));
             continue;
+        case '&':
+            tokens.push_back(simple(TokenType::Ampersand));
+            continue;
         case '=':
             tokens.push_back(simple(TokenType::Equal));
             continue;
@@ -241,7 +244,15 @@ Token Lexer::identifier_or_keyword() {
         {"NOT", TokenType::KeywordNot},
         {"AND", TokenType::KeywordAnd},
         {"OR", TokenType::KeywordOr},
-        {"XOR", TokenType::KeywordXor}
+        {"XOR", TokenType::KeywordXor},
+        {"LEFT$", TokenType::KeywordLeftDollar},
+        {"MID$", TokenType::KeywordMidDollar},
+        {"RIGHT$", TokenType::KeywordRightDollar},
+        {"STR$", TokenType::KeywordStrDollar},
+        {"LEN", TokenType::KeywordLen},
+        {"VAL", TokenType::KeywordVal},
+        {"CHR$", TokenType::KeywordChrDollar},
+        {"ASC", TokenType::KeywordAsc},
     };
 
     // IDENTIFIER - store uppercase name in text
@@ -250,10 +261,9 @@ Token Lexer::identifier_or_keyword() {
     while (!eof() && (is_alnum(peek()) || peek() == '_')) {
         advance();
     }
-    /*
-    if (!eof() && peek() == '$')
-        advance();          // string variable
-    */
+    if (!eof() && peek() == '$') {
+        advance();    // string variable or function
+    }
 
     std::string text = src.substr(start, pos - start);
 
@@ -306,8 +316,6 @@ Token Lexer::string_literal() {
     error_here("Unterminated string literal");
 }
 
-/*
 bool is_string_var(const std::string& name) {
     return (!name.empty() && name.back() == '$');
 }
-*/

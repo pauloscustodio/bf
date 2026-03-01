@@ -123,7 +123,7 @@ void CodeGen::emit_print(const Stmt& s) {
             break;
 
         case PrintElemType::Expr: {
-            if (e.expr.type == ExprType::Var) {
+            if (e.expr.expr_type == ExprType::Var) {
                 emit("print_cell16s(" + e.expr.name + ")");
             }
             else {
@@ -184,13 +184,13 @@ void CodeGen::emit_let(const Stmt& s) {
     }
     else {
         // Case 1: LET A = <constant>
-        if (s.let_stmt->expr.type == ExprType::Number) {
-            emit("set16(" + var + ", " + std::to_string(s.let_stmt->expr.value) + ")");
+        if (s.let_stmt->expr.expr_type == ExprType::Number) {
+            emit("set16(" + var + ", " + std::to_string(s.let_stmt->expr.int_value) + ")");
             return;
         }
 
         // Case 2: LET A = B
-        if (s.let_stmt->expr.type == ExprType::Var) {
+        if (s.let_stmt->expr.expr_type == ExprType::Var) {
             emit("copy16(" + s.let_stmt->expr.name + ", " + var + ")");
             return;
         }
@@ -321,9 +321,9 @@ void CodeGen::emit_for(const Stmt& s) {
 
 // expr result goes into target (16-bit cell name)
 void CodeGen::emit_expr(const Expr& e, const std::string& target) {
-    switch (e.type) {
+    switch (e.expr_type) {
     case ExprType::Number:
-        emit("set16(" + target + ", " + std::to_string(e.value) + ")");
+        emit("set16(" + target + ", " + std::to_string(e.int_value) + ")");
         break;
 
     case ExprType::Var:

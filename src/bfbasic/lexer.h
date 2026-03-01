@@ -21,11 +21,19 @@ enum class TokenType {
     KeywordFor, KeywordTo, KeywordStep, KeywordNext,
     KeywordWhile, KeywordWEnd,
     KeywordDim,
-    Plus, Minus, Star, Slash, Caret,
+    Plus, Minus, Star, Slash, Caret, Ampersand,
     Less, LessEqual, Greater, GreaterEqual, Equal, NotEqual,
     LParen, RParen,
     KeywordMod, KeywordShl, KeywordShr,
     KeywordNot, KeywordAnd, KeywordOr, KeywordXor,
+    KeywordLeftDollar,
+    KeywordMidDollar,
+    KeywordRightDollar,
+    KeywordStrDollar,
+    KeywordLen,
+    KeywordVal,
+    KeywordChrDollar,
+    KeywordAsc,
     Colon, Semicolon, Comma,
     Newline,
     EndOfFile
@@ -61,6 +69,4 @@ private:
     Token string_literal();
 };
 
-/*
 bool is_string_var(const std::string& name);
-*/

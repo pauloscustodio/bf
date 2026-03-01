@@ -30,7 +30,7 @@ spew("$test.bas", <<END);
 FOR V=
 END
 capture_nok("bfbasic -o $test.bfpp $test.bas", <<END);
-Error at line 2: Expected number, variable, unary operator, or '('
+Error at line 2: Expected number, string, variable, function call, unary operator, or '('
 END
 
 spew("$test.bas", <<END);
@@ -44,14 +44,14 @@ spew("$test.bas", <<END);
 FOR V=1 TO
 END
 capture_nok("bfbasic -o $test.bfpp $test.bas", <<END);
-Error at line 2: Expected number, variable, unary operator, or '('
+Error at line 2: Expected number, string, variable, function call, unary operator, or '('
 END
 
 spew("$test.bas", <<END);
 FOR V=1 TO STEP
 END
 capture_nok("bfbasic -o $test.bfpp $test.bas", <<END);
-Error at line 1: Expected number, variable, unary operator, or '('
+Error at line 1: Expected number, string, variable, function call, unary operator, or '('
 END
 
 spew("$test.bas", <<END);

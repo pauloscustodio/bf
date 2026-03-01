@@ -35,7 +35,7 @@ std::string read_file(const std::string& filename) {
 }
 
 void collect_symbols_in_expr(const Expr& e, SymbolTable& sym) {
-    switch (e.type) {
+    switch (e.expr_type) {
     case ExprType::Number:
         break;
 
@@ -164,14 +164,21 @@ int ipow(int base, int exp) {
 }
 
 std::optional<int> fold_constant_expr(const Expr& e) {
-    switch (e.type) {
+    switch (e.expr_type) {
 
     case ExprType::Number:
-        return e.value;
+        return e.int_value;
 
     case ExprType::Var:
     case ExprType::ArrayAccess:
         return std::nullopt;   // variables are not constant
+
+    case ExprType::StringLiteral:
+    case ExprType::Concat:
+        return std::nullopt;   // strings are not constant
+
+    case ExprType::Call:
+        return std::nullopt;   // function calls are not constant
 
     case ExprType::UnaryOp: {
         auto inner = fold_constant_expr(*e.inner);
@@ -248,6 +255,35 @@ std::optional<int> fold_constant_expr(const Expr& e) {
     return std::nullopt;
 }
 
+void const_expr_evaluator(Program& prog) {
+    for (auto& stmt : prog.statements) {
+        // only fold constant expressions in LET statements, to allow
+        // compile-time evaluation of array sizes in DIM statements
+        if (stmt->type == StmtType::Let) {
+            auto folded = fold_constant_expr(stmt->let_stmt->expr);
+            if (folded) {
+                stmt->let_stmt->expr = Expr::number(*folded, stmt->loc);
+            }
+        }
+    }
+}
+
+void fold_constants(Program& prog, const SymbolTable& sym) {
+    for (auto& stmt : prog.statements) {
+        if (stmt->type == StmtType::Let) {
+            auto folded = fold_constant_expr(stmt->let_stmt->expr);
+            if (folded) {
+                stmt->let_stmt->expr = Expr::number(*folded, stmt->loc);
+            }
+        }
+    }
+}
+
+void semantic_check(const Program& prog, const SymbolTable& sym) {
+    // currently all semantic checks are done during symbol collection and
+    // constant folding, so nothing to do here
+}
+
 std::string compile(const std::string& source) {
     Lexer lexer(source);
     auto tokens = lexer.tokenize();
@@ -255,8 +291,11 @@ std::string compile(const std::string& source) {
     Parser parser(tokens);
     Program prog = parser.parse_program();
 
+    const_expr_evaluator(prog);
     SymbolTable sym;
     collect_symbols(prog, sym);
+    fold_constants(prog, sym);
+    semantic_check(prog, sym);
 
     CodeGen cg(sym);
     return cg.generate(prog);

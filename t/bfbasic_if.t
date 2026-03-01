@@ -9,7 +9,7 @@ spew("$test.bas", <<END);
 IF
 END
 capture_nok("bfbasic -o $test.bfpp $test.bas", <<END);
-Error at line 2: Expected number, variable, unary operator, or '('
+Error at line 2: Expected number, string, variable, function call, unary operator, or '('
 END
 
 spew("$test.bas", <<END);

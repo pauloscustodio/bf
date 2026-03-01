@@ -193,6 +193,7 @@ Stmt Parser::parse_let_common(const SourceLoc& loc) {
     std::unique_ptr<Expr> index;
 
     Token id = expect(TokenType::Identifier, "Expected variable name after LET");
+    bool is_string = is_string_var(id.text);
 
     // LET A(i)=expr
     if (match(TokenType::LParen)) {
@@ -211,6 +212,7 @@ Stmt Parser::parse_let_common(const SourceLoc& loc) {
     s.loc = loc;
     s.let_stmt = std::make_unique<LetStmt>();
     s.let_stmt->is_array = is_array;
+    s.let_stmt->is_string = is_string;
     s.let_stmt->var = id.text;
     s.let_stmt->index = std::move(index);
     s.let_stmt->expr = std::move(e);
@@ -533,6 +535,7 @@ Stmt Parser::parse_dim() {
     Stmt s;
     s.type = StmtType::Dim;
     s.dim_stmt = std::make_unique<DimStmt>();
+    s.dim_stmt->is_string = is_string_var(var.text);
     s.dim_stmt->var = var.text;
     s.dim_stmt->size_expr = std::make_unique<Expr>(std::move(size_expr));
     return s;
@@ -559,8 +562,17 @@ bool Parser::starts_expression(const Token& t) const {
     switch (t.type) {
 
     case TokenType::Number:
+    case TokenType::StringLiteral:
     case TokenType::Identifier:
     case TokenType::LParen:
+    case TokenType::KeywordLeftDollar:
+    case TokenType::KeywordMidDollar:
+    case TokenType::KeywordRightDollar:
+    case TokenType::KeywordStrDollar:
+    case TokenType::KeywordLen:
+    case TokenType::KeywordVal:
+    case TokenType::KeywordChrDollar:
+    case TokenType::KeywordAsc:
         return true;
 
     case TokenType::Plus:
@@ -647,10 +659,18 @@ Expr Parser::parse_shift() {
 Expr Parser::parse_add() {
     Expr left = parse_mul();
 
-    while (match(TokenType::Plus) || match(TokenType::Minus)) {
+    while (match(TokenType::Plus) ||
+            match(TokenType::Minus) ||
+            match(TokenType::Ampersand)) {
         Token op = advance();
         Expr right = parse_mul();
-        left = Expr::binop(op.type, std::move(left), std::move(right), op.loc);
+
+        if (op.type == TokenType::Ampersand) {
+            left = Expr::concat(std::move(left), std::move(right), op.loc);
+        }
+        else {
+            left = Expr::binop(op.type, std::move(left), std::move(right), op.loc);
+        }
     }
 
     return left;
@@ -703,6 +723,37 @@ Expr Parser::parse_primary() {
         return Expr::number(t.value, t.loc);
     }
 
+    if (match(TokenType::StringLiteral)) {
+        advance();
+        return Expr::string_literal(t.text, t.loc);
+    }
+
+    if (match_any({
+    TokenType::KeywordLeftDollar,
+    TokenType::KeywordMidDollar,
+    TokenType::KeywordRightDollar,
+    TokenType::KeywordStrDollar,
+    TokenType::KeywordLen,
+    TokenType::KeywordVal,
+    TokenType::KeywordChrDollar,
+    TokenType::KeywordAsc })) {
+
+        Token fn = advance();
+        expect(TokenType::LParen, "Expected '(' after function name");
+
+        std::vector<std::unique_ptr<Expr>> args;
+        if (!match(TokenType::RParen)) {
+            args.push_back(std::make_unique<Expr>(parse_expr()));
+            while (match(TokenType::Comma)) {
+                advance();
+                args.push_back(std::make_unique<Expr>(parse_expr()));
+            }
+        }
+
+        expect(TokenType::RParen, "Expected ')' after function arguments");
+        return Expr::call(fn.text, std::move(args), fn.loc);
+    }
+
     if (match(TokenType::Identifier)) {
         Token var = advance();
 
@@ -710,7 +761,7 @@ Expr Parser::parse_primary() {
             advance();
             auto index = std::make_unique<Expr>(parse_expr());
             expect(TokenType::RParen, "Expected ')'");
-            return Expr::make_array_access(var.text, std::move(index), t.loc);
+            return Expr::array_access(var.text, std::move(index), t.loc);
         }
 
         return Expr::var(var.text, t.loc);
@@ -723,5 +774,5 @@ Expr Parser::parse_primary() {
         return e;
     }
 
-    error_here("Expected number, variable, unary operator, or '('");
+    error_here("Expected number, string, variable, function call, unary operator, or '('");
 }
