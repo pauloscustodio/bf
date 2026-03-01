@@ -115,6 +115,10 @@ const std::unordered_map<std::string, MacroExpander::BuiltinHandler> MacroExpand
     { "print_cell16",       &MacroExpander::handle_print_cell16       },
     { "print_cell8s",       &MacroExpander::handle_print_cell8s       },
     { "print_cell16s",      &MacroExpander::handle_print_cell16s      },
+    { "format_cell8",       &MacroExpander::handle_format_cell8       },
+    { "format_cell16",      &MacroExpander::handle_format_cell16      },
+    { "format_cell8s",      &MacroExpander::handle_format_cell8s      },
+    { "format_cell16s",     &MacroExpander::handle_format_cell16s     },
     { "scan_char8",         &MacroExpander::handle_scan_char8         },
     { "unscan_char8",       &MacroExpander::handle_unscan_char8       },
     { "scan_spaces",        &MacroExpander::handle_scan_spaces        },
@@ -2586,26 +2590,26 @@ bool MacroExpander::handle_ge16s(Parser& parser, const Token& tok) {
 }
 
 bool MacroExpander::handle_min8(Parser& parser, const Token& tok) {
-    return handle_minX(parser, tok, 8, /*signed_version=*/false);
+    return handle_minX(parser, tok, 8, /*is_signed=*/false);
 }
 
 bool MacroExpander::handle_min16(Parser& parser, const Token& tok) {
-    return handle_minX(parser, tok, 16, /*signed_version=*/false);
+    return handle_minX(parser, tok, 16, /*is_signed=*/false);
 }
 
 bool MacroExpander::handle_min8s(Parser& parser, const Token& tok) {
-    return handle_minX(parser, tok, 8, /*signed_version=*/true);
+    return handle_minX(parser, tok, 8, /*is_signed=*/true);
 }
 
 bool MacroExpander::handle_min16s(Parser& parser, const Token& tok) {
-    return handle_minX(parser, tok, 16, /*signed_version=*/true);
+    return handle_minX(parser, tok, 16, /*is_signed=*/true);
 }
 
 bool MacroExpander::handle_minX(Parser& parser, const Token& tok,
-                                int width, bool signed_version) {
+                                int width, bool is_signed) {
     assert(width == 8 || width == 16);
     std::string X = std::to_string(width);
-    std::string S = signed_version ? "s" : "";
+    std::string S = is_signed ? "s" : "";
     std::string mock_filename = "(min" + X + S + ")";
 
     std::vector<int> vals;
@@ -2635,26 +2639,26 @@ bool MacroExpander::handle_minX(Parser& parser, const Token& tok,
 }
 
 bool MacroExpander::handle_max8(Parser& parser, const Token& tok) {
-    return handle_maxX(parser, tok, 8, /*signed_version=*/false);
+    return handle_maxX(parser, tok, 8, /*is_signed=*/false);
 }
 
 bool MacroExpander::handle_max16(Parser& parser, const Token& tok) {
-    return handle_maxX(parser, tok, 16, /*signed_version=*/false);
+    return handle_maxX(parser, tok, 16, /*is_signed=*/false);
 }
 
 bool MacroExpander::handle_max8s(Parser& parser, const Token& tok) {
-    return handle_maxX(parser, tok, 8, /*signed_version=*/true);
+    return handle_maxX(parser, tok, 8, /*is_signed=*/true);
 }
 
 bool MacroExpander::handle_max16s(Parser& parser, const Token& tok) {
-    return handle_maxX(parser, tok, 16, /*signed_version=*/true);
+    return handle_maxX(parser, tok, 16, /*is_signed=*/true);
 }
 
 bool MacroExpander::handle_maxX(Parser& parser, const Token& tok,
-                                int width, bool signed_version) {
+                                int width, bool is_signed) {
     assert(width == 8 || width == 16);
     std::string X = std::to_string(width);
-    std::string S = signed_version ? "s" : "";
+    std::string S = is_signed ? "s" : "";
     std::string mock_filename = "(min" + X + S + ")";
 
     std::vector<int> vals;
@@ -2852,7 +2856,7 @@ bool MacroExpander::handle_shl16(Parser& parser, const Token& tok) {
 }
 
 bool MacroExpander::handle_powX(Parser& parser, const Token& tok,
-                                int width, bool signed_version) {
+                                int width, bool is_signed) {
     std::vector<int> vals;
     if (!parse_expr_args(parser, tok, { "expr_a", "expr_b" }, vals)) {
         return true;
@@ -2862,7 +2866,7 @@ bool MacroExpander::handle_powX(Parser& parser, const Token& tok,
 
     assert(width == 8 || width == 16);
     std::string X = std::to_string(width);
-    std::string S = signed_version ? "s" : "";
+    std::string S = is_signed ? "s" : "";
     std::string mock_filename = "(pow" + X + S + ")";
 
     std::string t_result = make_temp_name();
@@ -2927,19 +2931,19 @@ bool MacroExpander::handle_powX(Parser& parser, const Token& tok,
 }
 
 bool MacroExpander::handle_pow8(Parser& parser, const Token& tok) {
-    return handle_powX(parser, tok, 8, /*signed_version=*/false);
+    return handle_powX(parser, tok, 8, /*is_signed=*/false);
 }
 
 bool MacroExpander::handle_pow16(Parser& parser, const Token& tok) {
-    return handle_powX(parser, tok, 16, /*signed_version=*/false);
+    return handle_powX(parser, tok, 16, /*is_signed=*/false);
 }
 
 bool MacroExpander::handle_pow8s(Parser& parser, const Token& tok) {
-    return handle_powX(parser, tok, 8, /*signed_version=*/true);
+    return handle_powX(parser, tok, 8, /*is_signed=*/true);
 }
 
 bool MacroExpander::handle_pow16s(Parser& parser, const Token& tok) {
-    return handle_powX(parser, tok, 16, /*signed_version=*/true);
+    return handle_powX(parser, tok, 16, /*is_signed=*/true);
 }
 
 bool MacroExpander::handle_if(Parser& parser, const Token& tok) {
@@ -3530,6 +3534,195 @@ bool MacroExpander::handle_print_cell8s(Parser& parser, const Token& tok) {
 
 bool MacroExpander::handle_print_cell16s(Parser& parser, const Token& tok) {
     return handle_print_cellXs(parser, tok, 16);
+}
+
+bool MacroExpander::handle_format_cellX(Parser& parser, const Token& tok,
+                                        int width, bool is_signed) {
+    assert(width == 8 || width == 16);
+    std::string X = std::to_string(width);
+    std::string S = is_signed ? "s" : "";
+    std::string mock_filename = "(format_cell" + X + S + ")";
+    const int max_digits = (width == 8) ? 3 : 5;
+
+    Token macro_tok = tok;
+    std::string macro_name = tok.text;
+
+    Macro fake;
+    fake.name = macro_name;
+    fake.params = { "string", "value" };
+
+    std::vector<std::vector<Token>> args;
+    if (!collect_args(parser, fake, args)) {
+        return false; // error already reported
+    }
+
+    if (args.size() != 2) {
+        g_error_reporter.report_error(tok.loc,
+                                      "macro '" + macro_name + "' expects one NAME and one cell");
+        return false;
+    }
+
+    // evaluate first argument - identifier
+    if (args[0].size() != 1 ||
+            args[0][0].type != TokenType::Identifier) {
+        g_error_reporter.report_error(tok.loc,
+                                      "macro '" + macro_name + "' expects one NAME and one cell");
+        return false;
+    }
+
+    std::string string_name = args[0][0].text;
+    Array* array = validate_array_name_arg(parser, macro_tok, string_name);
+    if (array == nullptr) {
+        return false; // error already reported
+    }
+    if (array->elem_size != 1) {
+        g_error_reporter.report_error(
+            tok.loc, "array '" + string_name + "' is not a alloc_array8() array"
+        );
+        return false;
+    }
+
+    // get second argument - value cell
+    ArrayTokenSource source(args[1]);
+    ExpressionParser expr(source, parser_, /*undefined_as_zero=*/false);
+    int a = expr.parse_expression();
+
+    // temps
+    const int buffer_size = max_digits + 2; // +sign +space
+    std::string t_a = make_temp_name();
+    std::string t_sign = make_temp_name();
+    std::string t_string_size = make_temp_name();
+    std::string t_string_idx = make_temp_name();
+    std::string t_buffer_size = make_temp_name();
+    std::string t_buffer_idx = make_temp_name();
+    std::string t_digit = make_temp_name();
+    std::string t_cond = make_temp_name();
+    std::string t_0 = make_temp_name();
+    std::string t_1 = make_temp_name();
+    std::string t_10 = make_temp_name();
+    std::string t_0_char = make_temp_name();
+    std::string t_buffer = make_temp_name();
+
+    // implementation - alloc temps
+    std::string impl =
+        "{ alloc_cell" + X + "(" + t_a + ") "
+        "  alloc_cell" + X + "(" + t_sign + ") "
+        "  alloc_cell8(" + t_string_size + ") "
+        "  alloc_cell8(" + t_string_idx + ") "
+        "  alloc_cell8(" + t_buffer_size + ") "
+        "  alloc_cell8(" + t_buffer_idx + ") "
+        "  alloc_cell" + X + "(" + t_digit + ") "
+        "  alloc_cell" + X + "(" + t_cond + ") "
+        "  alloc_cell" + X + "(" + t_0 + ") "
+        "  alloc_cell" + X + "(" + t_1 + ") "
+        "  set" + X + "(" + t_1 + ", 1) "
+        "  alloc_cell" + X + "(" + t_10 + ") "
+        "  set" + X + "(" + t_10 + ", 10) "
+        "  alloc_cell" + X + "(" + t_0_char + ") "
+        "  set" + X + "(" + t_0_char + ", '0') "
+        "  alloc_array8(" + t_buffer + ", " + std::to_string(buffer_size) + ") ";
+    // initialize digit buffer with a space
+    impl +=
+        "  set8(" + t_buffer_size + ", " + std::to_string(buffer_size) + ") "
+        "  set8(" + t_buffer_idx + ", " + std::to_string(buffer_size - 1) + ") "
+        "  set8(" + t_digit + ", ' ') "
+        "  put_array8(" + t_buffer + ", " + t_buffer_idx + ", " + t_digit + ") ";
+    // initialize accumulator
+    impl +=
+        "  copy" + X + "(" + std::to_string(a) + ", " + t_a + ") ";
+    // collect sign if negative
+    if (is_signed) {
+        impl +=
+            "  copy" + X + "(" + t_a + ", " + t_sign + ") "
+            "  sign" + X + "(" + t_sign + ") "
+            "  abs" + X + "(" + t_a + ") ";
+    }
+    // collect digits into digit buffer - run loop at least once to handle "0" case
+    impl +=
+        "  set" + X + "(" + t_cond + ", 1) "
+        "  while(" + t_cond + ") "
+        //   compute next digit
+        "    copy" + X + "(" + t_a + ", " + t_digit + ") "
+        "    mod" + X + "(" + t_digit + ", " + t_10 + ") "
+        "    add" + X + "(" + t_digit + ", " + t_0_char + ") ";
+    // store next digit
+    impl +=
+        "    sub8(" + t_buffer_idx + ", " + t_1 + ") "
+        "    put_array8(" + t_buffer + ", " + t_buffer_idx + ", " + t_digit + ") ";
+    //       divide t_a by 10 and set the loop condition
+    impl +=
+        "    div" + X + "(" + t_a + ", " + t_10 + ") "
+        "    copy" + X + "(" + t_a + ", " + t_cond + ") "
+        "    ne" + X + "(" + t_cond + ", " + t_0 + ") "
+        "  endwhile ";
+    // write sign if negative
+    if (is_signed) {
+        impl +=
+            "  if(" + t_sign + ") "
+            "    sub8(" + t_buffer_idx + ", " + t_1 + ") "
+            "    set8(" + t_digit + ", '-') "
+            "    put_array8(" + t_buffer + ", " + t_buffer_idx + ", " + t_digit + ") "
+            "  endif ";
+    }
+    // compute length of formatted string
+    impl +=
+        "  sub8(" + t_buffer_size + ", " + t_buffer_idx + ") ";
+    // clear output string and check available size
+    impl +=
+        "  clear_string(" + string_name + ") "
+        "  set8(" + t_string_size + ", " + std::to_string(array->num_elems - 1) + ") ";
+    // output formatted string if it fits, otherwise output empty string
+    impl +=
+        "  copy8(" + t_buffer_size + ", " + t_cond + ") "
+        "  le8(" + t_cond + ", " + t_string_size + ") "
+        "  if(" + t_cond + ") "
+        "    copy8(" + t_buffer_size + ", " + string_name + ") "
+        "    set8(" + t_string_idx + ", 1) "
+        "    repeat(" + t_buffer_size + ") "
+        "      get_array8(" + t_buffer + ", " + t_buffer_idx + ", " + t_digit + ") "
+        "      put_array8(" + string_name + ", " + t_string_idx + ", " + t_digit + ") "
+        "      add8(" + t_string_idx + ", " + t_1 + ") "
+        "      add8(" + t_buffer_idx + ", " + t_1 + ") "
+        "    endrepeat "
+        "  endif ";
+    // free temps
+    impl +=
+        "  free_cell" + X + "(" + t_a + ") "
+        "  free_cell" + X + "(" + t_sign + ") "
+        "  free_cell8(" + t_string_size + ") "
+        "  free_cell8(" + t_string_idx + ") "
+        "  free_cell8(" + t_buffer_size + ") "
+        "  free_cell8(" + t_buffer_idx + ") "
+        "  free_cell" + X + "(" + t_digit + ") "
+        "  free_cell" + X + "(" + t_cond + ") "
+        "  free_cell" + X + "(" + t_0 + ") "
+        "  free_cell" + X + "(" + t_1 + ") "
+        "  free_cell" + X + "(" + t_10 + ") "
+        "  free_cell" + X + "(" + t_0_char + ") "
+        "  free_array8(" + t_buffer + ") "
+        "} ";
+
+    TokenScanner scanner;
+    parser.push_macro_expansion(
+        mock_filename,
+        scanner.scan_string(impl, mock_filename));
+    return true;
+}
+
+bool MacroExpander::handle_format_cell8(Parser& parser, const Token& tok) {
+    return handle_format_cellX(parser, tok, 8, /*is_signed=*/false);
+}
+
+bool MacroExpander::handle_format_cell16(Parser& parser, const Token& tok) {
+    return handle_format_cellX(parser, tok, 16, /*is_signed=*/false);
+}
+
+bool MacroExpander::handle_format_cell8s(Parser& parser, const Token& tok) {
+    return handle_format_cellX(parser, tok, 8, /*is_signed=*/true);
+}
+
+bool MacroExpander::handle_format_cell16s(Parser& parser, const Token& tok) {
+    return handle_format_cellX(parser, tok, 16, /*is_signed=*/true);
 }
 
 bool MacroExpander::handle_scan_char8(Parser& parser, const Token& tok) {

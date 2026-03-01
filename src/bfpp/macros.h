@@ -168,19 +168,19 @@ private:
     bool handle_min8s(Parser& parser, const Token& tok);
     bool handle_min16s(Parser& parser, const Token& tok);
     bool handle_minX(Parser& parser, const Token& tok,
-                     int width, bool signed_version);
+                     int width, bool is_signed);
     bool handle_max8(Parser& parser, const Token& tok);
     bool handle_max16(Parser& parser, const Token& tok);
     bool handle_max8s(Parser& parser, const Token& tok);
     bool handle_max16s(Parser& parser, const Token& tok);
     bool handle_maxX(Parser& parser, const Token& tok,
-                     int width, bool signed_version);
+                     int width, bool is_signed);
     bool handle_shr8(Parser& parser, const Token& tok);
     bool handle_shr16(Parser& parser, const Token& tok);
     bool handle_shl8(Parser& parser, const Token& tok);
     bool handle_shl16(Parser& parser, const Token& tok);
     bool handle_powX(Parser& parser, const Token& tok,
-                     int width, bool signed_version);
+                     int width, bool is_signed);
     bool handle_pow8(Parser& parser, const Token& tok);
     bool handle_pow16(Parser& parser, const Token& tok);
     bool handle_pow8s(Parser& parser, const Token& tok);
@@ -204,6 +204,12 @@ private:
     bool handle_print_cellXs(Parser& parser, const Token& tok, int width);
     bool handle_print_cell8s(Parser& parser, const Token& tok);
     bool handle_print_cell16s(Parser& parser, const Token& tok);
+    bool handle_format_cellX(Parser& parser, const Token& tok,
+                             int width, bool is_signed);
+    bool handle_format_cell8(Parser& parser, const Token& tok);
+    bool handle_format_cell16(Parser& parser, const Token& tok);
+    bool handle_format_cell8s(Parser& parser, const Token& tok);
+    bool handle_format_cell16s(Parser& parser, const Token& tok);
     bool handle_scan_char8(Parser& parser, const Token& tok);
     bool handle_unscan_char8(Parser& parser, const Token& tok);
     bool handle_scan_spaces(Parser& parser, const Token& tok);
