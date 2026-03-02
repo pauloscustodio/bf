@@ -69,8 +69,32 @@ struct Expr {
                      const SourceLoc& loc);
 };
 
+struct Stmt;
+
+struct StmtList {
+    std::vector<std::unique_ptr<Stmt>> statements;
+};
+
+struct LetStmt {
+    bool is_array = false;
+    bool is_string = false;
+    std::string var;
+    std::unique_ptr<Expr> index;    // for A(i) or A$(i)
+    Expr expr;                      // RHS
+};
+
+struct DimStmt {
+    bool is_string = false;
+    std::string var;
+    std::unique_ptr<Expr> size_expr;
+};
+
+struct InputStmt {
+    std::vector<std::string> vars;
+};
+
 enum class PrintElemType {
-    String,
+    String,     // TODO: can be removed, Expr can represent string literals
     Expr,
     Separator,
 };
@@ -90,12 +114,6 @@ struct PrintStmt {
     std::vector<PrintElem> elems;
 };
 
-struct Stmt;
-
-struct StmtList {
-    std::vector<std::unique_ptr<Stmt>> statements;
-};
-
 struct IfStmt {
     Expr condition;
     StmtList then_block;
@@ -113,24 +131,6 @@ struct ForStmt {
     Expr end_expr;
     Expr step_expr;       // optional; default = 1
     StmtList body;
-};
-
-struct LetStmt {
-    bool is_array = false;
-    bool is_string = false;
-    std::string var;
-    std::unique_ptr<Expr> index;    // for A(i) or A$(i)
-    Expr expr;                      // RHS
-};
-
-struct InputStmt {
-    std::vector<std::string> vars;
-};
-
-struct DimStmt {
-    bool is_string = false;
-    std::string var;
-    std::unique_ptr<Expr> size_expr;
 };
 
 enum class StmtType {

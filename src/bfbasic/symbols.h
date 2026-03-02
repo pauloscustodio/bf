@@ -17,6 +17,9 @@ struct Symbol {
     bool is_string = false;
     int array_size = 0;     // only valid if is_array == true
     bool allocated = false;
+    // if variable is assigned only once, it is a constant
+    // and can be optimized as such
+    int count_assignments = 0;
 };
 
 class SymbolTable {

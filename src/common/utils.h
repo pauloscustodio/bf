@@ -14,3 +14,4 @@ bool is_digit(int ch);
 bool is_alnum(int ch);
 std::string lowercase(std::string s);
 std::string uppercase(std::string s);
+int ipow(int base, int exp);

@@ -5,6 +5,7 @@
 //-----------------------------------------------------------------------------
 
 #include "errors.h"
+#include "lexer.h"
 #include "symbols.h"
 #include <iostream>
 
@@ -21,6 +22,7 @@ void SymbolTable::declare_variable(const SourceLoc& loc, const std::string& name
         s.name = name;
         s.loc = loc;
         s.is_array = false;
+        s.is_string = is_string_var(name);
         table[name] = std::move(s);
     }
 }
@@ -37,6 +39,7 @@ void SymbolTable::declare_array(const SourceLoc& loc, const std::string& name, i
         s.name = name;
         s.loc = loc;
         s.is_array = true;
+        s.is_string = is_string_var(name);
         s.array_size = size;
     }
 }
