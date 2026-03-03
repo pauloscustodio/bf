@@ -310,6 +310,7 @@ void collect_symbols(const StmtList& prog, SymbolTable& sym) {
                 symbol.count_assignments++;
             }
             break;
+
         case StmtType::Print:
             for (const auto& item : stmt->print_stmt->elems) {
                 if (item.type == PrintElemType::Expr) {

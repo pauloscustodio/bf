@@ -3323,9 +3323,10 @@ bool MacroExpander::handle_print_newline(Parser& parser, const Token&) {
 }
 
 bool MacroExpander::handle_print_cellX(Parser& parser, const Token& tok,
-                                       int width) {
+                                       int width, bool is_signed) {
     assert(width == 8 || width == 16);
     std::string X = std::to_string(width);
+    std::string S = is_signed ? "s" : "";
     const int max_digits = (width == 8) ? 3 : 5;
 
     Token func_tok = tok;
@@ -3356,8 +3357,7 @@ bool MacroExpander::handle_print_cellX(Parser& parser, const Token& tok,
     }
 
     // allocate and initialize temps
-    std::string impl;
-    impl =
+    std::string impl =
         "{ alloc_cell" + X + "(" + t_a + ") "
         "  alloc_cell" + X + "(" + t_digit + ") "
         "  alloc_cell" + X + "(" + t_cond + ") "
@@ -3383,6 +3383,17 @@ bool MacroExpander::handle_print_cellX(Parser& parser, const Token& tok,
     // copy a
     impl +=
         "  copy" + X + "(" + std::to_string(a) + ", " + t_a + ") ";
+
+    // print sign if negative and is_signed version
+    if (is_signed) {
+        impl +=
+            "  copy" + X + "(" + std::to_string(a) + ", " + t_cond + ") "
+            "  sign" + X + "(" + t_cond + ") "
+            "  if(" + t_cond + ") " // if negative
+            "    print_char('-') "
+            "    neg" + X + "(" + t_a + ") " // negate a for negative
+            "  endif ";
+    }
 
     // loop runs at least once to print "0"
     impl +=
@@ -3468,72 +3479,19 @@ bool MacroExpander::handle_print_cellX(Parser& parser, const Token& tok,
 }
 
 bool MacroExpander::handle_print_cell8(Parser& parser, const Token& tok) {
-    return handle_print_cellX(parser, tok, 8);
+    return handle_print_cellX(parser, tok, 8, /*is_signed=*/false);
 }
 
 bool MacroExpander::handle_print_cell16(Parser& parser, const Token& tok) {
-    return handle_print_cellX(parser, tok, 16);
-}
-
-bool MacroExpander::handle_print_cellXs(Parser& parser, const Token& tok,
-                                        int width) {
-    assert(width == 8 || width == 16);
-    std::string X = std::to_string(width);
-
-    Token func_tok = tok;
-    std::vector<int> vals;
-    if (!parse_expr_args(parser, tok, { "cell" }, vals)) {
-        return true;
-    }
-    int a = vals[0];
-
-    // temps
-    std::string t_a = make_temp_name();
-    std::string t_sign = make_temp_name();
-
-    // allocate and initialize temps
-    std::string impl;
-    impl =
-        "{ alloc_cell" + X + "(" + t_a + ") "
-        "  alloc_cell" + X + "(" + t_sign + ") ";
-
-    // copy a
-    impl +=
-        "  copy" + X + "(" + std::to_string(a) + ", " + t_a + ") ";
-
-    // print sign if negative
-    impl +=
-        "  copy" + X + "(" + std::to_string(a) + ", " + t_sign + ") "
-        "  sign" + X + "(" + t_sign + ") "
-        "  if(" + t_sign + ") " // if negative
-        "    print_char('-') "
-        "    abs" + X + "(" + t_a + ") "
-        "  endif ";
-
-    // call unsigned print
-    impl +=
-        "  print_cell" + X + "(" + t_a + ") ";
-
-    // free temps
-    impl +=
-        "  free_cell" + X + "(" + t_a + ") "
-        "  free_cell" + X + "(" + t_sign + ") "
-        "} ";
-
-    TokenScanner scanner;
-    std::string mock_filename = "(print_cell" + X + "s)";
-    parser.push_macro_expansion(
-        mock_filename,
-        scanner.scan_string(impl, mock_filename));
-    return true;
+    return handle_print_cellX(parser, tok, 16, /*is_signed=*/false);
 }
 
 bool MacroExpander::handle_print_cell8s(Parser& parser, const Token& tok) {
-    return handle_print_cellXs(parser, tok, 8);
+    return handle_print_cellX(parser, tok, 8, /*is_signed=*/true);
 }
 
 bool MacroExpander::handle_print_cell16s(Parser& parser, const Token& tok) {
-    return handle_print_cellXs(parser, tok, 16);
+    return handle_print_cellX(parser, tok, 16, /*is_signed=*/true);
 }
 
 bool MacroExpander::handle_format_cellX(Parser& parser, const Token& tok,
