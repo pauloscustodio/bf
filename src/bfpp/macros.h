@@ -210,6 +210,12 @@ private:
     bool handle_format_cell16(Parser& parser, const Token& tok);
     bool handle_format_cell8s(Parser& parser, const Token& tok);
     bool handle_format_cell16s(Parser& parser, const Token& tok);
+    bool handle_string_valX(Parser& parser, const Token& tok,
+                            int width, bool is_signed);
+    bool handle_string_val8(Parser& parser, const Token& tok);
+    bool handle_string_val16(Parser& parser, const Token& tok);
+    bool handle_string_val8s(Parser& parser, const Token& tok);
+    bool handle_string_val16s(Parser& parser, const Token& tok);
     bool handle_scan_char8(Parser& parser, const Token& tok);
     bool handle_unscan_char8(Parser& parser, const Token& tok);
     bool handle_scan_spaces(Parser& parser, const Token& tok);

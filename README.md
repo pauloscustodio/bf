@@ -45,7 +45,7 @@ usage: bfpp [-o output_file] [-I include_path] [-D name=value] [-v] [input_file]
 - Arrays: `alloc_arrayX(NAME, size)`, `free_arrayX(NAME)`, `put_arrayX(NAME, idx_cell, source_cell)`, `get_arrayX(NAME, idx_cell, target_cell)`. (X=`8`, `16`).
 - Strings: allocated with `alloc_array8`, item 0 holds length, item 1 first character.
   `set_string(STR, "string")`, `clear_string(STR)`, `append_string(DST, SRC)`, `left_string(DST, SRC, size)`, `right_string(DST, SRC, size)`, `mid_string(DST, SRC, start, size)`, `cmp_string(STR1, STR2, result)`.
-  `format_cellX(DST, cell)`. (X=`8`, `8s`, `16`, `16s`).
+  `format_cellX(DST, cell)`, `string_valX(SRC, cell)`. (X=`8`, `8s`, `16`, `16s`).
 - Output: `print_char(value)`, `print_char8(cell)`.  
   `print_string("string")`. string supports common C escape sequences: `\n`, `\t`, `\r`, `\\`, `\"`, `\'`, `\0`, `\a`, `\b`, `\f`, `\v`.
   `print_string(STR)`, `print_newline`.
