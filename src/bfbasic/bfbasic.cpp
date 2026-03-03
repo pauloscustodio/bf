@@ -347,19 +347,132 @@ void collect_symbols(const StmtList& prog, SymbolTable& sym) {
     }
 }
 
-void fold_constants(StmtList& prog, const SymbolTable& sym) {
-    (void)prog;
-    (void)sym;
-    /*
-    for (auto& stmt : prog.statements) {
-        if (stmt->type == StmtType::Let) {
-            auto folded = fold_const_int_expr(stmt->let_stmt->expr);
-            if (folded) {
-                stmt->let_stmt->expr = Expr::number(*folded, stmt->loc);
+// After collect_symbols: mark single-assignment constants now that counts are final
+void mark_single_assignment_constants(const StmtList& prog, SymbolTable& sym) {
+    for (const auto& stmt : prog.statements) {
+        switch (stmt->type) {
+        case StmtType::Let:
+            if (!stmt->let_stmt->is_array) {
+                Symbol& symbol = sym.get(stmt->let_stmt->var);
+                if (!symbol.is_string && symbol.count_assignments == 1 &&
+                        stmt->let_stmt->expr.expr_type == ExprType::Number) {
+                    symbol.const_value = stmt->let_stmt->expr.int_value;
+                }
             }
+            break;
+        case StmtType::If:
+            mark_single_assignment_constants(stmt->if_stmt->then_block, sym);
+            mark_single_assignment_constants(stmt->if_stmt->else_block, sym);
+            break;
+        case StmtType::While:
+            mark_single_assignment_constants(stmt->while_stmt->body, sym);
+            break;
+        case StmtType::For:
+            mark_single_assignment_constants(stmt->for_stmt->body, sym);
+            break;
+        default:
+            break;
         }
     }
-    */
+}
+
+void fold_constants_in_expr(Expr& e, const SymbolTable& sym) {
+    switch (e.expr_type) {
+    case ExprType::Number:
+    case ExprType::StringLiteral:
+        break;
+
+    case ExprType::Var: {
+        if (sym.exists(e.name)) {
+            const Symbol& symbol = sym.get(e.name);
+            if (symbol.const_value) {
+                e = Expr::number(*symbol.const_value, e.loc);
+            }
+        }
+        break;
+    }
+
+    case ExprType::BinOp:
+        fold_constants_in_expr(*e.left, sym);
+        fold_constants_in_expr(*e.right, sym);
+        if (auto folded = fold_const_int_expr(e)) {
+            e = Expr::number(*folded, e.loc);
+        }
+        break;
+
+    case ExprType::UnaryOp:
+        fold_constants_in_expr(*e.inner, sym);
+        if (auto folded = fold_const_int_expr(e)) {
+            e = Expr::number(*folded, e.loc);
+        }
+        break;
+
+    case ExprType::ArrayAccess:
+        fold_constants_in_expr(*e.index, sym);
+        break;
+
+    case ExprType::Concat:
+        fold_constants_in_expr(*e.left, sym);
+        fold_constants_in_expr(*e.right, sym);
+        break;
+
+    case ExprType::Call:
+        for (auto& arg : e.args) {
+            fold_constants_in_expr(*arg, sym);
+        }
+        break;
+
+    default:
+        assert(0);
+    }
+}
+
+void fold_constants(StmtList& prog, const SymbolTable& sym) {
+    for (auto& stmt : prog.statements) {
+        switch (stmt->type) {
+        case StmtType::Let:
+            if (stmt->let_stmt->index) {
+                fold_constants_in_expr(*stmt->let_stmt->index, sym);
+            }
+            fold_constants_in_expr(stmt->let_stmt->expr, sym);
+            break;
+
+        case StmtType::Dim:
+            fold_constants_in_expr(*stmt->dim_stmt->size_expr, sym);
+            break;
+
+        case StmtType::Input:
+            break;
+
+        case StmtType::Print:
+            for (auto& item : stmt->print_stmt->elems) {
+                if (item.type == PrintElemType::Expr) {
+                    fold_constants_in_expr(item.expr, sym);
+                }
+            }
+            break;
+
+        case StmtType::If:
+            fold_constants_in_expr(stmt->if_stmt->condition, sym);
+            fold_constants(stmt->if_stmt->then_block, sym);
+            fold_constants(stmt->if_stmt->else_block, sym);
+            break;
+
+        case StmtType::While:
+            fold_constants_in_expr(stmt->while_stmt->condition, sym);
+            fold_constants(stmt->while_stmt->body, sym);
+            break;
+
+        case StmtType::For:
+            fold_constants_in_expr(stmt->for_stmt->start_expr, sym);
+            fold_constants_in_expr(stmt->for_stmt->end_expr, sym);
+            fold_constants_in_expr(stmt->for_stmt->step_expr, sym);
+            fold_constants(stmt->for_stmt->body, sym);
+            break;
+        default:
+            assert(0);
+        }
+    }
 }
 
 void semantic_check(const StmtList& prog, const SymbolTable& sym) {
@@ -382,6 +495,7 @@ std::string compile(const std::string& source) {
 
     SymbolTable sym;
     collect_symbols(prog, sym);
+    mark_single_assignment_constants(prog, sym);
     fold_constants(prog, sym);
     semantic_check(prog, sym);
 

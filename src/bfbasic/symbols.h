@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include "errors.h"
@@ -20,6 +21,7 @@ struct Symbol {
     // if variable is assigned only once, it is a constant
     // and can be optimized as such
     int count_assignments = 0;
+    std::optional<int> const_value; // set when count_assignments == 1 and RHS is a folded number
 };
 
 class SymbolTable {
