@@ -189,14 +189,16 @@ StmtList Parser::parse_statement_list_until(std::initializer_list<TokenType> ter
 }
 
 Stmt Parser::parse_let_common(const SourceLoc& loc) {
-    bool is_array = false;
-    std::unique_ptr<Expr> index;
-
     Token id = expect(TokenType::Identifier, "Expected variable name after LET");
     bool is_string = is_string_var(id.text);
 
     // LET A(i)=expr
+    bool is_array = false;
+    std::unique_ptr<Expr> index;
     if (match(TokenType::LParen)) {
+        if(is_string) {
+            error_at(id.loc, "string variable '" + id.text + "' cannot be indexed");
+        }
         advance();
         index = std::make_unique<Expr>(parse_expr());
         expect(TokenType::RParen, "Expected ')'");
@@ -211,9 +213,9 @@ Stmt Parser::parse_let_common(const SourceLoc& loc) {
     s.type = StmtType::Let;
     s.loc = loc;
     s.let_stmt = std::make_unique<LetStmt>();
-    s.let_stmt->is_array = is_array;
-    s.let_stmt->is_string = is_string;
     s.let_stmt->var = id.text;
+    s.let_stmt->type = is_array ? LetType::Array
+                       : is_string ? LetType::String : LetType::Normal;
     s.let_stmt->index = std::move(index);
     s.let_stmt->expr = std::move(e);
 
@@ -535,7 +537,6 @@ Stmt Parser::parse_dim() {
     Stmt s;
     s.type = StmtType::Dim;
     s.dim_stmt = std::make_unique<DimStmt>();
-    s.dim_stmt->is_string = is_string_var(var.text);
     s.dim_stmt->var = var.text;
     s.dim_stmt->size_expr = std::make_unique<Expr>(std::move(size_expr));
     return s;
@@ -751,13 +752,18 @@ Expr Parser::parse_primary() {
         }
 
         expect(TokenType::RParen, "Expected ')' after function arguments");
-        return Expr::call(fn.text, std::move(args), fn.loc);
+        return Expr::call(fn, std::move(args), fn.loc);
     }
 
     if (match(TokenType::Identifier)) {
         Token var = advance();
+        bool is_string = is_string_var(var.text);
 
         if (match(TokenType::LParen)) {
+            if (is_string) {
+                error_at(var.loc,
+                         "string variable '" + var.text + "' cannot be indexed");
+            }
             advance();
             auto index = std::make_unique<Expr>(parse_expr());
             expect(TokenType::RParen, "Expected ')'");

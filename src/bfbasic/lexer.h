@@ -11,32 +11,8 @@
 #include "errors.h"
 
 enum class TokenType {
-    Identifier,
-    Number,
-    StringLiteral,
-    KeywordLet,
-    KeywordInput,
-    KeywordPrint,
-    KeywordIf, KeywordThen, KeywordElse, KeywordEndIf,
-    KeywordFor, KeywordTo, KeywordStep, KeywordNext,
-    KeywordWhile, KeywordWEnd,
-    KeywordDim,
-    Plus, Minus, Star, Slash, Caret, Ampersand,
-    Less, LessEqual, Greater, GreaterEqual, Equal, NotEqual,
-    LParen, RParen,
-    KeywordMod, KeywordShl, KeywordShr,
-    KeywordNot, KeywordAnd, KeywordOr, KeywordXor,
-    KeywordLeftDollar,
-    KeywordMidDollar,
-    KeywordRightDollar,
-    KeywordStrDollar,
-    KeywordLen,
-    KeywordVal,
-    KeywordChrDollar,
-    KeywordAsc,
-    Colon, Semicolon, Comma,
-    Newline,
-    EndOfFile
+#define X(name, str) name,
+#include "token_type.def"
 };
 
 struct Token {
@@ -70,3 +46,4 @@ private:
 };
 
 bool is_string_var(const std::string& name);
+std::string token_type_to_string(TokenType type);

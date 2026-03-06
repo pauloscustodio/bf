@@ -319,3 +319,12 @@ Token Lexer::string_literal() {
 bool is_string_var(const std::string& name) {
     return (!name.empty() && name.back() == '$');
 }
+
+std::string token_type_to_string(TokenType type) {
+    switch (type) {
+#define X(name, str) case TokenType::name: return str;
+#include "token_type.def"
+    default:
+        return "<unknown>";
+    }
+}

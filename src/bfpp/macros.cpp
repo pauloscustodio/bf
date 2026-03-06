@@ -4450,25 +4450,48 @@ bool MacroExpander::handle_set_string(Parser& parser, const Token& tok) {
         return false;
     }
 
-    // get second argument - init text
-    if (args[1].size() != 1 ||
-            args[1][0].type != TokenType::String) {
+    // create implementation code for second argument as string literal
+    // or another string
+    std::string impl;
+
+    // get second argument - init text?
+    if (args[1].size() == 1 && args[1][0].type == TokenType::String) {
+        std::string text = args[1][0].text;
+
+        // produce code to init array from text
+        int copy_size = std::min(array->num_elems - 1,
+                                 static_cast<int>(text.size()));
+        impl =
+            "set8(" + std::to_string(array->base_addr) + ", " +
+            std::to_string(copy_size) + ") ";
+        for (int i = 0; i < copy_size; i++) {
+            impl +=
+                "set8(" + std::to_string(array->base_addr + 1 + i) + ", " +
+                std::to_string(static_cast<int>(text[i])) + ") ";
+        }
+    }
+    // get second argument - another string?
+    else if (args[1].size() == 1 && args[1][0].type == TokenType::Identifier) {
+        std::string src_string_name = args[1][0].text;
+        Array* src_array = validate_array_name_arg(parser, macro_tok,
+                           src_string_name);
+        if (src_array == nullptr) {
+            return false; // error already reported
+        }
+        if (src_array->elem_size != 1) {
+            g_error_reporter.report_error(
+                tok.loc, "array '" + src_string_name + "' is not a alloc_array8() array"
+            );
+            return false;
+        }
+        impl =
+            "clear_string(" + string_name + ") "
+            "append_string(" + string_name + ", " + src_string_name + ") ";
+    }
+    else {
         g_error_reporter.report_error(tok.loc,
                                       "macro '" + macro_name + "' expects one NAME and one string");
         return false;
-    }
-    std::string text = args[1][0].text;
-
-    // produce code to init array from text
-    int copy_size = std::min(array->num_elems - 1,
-                             static_cast<int>(text.size()));
-    std::string impl =
-        "set8(" + std::to_string(array->base_addr) + ", " +
-        std::to_string(copy_size) + ") ";
-    for (int i = 0; i < copy_size; i++) {
-        impl +=
-            "set8(" + std::to_string(array->base_addr + 1 + i) + ", " +
-            std::to_string(static_cast<int>(text[i])) + ") ";
     }
 
     TokenScanner scanner;

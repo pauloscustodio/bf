@@ -21,7 +21,9 @@ private:
 
     void emit(const std::string& line);
     std::string alloc_temp16();
+    std::string alloc_temp_string(int size);
     void free_temp16(const std::string& name);
+    void free_temp_string(const std::string& name);
     std::vector<std::string> sorted_variable_names() const;
 
     // --- prelude / postlude --------------------------------------------------
@@ -47,4 +49,5 @@ private:
     void emit_expr(const Expr& e, const std::string& target);
     void emit_unary(const Expr& e, const std::string& target);
     void emit_binary(const Expr& e, const std::string& target);
+    void emit_call(const Expr& e, const std::string& target);
 };

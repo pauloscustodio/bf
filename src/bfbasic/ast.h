@@ -22,7 +22,7 @@ enum class ExprType {
     Var,
     BinOp,
     UnaryOp,
-    ArrayAccess,     // A(i) or A$(i)
+    ArrayAccess,     // A(i)
     StringLiteral,   // "hello"
     Concat,          // B$ & C$
     Call             // LEFT$(...), MID$(...), RIGHT$(...)
@@ -30,7 +30,7 @@ enum class ExprType {
 
 struct Expr {
     ExprType expr_type = ExprType::Number;   // filled in by parser
-    ValueType value_type = ValueType::Int;   // filled in by semantic pass
+    ValueType value_type = ValueType::Int;
     SourceLoc loc;
 
     // For Number
@@ -41,6 +41,7 @@ struct Expr {
 
     // For StringLiteral
     std::string string_value;
+    int string_size = 0;    // filled in by semantic pass
 
     // For operators
     TokenType op = TokenType::EndOfFile;
@@ -52,9 +53,8 @@ struct Expr {
     std::unique_ptr<Expr> index;
     bool is_string_array = false;  // filled by semantic pass
 
-
     // For function call
-    std::string func_name; // "LEFT$", "MID$", "RIGHT$", "STR$", "LEN", "VAL", "CHR", "ASC"
+    TokenType func;
     std::vector<std::unique_ptr<Expr>> args;
 
     static Expr number(int v, const SourceLoc& loc);
@@ -65,7 +65,7 @@ struct Expr {
                              const SourceLoc& loc);
     static Expr string_literal(std::string s, const SourceLoc& loc);
     static Expr concat(Expr lhs, Expr rhs, const SourceLoc& loc);
-    static Expr call(std::string fname, std::vector<std::unique_ptr<Expr>> args,
+    static Expr call(Token func_tok, std::vector<std::unique_ptr<Expr>> args,
                      const SourceLoc& loc);
 };
 
@@ -75,16 +75,20 @@ struct StmtList {
     std::vector<std::unique_ptr<Stmt>> statements;
 };
 
+enum class LetType {
+    Normal,     // LET A = 5
+    Array,      // LET A(i) = 5
+    String,     // LET A$ = "hello"
+};
+
 struct LetStmt {
-    bool is_array = false;
-    bool is_string = false;
     std::string var;
-    std::unique_ptr<Expr> index;    // for A(i) or A$(i)
+    LetType type = LetType::Normal;
+    std::unique_ptr<Expr> index;    // for A(i)
     Expr expr;                      // RHS
 };
 
 struct DimStmt {
-    bool is_string = false;
     std::string var;
     std::unique_ptr<Expr> size_expr;
 };

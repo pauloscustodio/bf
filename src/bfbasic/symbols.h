@@ -11,30 +11,38 @@
 #include <unordered_map>
 #include "errors.h"
 
+enum class SymbolType {
+    IntVar,
+    IntArrayVar,
+    StringVar
+};
+
 struct Symbol {
     std::string name;       // uppercase BASIC name, possibly with final $
+    SymbolType type = SymbolType::IntVar;
     SourceLoc loc;
-    bool is_array = false;
-    bool is_string = false;
-    int array_size = 0;     // only valid if is_array == true
-    bool allocated = false;
+
+    int array_size = 0;     // for IntArrayVar and StringVar, 0 for IntVar
+    bool allocated = false; // allocation code already output
+
     // if variable is assigned only once, it is a constant
     // and can be optimized as such
     int count_assignments = 0;
-    std::optional<int> const_value; // set when count_assignments == 1 and RHS is a folded number
+    // set when count_assignments == 1 and RHS is a folded number
+    std::optional<int> const_value;
 };
 
 class SymbolTable {
 public:
-    // returns true if symbol already existed
-    void declare_variable(const SourceLoc& loc, const std::string& name);
-    void declare_array(const SourceLoc& loc, const std::string& name, int size);
-    bool exists(const std::string& name) const;
+    void declare(const std::string& name, SymbolType type,
+                 const SourceLoc& loc);
     void mark_allocated(const std::string& name);
     bool is_allocated(const std::string& name) const;
     const std::unordered_map<std::string, Symbol>& all() const;
-    Symbol& get(const std::string& name);
-    const Symbol& get(const std::string& name) const;
+
+    // return nullptr if not found
+    Symbol* get(const std::string& name);
+    const Symbol* get(const std::string& name) const;
 
 private:
     std::unordered_map<std::string, Symbol> table;

@@ -224,15 +224,17 @@ void const_int_expr_evaluator(StmtList& prog) {
     }
 }
 
-void collect_symbols_in_expr(const Expr& e, SymbolTable& sym) {
+void collect_symbols_in_expr(Expr& e, SymbolTable& sym) {
     switch (e.expr_type) {
     case ExprType::Number:
         break;
 
-    case ExprType::Var:
-        sym.declare_variable(e.loc, e.name);
+    case ExprType::Var: {
+        bool is_string = is_string_var(e.name);
+        SymbolType type = is_string ? SymbolType::StringVar : SymbolType::IntVar;
+        sym.declare(e.name, type, e.loc);
         break;
-
+    }
     case ExprType::BinOp:
         collect_symbols_in_expr(*e.left, sym);
         collect_symbols_in_expr(*e.right, sym);
@@ -265,30 +267,66 @@ void collect_symbols_in_expr(const Expr& e, SymbolTable& sym) {
     }
 }
 
-void collect_symbols(const StmtList& prog, SymbolTable& sym) {
-    for (const auto& stmt : prog.statements) {
+void collect_symbols(StmtList& prog, SymbolTable& sym) {
+    for (auto& stmt : prog.statements) {
         switch (stmt->type) {
         case StmtType::Let:
-            if (stmt->let_stmt->is_array) {
+            switch (stmt->let_stmt->type) {
+            case LetType::Normal: {
+                std::string name = stmt->let_stmt->var;
+                bool is_string = is_string_var(name);
+                SymbolType type = is_string ?
+                                  SymbolType::StringVar : SymbolType::IntVar;
+
+                sym.declare(name, type, stmt->loc);
+
+                Symbol* symbol = sym.get(name);
+                symbol->count_assignments++;
+                break;
+            }
+            case LetType::Array: {
                 // must already have been declared
                 std::string name = stmt->let_stmt->var;
-                if (!sym.exists(name)) {
-                    error_at(stmt->loc, "array '" + name + "' must be declared by DIM before used");
+                Symbol* symbol = sym.get(name);
+                if (!symbol) {
+                    error_at(
+                        stmt->loc,
+                        "array '" + name + "' must be declared by DIM before used");
                 }
-                Symbol& symbol = sym.get(name);
-                if (!symbol.is_array) {
-                    error_at(stmt->loc, "variable '" + name + "' is not an array");
+                if (symbol->type != SymbolType::IntArrayVar) {
+                    error_at(
+                        stmt->loc,
+                        "variable '" + name + "' is not an array");
                 }
+                break;
             }
-            else {
-                sym.declare_variable(stmt->loc, stmt->let_stmt->var);
-                Symbol& symbol = sym.get(stmt->let_stmt->var);
-                symbol.count_assignments++;
+            case LetType::String: {
+                // must already have been declared
+                std::string name = stmt->let_stmt->var;
+                Symbol* symbol = sym.get(name);
+                if (!symbol) {
+                    error_at(
+                        stmt->loc,
+                        "string variable '" + name + "' must be declared by DIM before used");
+                }
+                if (symbol->type != SymbolType::StringVar) {
+                    error_at(
+                        stmt->loc,
+                        "variable '" + name + "' is not a string variable");
+                }
+                break;
             }
+            }
+
             collect_symbols_in_expr(stmt->let_stmt->expr, sym);
             break;
 
         case StmtType::Dim: {
+            std::string name = stmt->dim_stmt->var;
+            bool is_string = is_string_var(name);
+            SymbolType type = is_string ?
+                              SymbolType::StringVar : SymbolType::IntArrayVar;
+
             auto folded = fold_const_int_expr(*stmt->dim_stmt->size_expr);
             if (!folded) {
                 error_at(stmt->loc, "DIM size must be a constant expression");
@@ -299,20 +337,28 @@ void collect_symbols(const StmtList& prog, SymbolTable& sym) {
                 error_at(stmt->loc, "DIM size must be > 0");
             }
 
-            // BASIC 1-based
-            sym.declare_array(stmt->loc, stmt->dim_stmt->var, size + 1);
+            sym.declare(name, type, stmt->loc);
+
+            Symbol* symbol = sym.get(name);
+            symbol->array_size = size;
+
             break;
         }
         case StmtType::Input:
-            for (auto& v : stmt->input_stmt->vars) {
-                sym.declare_variable(stmt->loc, v);
-                Symbol& symbol = sym.get(v);
-                symbol.count_assignments++;
+            for (auto& name : stmt->input_stmt->vars) {
+                bool is_string = is_string_var(name);
+                SymbolType type = is_string ?
+                                  SymbolType::StringVar : SymbolType::IntVar;
+
+                sym.declare(name, type, stmt->loc);
+
+                Symbol* symbol = sym.get(name);
+                symbol->count_assignments++;
             }
             break;
 
         case StmtType::Print:
-            for (const auto& item : stmt->print_stmt->elems) {
+            for (auto& item : stmt->print_stmt->elems) {
                 if (item.type == PrintElemType::Expr) {
                     collect_symbols_in_expr(item.expr, sym);
                 }
@@ -331,9 +377,18 @@ void collect_symbols(const StmtList& prog, SymbolTable& sym) {
             break;
 
         case StmtType::For: {
-            sym.declare_variable(stmt->loc, stmt->for_stmt->var);
-            Symbol& symbol = sym.get(stmt->for_stmt->var);
-            symbol.count_assignments++;
+            std::string name = stmt->for_stmt->var;
+            bool is_string = is_string_var(name);
+            if (is_string) {
+                error_at(
+                    stmt->loc,
+                    "loop variable '" + name + "' cannot be a string variable");
+            }
+
+            sym.declare(name, SymbolType::IntVar, stmt->loc);
+
+            Symbol* symbol = sym.get(name);
+            symbol->count_assignments++;
 
             collect_symbols_in_expr(stmt->for_stmt->start_expr, sym);
             collect_symbols_in_expr(stmt->for_stmt->end_expr, sym);
@@ -347,47 +402,55 @@ void collect_symbols(const StmtList& prog, SymbolTable& sym) {
     }
 }
 
-// After collect_symbols: mark single-assignment constants now that counts are final
-void mark_single_assignment_constants(const StmtList& prog, SymbolTable& sym) {
+// After collect_symbols:
+// mark single-assignment constants now that counts are final
+void mark_single_assignment_constants(StmtList& prog, SymbolTable& sym) {
     for (const auto& stmt : prog.statements) {
         switch (stmt->type) {
-        case StmtType::Let:
-            if (!stmt->let_stmt->is_array) {
-                Symbol& symbol = sym.get(stmt->let_stmt->var);
-                if (!symbol.is_string && symbol.count_assignments == 1 &&
-                        stmt->let_stmt->expr.expr_type == ExprType::Number) {
-                    symbol.const_value = stmt->let_stmt->expr.int_value;
+        case StmtType::Let: {
+            if (stmt->let_stmt->type == LetType::Normal &&
+                    stmt->let_stmt->expr.expr_type == ExprType::Number) {
+                // only mark simple variables, not arrays or strings
+                std::string name = stmt->let_stmt->var;
+                Symbol* symbol = sym.get(name);
+                if (symbol &&
+                        symbol->type == SymbolType::IntVar &&
+                        symbol->count_assignments == 1) {
+                    // symbol is constant, can be optimized
+                    symbol->const_value = stmt->let_stmt->expr.int_value;
                 }
             }
             break;
+        }
         case StmtType::If:
             mark_single_assignment_constants(stmt->if_stmt->then_block, sym);
             mark_single_assignment_constants(stmt->if_stmt->else_block, sym);
             break;
+
         case StmtType::While:
             mark_single_assignment_constants(stmt->while_stmt->body, sym);
             break;
+
         case StmtType::For:
             mark_single_assignment_constants(stmt->for_stmt->body, sym);
             break;
+
         default:
             break;
         }
     }
 }
 
-void fold_constants_in_expr(Expr& e, const SymbolTable& sym) {
+void fold_constants_in_expr(Expr& e, SymbolTable& sym) {
     switch (e.expr_type) {
     case ExprType::Number:
     case ExprType::StringLiteral:
         break;
 
     case ExprType::Var: {
-        if (sym.exists(e.name)) {
-            const Symbol& symbol = sym.get(e.name);
-            if (symbol.const_value) {
-                e = Expr::number(*symbol.const_value, e.loc);
-            }
+        Symbol* symbol = sym.get(e.name);
+        if (symbol && symbol->const_value) {
+            e = Expr::number(*symbol->const_value, e.loc);
         }
         break;
     }
@@ -427,7 +490,7 @@ void fold_constants_in_expr(Expr& e, const SymbolTable& sym) {
     }
 }
 
-void fold_constants(StmtList& prog, const SymbolTable& sym) {
+void fold_constants(StmtList& prog, SymbolTable& sym) {
     for (auto& stmt : prog.statements) {
         switch (stmt->type) {
         case StmtType::Let:
@@ -475,11 +538,264 @@ void fold_constants(StmtList& prog, const SymbolTable& sym) {
     }
 }
 
-void semantic_check(const StmtList& prog, const SymbolTable& sym) {
-    (void)prog;
-    (void)sym;
-    // currently all semantic checks are done during symbol collection and
-    // constant folding, so nothing to do here
+void semantic_check_in_expr(Expr& e, SymbolTable& sym) {
+    switch (e.expr_type) {
+    case ExprType::Number:
+        assert(e.value_type == ValueType::Int);
+        break;
+
+    case ExprType::StringLiteral:
+        assert(e.value_type == ValueType::String);
+        e.string_size = static_cast<int>(e.string_value.size());
+        break;
+
+    case ExprType::Var: {
+        Symbol* symbol = sym.get(e.name);
+        assert(symbol);  // should have been caught in collect_symbols
+        bool is_string = is_string_var(e.name);
+        e.value_type = is_string ? ValueType::String : ValueType::Int;
+        break;
+    }
+    case ExprType::BinOp:
+        semantic_check_in_expr(*e.left, sym);
+        semantic_check_in_expr(*e.right, sym);
+        if (e.left->value_type == ValueType::String ||
+                e.right->value_type == ValueType::String) {
+            error_at(
+                e.loc,
+                "operator '" + token_type_to_string(e.op) + "' cannot be applied to strings");
+        }
+
+        e.value_type = ValueType::Int;
+        break;
+
+    case ExprType::UnaryOp:
+        semantic_check_in_expr(*e.inner, sym);
+        if (e.inner->value_type == ValueType::String) {
+            error_at(
+                e.loc,
+                "operator '" + token_type_to_string(e.op) + "' cannot be applied to strings");
+        }
+
+        e.value_type = ValueType::Int;
+        break;
+
+    case ExprType::ArrayAccess: {
+        // assertions for errors that should have been caught in collect_symbols
+        Symbol* symbol = sym.get(e.name);
+        assert(symbol);
+        bool is_string = is_string_var(e.name);
+        assert(!is_string);
+        assert(symbol->type == SymbolType::IntArrayVar);
+
+        e.value_type = ValueType::Int;
+
+        semantic_check_in_expr(*e.index, sym);
+        break;
+    }
+    case ExprType::Concat:
+        semantic_check_in_expr(*e.left, sym);
+        semantic_check_in_expr(*e.right, sym);
+        if (e.left->value_type == ValueType::Int ||
+                e.right->value_type == ValueType::Int) {
+            error_at(
+                e.loc,
+                "operator '" + token_type_to_string(e.op) + "' cannot be applied to numbers");
+        }
+
+        e.value_type = ValueType::String;
+        e.string_size = e.left->string_size + e.right->string_size;
+        break;
+
+    case ExprType::Call:
+        for (const auto& arg : e.args) {
+            semantic_check_in_expr(*arg, sym);
+        }
+
+        switch (e.func) {
+        case TokenType::KeywordLeftDollar:
+            if (e.args.size() != 2) {
+                error_at(e.loc, "LEFT$ function takes exactly 2 arguments");
+            }
+            if (e.args[0]->value_type == ValueType::Int) {
+                error_at(e.loc, "LEFT$ function's first argument cannot be a number");
+            }
+            if (e.args[1]->value_type == ValueType::String) {
+                error_at(e.loc, "LEFT$ function's second argument cannot be a string");
+            }
+            e.value_type = ValueType::String;
+            e.string_size = e.args[0]->string_size;  // upper bound; actual size may be smaller
+            break;
+
+        case TokenType::KeywordMidDollar:
+            if (e.args.size() != 3) {
+                error_at(e.loc, "MID$ function takes exactly 3 arguments");
+            }
+            if (e.args[0]->value_type == ValueType::Int) {
+                error_at(e.loc, "MID$ function's first argument cannot be a number");
+            }
+            if (e.args[1]->value_type == ValueType::String) {
+                error_at(e.loc, "MID$ function's second argument cannot be a string");
+            }
+            if (e.args[2]->value_type == ValueType::String) {
+                error_at(e.loc, "MID$ function's third argument cannot be a string");
+            }
+            e.value_type = ValueType::String;
+            e.string_size = e.args[0]->string_size;  // upper bound; actual size may be smaller
+            break;
+
+        case TokenType::KeywordRightDollar:
+            if (e.args.size() != 2) {
+                error_at(e.loc, "RIGHT$ function takes exactly 2 arguments");
+            }
+            if (e.args[0]->value_type == ValueType::Int) {
+                error_at(e.loc, "RIGHT$ function's first argument cannot be a number");
+            }
+            if (e.args[1]->value_type == ValueType::String) {
+                error_at(e.loc, "RIGHT$ function's second argument cannot be a string");
+            }
+            e.value_type = ValueType::String;
+            e.string_size = e.args[0]->string_size;  // upper bound; actual size may be smaller
+            break;
+
+        case TokenType::KeywordStrDollar:
+            if (e.args.size() != 1) {
+                error_at(e.loc, "STR$ function takes exactly 1 argument");
+            }
+            if (e.args[0]->value_type == ValueType::String) {
+                error_at(e.loc, "STR$ function's argument cannot be a string");
+            }
+            e.value_type = ValueType::String;
+            e.string_size = 1 + 5 + 1; // upper bound for 16-bit int: -32768 space
+            break;
+
+        case TokenType::KeywordLen:
+            if (e.args.size() != 1) {
+                error_at(e.loc, "LEN function takes exactly 1 argument");
+            }
+            if (e.args[0]->value_type == ValueType::Int) {
+                error_at(e.loc, "LEN function's argument cannot be a number");
+            }
+            e.value_type = ValueType::Int;
+            break;
+
+        case TokenType::KeywordVal:
+            if (e.args.size() != 1) {
+                error_at(e.loc, "VAL function takes exactly 1 argument");
+            }
+            if (e.args[0]->value_type == ValueType::Int) {
+                error_at(e.loc, "VAL function's argument cannot be a number");
+            }
+            e.value_type = ValueType::Int;
+            break;
+
+        case TokenType::KeywordChrDollar:
+            if (e.args.size() != 1) {
+                error_at(e.loc, "CHR$ function takes exactly 1 argument");
+            }
+            if (e.args[0]->value_type == ValueType::String) {
+                error_at(e.loc, "CHR$ function's argument cannot be a string");
+            }
+            e.value_type = ValueType::String;
+            e.string_size = 1;
+            break;
+
+        case TokenType::KeywordAsc:
+            if (e.args.size() != 1) {
+                error_at(e.loc, "ASC function takes exactly 1 argument");
+            }
+            if (e.args[0]->value_type == ValueType::Int) {
+                error_at(e.loc, "ASC function's argument cannot be a number");
+            }
+            e.value_type = ValueType::Int;
+            break;
+
+        default:
+            assert(0);
+        }
+
+        break;
+
+    default:
+        assert(0);
+    }
+}
+
+void semantic_check(StmtList& prog, SymbolTable& sym) {
+    for (auto& stmt : prog.statements) {
+        switch (stmt->type) {
+        case StmtType::Let: {
+            if (stmt->let_stmt->index) {
+                semantic_check_in_expr(*stmt->let_stmt->index, sym);
+            }
+            semantic_check_in_expr(stmt->let_stmt->expr, sym);
+
+            switch (stmt->let_stmt->type) {
+            case LetType::Normal:
+                if (stmt->let_stmt->expr.value_type == ValueType::String) {
+                    error_at(
+                        stmt->loc,
+                        "cannot assign string to number variable '" + stmt->let_stmt->var + "'");
+                }
+                break;
+
+            case LetType::Array:
+                if (stmt->let_stmt->expr.value_type == ValueType::String) {
+                    error_at(
+                        stmt->loc,
+                        "cannot assign string to array variable '" + stmt->let_stmt->var + "'");
+                }
+                break;
+
+            case LetType::String:
+                if (stmt->let_stmt->expr.value_type == ValueType::Int) {
+                    error_at(
+                        stmt->loc,
+                        "cannot assign number to string variable '" + stmt->let_stmt->var + "'");
+                }
+                break;
+
+            default:
+                assert(0);
+            }
+            break;
+        }
+        case StmtType::Dim:
+            semantic_check_in_expr(*stmt->dim_stmt->size_expr, sym);
+            break;
+
+        case StmtType::Input:
+            break;
+
+        case StmtType::Print:
+            for (auto& item : stmt->print_stmt->elems) {
+                if (item.type == PrintElemType::Expr) {
+                    semantic_check_in_expr(item.expr, sym);
+                }
+            }
+            break;
+
+        case StmtType::If:
+            semantic_check_in_expr(stmt->if_stmt->condition, sym);
+            semantic_check(stmt->if_stmt->then_block, sym);
+            semantic_check(stmt->if_stmt->else_block, sym);
+            break;
+
+        case StmtType::While:
+            semantic_check_in_expr(stmt->while_stmt->condition, sym);
+            semantic_check(stmt->while_stmt->body, sym);
+            break;
+
+        case StmtType::For:
+            semantic_check_in_expr(stmt->for_stmt->start_expr, sym);
+            semantic_check_in_expr(stmt->for_stmt->end_expr, sym);
+            semantic_check_in_expr(stmt->for_stmt->step_expr, sym);
+            semantic_check(stmt->for_stmt->body, sym);
+            break;
+        default:
+            assert(0);
+        }
+    }
 }
 
 std::string compile(const std::string& source) {

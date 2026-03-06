@@ -76,12 +76,12 @@ Expr Expr::concat(Expr lhs, Expr rhs, const SourceLoc& loc) {
     return e;
 }
 
-Expr Expr::call(std::string fname, std::vector<std::unique_ptr<Expr>> args,
+Expr Expr::call(Token func_tok, std::vector<std::unique_ptr<Expr>> args,
                 const SourceLoc& loc) {
     Expr e;
     e.expr_type = ExprType::Call;
-    e.value_type = is_string_var(fname) ? ValueType::String : ValueType::Int;
-    e.func_name = std::move(fname);
+    e.value_type = is_string_var(func_tok.text) ? ValueType::String : ValueType::Int;
+    e.func = func_tok.type;
     e.args = std::move(args);
     e.loc = loc;
     return e;

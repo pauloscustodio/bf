@@ -37,8 +37,18 @@ std::string CodeGen::alloc_temp16() {
     return name;
 }
 
+std::string CodeGen::alloc_temp_string(int size) {
+    std::string name = "_BFB" + std::to_string(++temp_counter) + "$";
+    emit("alloc_array8(" + name + ", " + std::to_string(size + 1) + ")");
+    return name;
+}
+
 void CodeGen::free_temp16(const std::string& name) {
     emit("free_cell16(" + name + ")");
+}
+
+void CodeGen::free_temp_string(const std::string& name) {
+    emit("free_array8(" + name + ")");
 }
 
 std::vector<std::string> CodeGen::sorted_variable_names() const {
@@ -63,16 +73,26 @@ void CodeGen::emit_postlude() {
 void CodeGen::emit_var_allocs() {
     auto names = sorted_variable_names();
     for (const auto& name : names) {
-        const Symbol& s = sym.get(name);
-        if (!s.allocated) {
-            if (s.is_array) {
-                emit("alloc_array16(" + name + ", " + std::to_string(s.array_size) + ")");
-            }
-            else {
-                emit("alloc_cell16(" + name + ")");
-            }
-            sym.mark_allocated(name);
+        const Symbol* symbol = sym.get(name);
+        assert(symbol); // should exist
+
+        switch (symbol->type) {
+        case SymbolType::IntVar:
+            emit("alloc_cell16(" + name + ")");
+            break;
+        case SymbolType::StringVar:
+            emit("alloc_array8(" + name + ", " +
+                 std::to_string(symbol->array_size + 1) + ")");
+            break;
+        case SymbolType::IntArrayVar:
+            emit("alloc_array16(" + name + ", " +
+                 std::to_string(symbol->array_size + 1) + ")");
+            break;
+        default:
+            assert(0);
         }
+
+        sym.mark_allocated(name);
     }
 }
 
@@ -123,15 +143,33 @@ void CodeGen::emit_print(const Stmt& s) {
             break;
 
         case PrintElemType::Expr: {
-            if (e.expr.expr_type == ExprType::Var) {
-                emit("print_cell16s(" + e.expr.name + ")");
+            switch (e.expr.value_type) {
+            case ValueType::Int:
+                if (e.expr.expr_type == ExprType::Var) {
+                    emit("print_cell16s(" + e.expr.name + ")");
+                }
+                else {
+                    std::string tmp = alloc_temp16();
+                    emit_expr(e.expr, tmp);
+                    emit("print_cell16s(" + tmp + ")");
+                    free_temp16(tmp);
+                }
+                break;
+            case ValueType::String:
+                if (e.expr.expr_type == ExprType::Var) {
+                    emit("print_string(" + e.expr.name + ")");
+                }
+                else {
+                    std::string tmp = alloc_temp_string(e.expr.string_size);
+                    emit_expr(e.expr, tmp);
+                    emit("print_string(" + tmp + ")");
+                    free_temp_string(tmp);
+                }
+                break;
+            default:
+                assert(0);
             }
-            else {
-                std::string tmp = alloc_temp16();
-                emit_expr(e.expr, tmp);
-                emit("print_cell16s(" + tmp + ")");
-                free_temp16(tmp);
-            }
+
             last_was_separator = false;
             break;
         }
@@ -170,22 +208,13 @@ std::string CodeGen::escape(const std::string& s) {
 
 void CodeGen::emit_let(const Stmt& s) {
     std::string var = s.let_stmt->var;
-    assert(sym.exists(var));
-    Symbol symbol = sym.get(var);
 
-    if (symbol.is_array) {
-        std::string index = alloc_temp16();
-        std::string t = alloc_temp16();
-        emit_expr(*s.let_stmt->index, index);
-        emit_expr(s.let_stmt->expr, t);
-        emit("put_array16(" + var + ", " + index + ", " + t + ")");
-        free_temp16(index);
-        free_temp16(t);
-    }
-    else {
+    switch (s.let_stmt->type) {
+    case LetType::Normal: {
         // Case 1: LET A = <constant>
         if (s.let_stmt->expr.expr_type == ExprType::Number) {
-            emit("set16(" + var + ", " + std::to_string(s.let_stmt->expr.int_value) + ")");
+            emit("set16(" + var + ", " +
+                 std::to_string(s.let_stmt->expr.int_value) + ")");
             return;
         }
 
@@ -200,6 +229,34 @@ void CodeGen::emit_let(const Stmt& s) {
         emit_expr(s.let_stmt->expr, t);
         emit("move16(" + t + ", " + var + ")");
         free_temp16(t);
+        break;
+    }
+    case LetType::Array: {
+        std::string index = alloc_temp16();
+        std::string t = alloc_temp16();
+        emit_expr(*s.let_stmt->index, index);
+        emit_expr(s.let_stmt->expr, t);
+        emit("put_array16(" + var + ", " + index + ", " + t + ")");
+        free_temp16(index);
+        free_temp16(t);
+        break;
+    }
+    case LetType::String: {
+        if (s.let_stmt->expr.expr_type == ExprType::StringLiteral) {
+            const std::string& str = s.let_stmt->expr.string_value;
+            emit("set_string(" + var + ", \"" + escape(str) + "\")");
+        }
+        else {
+            int size = s.let_stmt->expr.string_size;
+            std::string t = alloc_temp_string(size);
+            emit_expr(s.let_stmt->expr, t);
+            emit("set_string(" + var + ", " + t + ")");
+            free_temp_string(t);
+        }
+        break;
+    }
+    default:
+        assert(0);
     }
 }
 
@@ -319,7 +376,7 @@ void CodeGen::emit_for(const Stmt& s) {
     free_temp16(t_cond);
 }
 
-// expr result goes into target (16-bit cell name)
+// expr result goes into target
 void CodeGen::emit_expr(const Expr& e, const std::string& target) {
     switch (e.expr_type) {
     case ExprType::Number:
@@ -343,6 +400,26 @@ void CodeGen::emit_expr(const Expr& e, const std::string& target) {
         emit_expr(*e.index, index);
         emit("get_array16(" + e.name + ", " + index + ", " + target + ")");
         free_temp16(index);
+        break;
+    }
+    case ExprType::StringLiteral: {
+        emit("set_string(" + target + ", \"" +
+             escape(e.string_value) + "\")");
+        break;
+    }
+    case ExprType::Concat: {
+        std::string left = alloc_temp_string(e.left->string_size);
+        std::string right = alloc_temp_string(e.right->string_size);
+        emit_expr(*e.left, left);
+        emit_expr(*e.right, right);
+        emit("set_string(" + target + ", " + left + ")");
+        emit("append_string(" + target + ", " + right + ")");
+        free_temp_string(left);
+        free_temp_string(right);
+        break;
+    }
+    case ExprType::Call: {
+        emit_call(e, target);
         break;
     }
     default:
@@ -447,4 +524,61 @@ void CodeGen::emit_binary(const Expr& e, const std::string& target) {
     }
 
     free_temp16(tmp);
+}
+
+void CodeGen::emit_call(const Expr& e, const std::string& target) {
+    switch (e.func) {
+    case TokenType::KeywordLeftDollar: {
+        assert(e.args.size() == 2);
+
+        std::string arg0 = alloc_temp_string(e.args[0]->string_size);
+        emit_expr(*e.args[0], arg0);   // string
+
+        std::string arg1 = alloc_temp16();
+        emit_expr(*e.args[1], arg1);     // length
+
+        emit("left_string(" + target + ", " + arg0 + ", " + arg1 + ")");
+
+        free_temp_string(arg0);
+        free_temp16(arg1);
+        break;
+    }
+    case TokenType::KeywordRightDollar: {
+        assert(e.args.size() == 2);
+
+        std::string arg0 = alloc_temp_string(e.args[0]->string_size);
+        emit_expr(*e.args[0], arg0);   // string
+
+        std::string arg1 = alloc_temp16();
+        emit_expr(*e.args[1], arg1);     // length
+
+        emit("right_string(" + target + ", " + arg0 + ", " + arg1 + ")");
+
+        free_temp_string(arg0);
+        free_temp16(arg1);
+        break;
+    }
+    case TokenType::KeywordMidDollar: {
+        assert(e.args.size() == 3);
+
+        std::string arg0 = alloc_temp_string(e.args[0]->string_size);
+        emit_expr(*e.args[0], arg0);   // string
+
+        std::string arg1 = alloc_temp16();
+        emit_expr(*e.args[1], arg1);     // start
+
+        std::string arg2 = alloc_temp16();
+        emit_expr(*e.args[2], arg2);     // length
+
+        emit("mid_string(" + target + ", " + arg0 + ", " +
+             arg1 + ", " + arg2 + ")");
+
+        free_temp_string(arg0);
+        free_temp16(arg1);
+        free_temp16(arg2);
+        break;
+    }
+    default:
+        assert(0);
+    }
 }

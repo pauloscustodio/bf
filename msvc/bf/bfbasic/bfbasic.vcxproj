@@ -152,6 +152,9 @@
       <Project>{082f2562-a2db-4081-b93b-964aabf1af43}</Project>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\src\bfbasic\token_type.def" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
