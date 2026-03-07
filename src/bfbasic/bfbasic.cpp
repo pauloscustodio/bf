@@ -554,6 +554,9 @@ void semantic_check_in_expr(Expr& e, SymbolTable& sym) {
         assert(symbol);  // should have been caught in collect_symbols
         bool is_string = is_string_var(e.name);
         e.value_type = is_string ? ValueType::String : ValueType::Int;
+        if (is_string) {
+            e.string_size = symbol->array_size;
+        }
         break;
     }
     case ExprType::BinOp:

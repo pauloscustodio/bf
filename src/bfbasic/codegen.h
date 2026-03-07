@@ -26,13 +26,13 @@ private:
     void free_temp_string(const std::string& name);
     std::vector<std::string> sorted_variable_names() const;
 
-    // --- prelude / postlude --------------------------------------------------
+    // prelude / postlude
 
     void emit_prelude();
     void emit_postlude();
     void emit_var_allocs();
 
-    // --- statements ----------------------------------------------------------
+    // statements
 
     void emit_stmt(const Stmt& s);
     void emit_input(const Stmt& s);
@@ -44,7 +44,7 @@ private:
     void emit_while(const Stmt& s);
     void emit_for(const Stmt& s);
 
-    // --- expressions ---------------------------------------------------------
+    // expressions
 
     void emit_expr(const Expr& e, const std::string& target);
     void emit_unary(const Expr& e, const std::string& target);

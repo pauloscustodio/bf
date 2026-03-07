@@ -157,10 +157,7 @@ alloc_cell16(_BFB5)
 alloc_cell16(_BFB6)
 copy16(I, _BFB5)
 copy16(I, _BFB6)
-alloc_cell16(_BFB7)
-copy16(I, _BFB7)
-add16s(_BFB6, _BFB7)
-free_cell16(_BFB7)
+add16s(_BFB6, I)
 put_array16(A, _BFB5, _BFB6)
 free_cell16(_BFB5)
 free_cell16(_BFB6)
@@ -179,46 +176,46 @@ free_cell16(_BFB1)
 free_cell16(_BFB2)
 free_cell16(_BFB3)
 free_cell16(_BFB4)
+alloc_cell16(_BFB7)
 alloc_cell16(_BFB8)
 alloc_cell16(_BFB9)
 alloc_cell16(_BFB10)
-alloc_cell16(_BFB11)
-set16(_BFB8, 4)
-set16(_BFB9, 1)
-set16(_BFB10, -1)
-copy16(_BFB8, I)
-copy16(_BFB10, _BFB11)
-sign16(_BFB11)
-if(_BFB11)
-copy16(I, _BFB11)
-ge16s(_BFB11, _BFB9)
+set16(_BFB7, 4)
+set16(_BFB8, 1)
+set16(_BFB9, -1)
+copy16(_BFB7, I)
+copy16(_BFB9, _BFB10)
+sign16(_BFB10)
+if(_BFB10)
+copy16(I, _BFB10)
+ge16s(_BFB10, _BFB8)
 else
-copy16(I, _BFB11)
-le16s(_BFB11, _BFB9)
+copy16(I, _BFB10)
+le16s(_BFB10, _BFB8)
 endif
-while(_BFB11)
+while(_BFB10)
+alloc_cell16(_BFB11)
 alloc_cell16(_BFB12)
-alloc_cell16(_BFB13)
-copy16(I, _BFB13)
-get_array16(A, _BFB13, _BFB12)
-free_cell16(_BFB13)
-print_cell16s(_BFB12)
+copy16(I, _BFB12)
+get_array16(A, _BFB12, _BFB11)
 free_cell16(_BFB12)
-add16s(I, _BFB10)
-copy16(_BFB10, _BFB11)
-sign16(_BFB11)
-if(_BFB11)
-copy16(I, _BFB11)
-ge16s(_BFB11, _BFB9)
+print_cell16s(_BFB11)
+free_cell16(_BFB11)
+add16s(I, _BFB9)
+copy16(_BFB9, _BFB10)
+sign16(_BFB10)
+if(_BFB10)
+copy16(I, _BFB10)
+ge16s(_BFB10, _BFB8)
 else
-copy16(I, _BFB11)
-le16s(_BFB11, _BFB9)
+copy16(I, _BFB10)
+le16s(_BFB10, _BFB8)
 endif
 endwhile
+free_cell16(_BFB7)
 free_cell16(_BFB8)
 free_cell16(_BFB9)
 free_cell16(_BFB10)
-free_cell16(_BFB11)
 END
 run_ok("bfpp -o $test.bf $test.bfpp");
 capture_ok("bf $test.bf", "8 6 4 2 ");
@@ -244,7 +241,7 @@ END
 spew("$test.bas", <<'END');
 DIM A$(10)
 LET A$ = "hello"
-PRINT A$
+PRINT A$;
 END
 run_ok("bfbasic -o $test.bfpp $test.bas");
 check_text_file("$test.bfpp", <<'END');
@@ -252,16 +249,15 @@ check_text_file("$test.bfpp", <<'END');
 alloc_array8(A$, 11)
 set_string(A$, "hello")
 print_string(A$)
-print_newline
 END
 run_ok("bfpp -o $test.bf $test.bfpp");
-capture_ok("bf $test.bf", "hello\n");
+capture_ok("bf $test.bf", "hello");
 
 # LET A$ = string & string
 spew("$test.bas", <<'END');
 DIM A$(11)
 LET A$ = "hello" & " " & "world"
-PRINT A$
+PRINT A$;
 END
 run_ok("bfbasic -o $test.bfpp $test.bas");
 check_text_file("$test.bfpp", <<'END');
@@ -270,26 +266,25 @@ alloc_array8(A$, 12)
 alloc_array8(_BFB1$, 12)
 alloc_array8(_BFB2$, 7)
 alloc_array8(_BFB3$, 6)
-alloc_array8(_BFB4$, 6)
-alloc_array8(_BFB5$, 2)
-set_string(_BFB4$, "hello")
-set_string(_BFB5$, " ")
-set_string(_BFB2$, _BFB4$)
-append_string(_BFB2$, _BFB5$)
-free_array8(_BFB4$)
-free_array8(_BFB5$)
-set_string(_BFB3$, "world")
-set_string(_BFB1$, _BFB2$)
-append_string(_BFB1$, _BFB3$)
-free_array8(_BFB2$)
+set_string(_BFB3$, "hello")
+alloc_array8(_BFB4$, 2)
+set_string(_BFB4$, " ")
+set_string(_BFB2$, _BFB3$)
+append_string(_BFB2$, _BFB4$)
 free_array8(_BFB3$)
+free_array8(_BFB4$)
+alloc_array8(_BFB5$, 6)
+set_string(_BFB5$, "world")
+set_string(_BFB1$, _BFB2$)
+append_string(_BFB1$, _BFB5$)
+free_array8(_BFB2$)
+free_array8(_BFB5$)
 set_string(A$, _BFB1$)
 free_array8(_BFB1$)
 print_string(A$)
-print_newline
 END
 run_ok("bfpp -o $test.bf $test.bfpp");
-capture_ok("bf $test.bf", "hello world\n");
+capture_ok("bf $test.bf", "hello world");
 
 unlink_testfiles;
 done_testing;

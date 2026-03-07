@@ -79,6 +79,12 @@ Supported statements (one per line; blank lines allowed):
 - a colon (`:`) can be used to separate statements in the same line.
 - a single `_` followed by newline is considered white space and ignored.
 
+Strings:
+- Must be DIM-ensinoned to the maximum size - `DIM A$(10)`.
+- Can be assigned - `[LET] A$ = "hello"`.
+- Can be concatenated - `[LET] A$ = B$ & C$`.
+- String functions in expressions - `LEFT$`, `MID$`, `RIGHT$`, `STR$`, `LEN`, `VAL`, `CHR$`, `ASC`.
+
 Expressions:
 - variables and decimal integers
 - binary arithmetic: `+  -  *  /  \\  MOD  ^`

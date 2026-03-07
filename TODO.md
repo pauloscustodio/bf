@@ -1,13 +1,14 @@
 - Strings:
-	- DIM A$(10) - string of max 10 chars, length in array position 0
-	- used as A$; must be DIMmensioned with DIM
-	- A$ = "text" - initialize
-	- A$ = B$ - assign
-	- A$ = "hello " & "world" - concatenate
 	- A$ < <= = <> >= > B$ - compare
-	- string functions LEFT$, MID$, RIGHT$, STR$, LEN, VAL, CHR$, ASC
 - SUB name(A, B, ...) \n block \n ENDSUB
 - FUNCTION name(A, B, ...) \n block \n name = return \n ENDFUNCTION
-- Simple strings: INPUT, PRINT, compare
-- simplify expressions, e.g. -(-A), subexpressions with constants
+- Strings: INPUT, PRINT, compare
+- Simplify expressions, e.g. -(-A), subexpressions with constants
 - FOR: optimizing away the direction test when step is constant
+- IF: optimize if expression is constant
+- WHILE: optimize if expression is constant
+- Allow DIM A$(10), B$(10)
+- Fold constant strings
+- Fold constant string functions
+- Simplify PrintElement - String is not needed
+- INPUT A$

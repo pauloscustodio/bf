@@ -384,7 +384,12 @@ void CodeGen::emit_expr(const Expr& e, const std::string& target) {
         break;
 
     case ExprType::Var:
-        emit("copy16(" + e.name + ", " + target + ")");
+        if (e.value_type == ValueType::Int) {
+            emit("copy16(" + e.name + ", " + target + ")");
+        }
+        else if (e.value_type == ValueType::String) {
+            emit("set_string(" + target + ", " + e.name + ")");
+        }
         break;
 
     case ExprType::BinOp:
@@ -408,14 +413,37 @@ void CodeGen::emit_expr(const Expr& e, const std::string& target) {
         break;
     }
     case ExprType::Concat: {
-        std::string left = alloc_temp_string(e.left->string_size);
-        std::string right = alloc_temp_string(e.right->string_size);
-        emit_expr(*e.left, left);
-        emit_expr(*e.right, right);
+        std::string left;
+        bool need_to_free_left = false;
+        if (e.left->expr_type == ExprType::Var) {
+            left = e.left->name;
+        }
+        else {
+            left = alloc_temp_string(e.left->string_size);
+            emit_expr(*e.left, left);
+            need_to_free_left = true;
+        }
+
+        std::string right;
+        bool need_to_free_right = false;
+        if (e.right->expr_type == ExprType::Var) {
+            right = e.right->name;
+        }
+        else {
+            right = alloc_temp_string(e.right->string_size);
+            emit_expr(*e.right, right);
+            need_to_free_right = true;
+        }
+
         emit("set_string(" + target + ", " + left + ")");
         emit("append_string(" + target + ", " + right + ")");
-        free_temp_string(left);
-        free_temp_string(right);
+
+        if (need_to_free_left) {
+            free_temp_string(left);
+        }
+        if (need_to_free_right) {
+            free_temp_string(right);
+        }
         break;
     }
     case ExprType::Call: {
@@ -455,75 +483,98 @@ void CodeGen::emit_binary(const Expr& e, const std::string& target) {
     emit_expr(*e.left, target);
 
     // Evaluate right into a temp
-    std::string tmp = alloc_temp16();
-    emit_expr(*e.right, tmp);
+    std::string right;
+    bool need_to_free_right = false;
+    if (e.right->expr_type == ExprType::Var) {
+        right = e.right->name;
+    }
+    else if (e.right->value_type == ValueType::Int) {
+        right = alloc_temp16();
+        emit_expr(*e.right, right);
+        need_to_free_right = true;
+    }
+    else if (e.right->value_type == ValueType::String) {
+        right = alloc_temp_string(e.right->string_size);
+        emit_expr(*e.right, right);
+        need_to_free_right = true;
+    }
+    else {
+        assert(0);
+    }
 
     switch (e.op) {
 
     // Arithmetic
     case TokenType::Plus:
-        emit("add16s(" + target + ", " + tmp + ")");
+        emit("add16s(" + target + ", " + right + ")");
         break;
     case TokenType::Minus:
-        emit("sub16s(" + target + ", " + tmp + ")");
+        emit("sub16s(" + target + ", " + right + ")");
         break;
     case TokenType::Star:
-        emit("mul16s(" + target + ", " + tmp + ")");
+        emit("mul16s(" + target + ", " + right + ")");
         break;
     case TokenType::Slash:
-        emit("div16s(" + target + ", " + tmp + ")");
+        emit("div16s(" + target + ", " + right + ")");
         break;
     case TokenType::KeywordMod:
-        emit("mod16s(" + target + ", " + tmp + ")");
+        emit("mod16s(" + target + ", " + right + ")");
         break;
     case TokenType::Caret:
-        emit("pow16s(" + target + ", " + tmp + ")");
+        emit("pow16s(" + target + ", " + right + ")");
         break;
 
     // Shifts
     case TokenType::KeywordShl:
-        emit("shl16(" + target + ", " + tmp + ")");
+        emit("shl16(" + target + ", " + right + ")");
         break;
     case TokenType::KeywordShr:
-        emit("shr16(" + target + ", " + tmp + ")");
+        emit("shr16(" + target + ", " + right + ")");
         break;
 
     // Relational (normalize to 0/1)
     case TokenType::Equal:
-        emit("eq16s(" + target + ", " + tmp + ")");
+        emit("eq16s(" + target + ", " + right + ")");
         break;
     case TokenType::NotEqual:
-        emit("ne16s(" + target + ", " + tmp + ")");
+        emit("ne16s(" + target + ", " + right + ")");
         break;
     case TokenType::Less:
-        emit("lt16s(" + target + ", " + tmp + ")");
+        emit("lt16s(" + target + ", " + right + ")");
         break;
     case TokenType::LessEqual:
-        emit("le16s(" + target + ", " + tmp + ")");
+        emit("le16s(" + target + ", " + right + ")");
         break;
     case TokenType::Greater:
-        emit("gt16s(" + target + ", " + tmp + ")");
+        emit("gt16s(" + target + ", " + right + ")");
         break;
     case TokenType::GreaterEqual:
-        emit("ge16s(" + target + ", " + tmp + ")");
+        emit("ge16s(" + target + ", " + right + ")");
         break;
 
     // Boolean logic (operates on 0/1)
     case TokenType::KeywordAnd:
-        emit("and16(" + target + ", " + tmp + ")");
+        emit("and16(" + target + ", " + right + ")");
         break;
     case TokenType::KeywordOr:
-        emit("or16(" + target + ", " + tmp + ")");
+        emit("or16(" + target + ", " + right + ")");
         break;
     case TokenType::KeywordXor:
-        emit("xor16(" + target + ", " + tmp + ")");
+        emit("xor16(" + target + ", " + right + ")");
         break;
 
     default:
         assert(0);
     }
 
-    free_temp16(tmp);
+    if (need_to_free_right) {
+        if (e.right->value_type == ValueType::Int) {
+            free_temp16(right);
+        }
+        else if (e.right->value_type == ValueType::String) {
+            free_temp_string(right);
+        }
+    }
 }
 
 void CodeGen::emit_call(const Expr& e, const std::string& target) {
@@ -531,51 +582,259 @@ void CodeGen::emit_call(const Expr& e, const std::string& target) {
     case TokenType::KeywordLeftDollar: {
         assert(e.args.size() == 2);
 
-        std::string arg0 = alloc_temp_string(e.args[0]->string_size);
-        emit_expr(*e.args[0], arg0);   // string
+        std::string arg0;
+        bool need_to_free_arg0 = false;
+        if (e.args[0]->expr_type == ExprType::Var) {
+            arg0 = e.args[0]->name;
+        }
+        else {
+            arg0 = alloc_temp_string(e.args[0]->string_size);
+            emit_expr(*e.args[0], arg0);   // string
+            need_to_free_arg0 = true;
+        }
 
-        std::string arg1 = alloc_temp16();
-        emit_expr(*e.args[1], arg1);     // length
+        std::string arg1;
+        bool need_to_free_arg1 = false;
+        if (e.args[1]->expr_type == ExprType::Var) {
+            arg1 = e.args[1]->name;
+        }
+        else {
+            arg1 = alloc_temp16();
+            emit_expr(*e.args[1], arg1);     // length
+            need_to_free_arg1 = true;
+        }
 
         emit("left_string(" + target + ", " + arg0 + ", " + arg1 + ")");
 
-        free_temp_string(arg0);
-        free_temp16(arg1);
+        if (need_to_free_arg0) {
+            free_temp_string(arg0);
+        }
+        if (need_to_free_arg1) {
+            free_temp16(arg1);
+        }
         break;
     }
     case TokenType::KeywordRightDollar: {
         assert(e.args.size() == 2);
 
-        std::string arg0 = alloc_temp_string(e.args[0]->string_size);
-        emit_expr(*e.args[0], arg0);   // string
+        std::string arg0;
+        bool need_to_free_arg0 = false;
+        if (e.args[0]->expr_type == ExprType::Var) {
+            arg0 = e.args[0]->name;
+        }
+        else {
+            arg0 = alloc_temp_string(e.args[0]->string_size);
+            emit_expr(*e.args[0], arg0);   // string
+            need_to_free_arg0 = true;
+        }
 
-        std::string arg1 = alloc_temp16();
-        emit_expr(*e.args[1], arg1);     // length
+        std::string arg1;
+        bool need_to_free_arg1 = false;
+        if (e.args[1]->expr_type == ExprType::Var) {
+            arg1 = e.args[1]->name;
+        }
+        else {
+            arg1 = alloc_temp16();
+            emit_expr(*e.args[1], arg1);     // length
+            need_to_free_arg1 = true;
+        }
 
         emit("right_string(" + target + ", " + arg0 + ", " + arg1 + ")");
 
-        free_temp_string(arg0);
-        free_temp16(arg1);
+        if (need_to_free_arg0) {
+            free_temp_string(arg0);
+        }
+        if (need_to_free_arg1) {
+            free_temp16(arg1);
+        }
         break;
     }
     case TokenType::KeywordMidDollar: {
         assert(e.args.size() == 3);
 
-        std::string arg0 = alloc_temp_string(e.args[0]->string_size);
-        emit_expr(*e.args[0], arg0);   // string
+        std::string arg0;
+        bool need_to_free_arg0 = false;
+        if (e.args[0]->expr_type == ExprType::Var) {
+            arg0 = e.args[0]->name;
+        }
+        else {
+            arg0 = alloc_temp_string(e.args[0]->string_size);
+            emit_expr(*e.args[0], arg0);   // string
+            need_to_free_arg0 = true;
+        }
 
-        std::string arg1 = alloc_temp16();
-        emit_expr(*e.args[1], arg1);     // start
+        std::string arg1;
+        bool need_to_free_arg1 = false;
+        if (e.args[1]->expr_type == ExprType::Var) {
+            arg1 = e.args[1]->name;
+        }
+        else {
+            arg1 = alloc_temp16();
+            emit_expr(*e.args[1], arg1);     // start
+            need_to_free_arg1 = true;
+        }
 
-        std::string arg2 = alloc_temp16();
-        emit_expr(*e.args[2], arg2);     // length
+        std::string arg2;
+        bool need_to_free_arg2 = false;
+        if (e.args[2]->expr_type == ExprType::Var) {
+            arg2 = e.args[2]->name;
+        }
+        else {
+            arg2 = alloc_temp16();
+            emit_expr(*e.args[2], arg2);     // length
+            need_to_free_arg2 = true;
+        }
 
         emit("mid_string(" + target + ", " + arg0 + ", " +
              arg1 + ", " + arg2 + ")");
 
-        free_temp_string(arg0);
-        free_temp16(arg1);
-        free_temp16(arg2);
+        if (need_to_free_arg0) {
+            free_temp_string(arg0);
+        }
+        if (need_to_free_arg1) {
+            free_temp16(arg1);
+        }
+        if (need_to_free_arg2) {
+            free_temp16(arg2);
+        }
+        break;
+    }
+    case TokenType::KeywordStrDollar: {
+        assert(e.args.size() == 1);
+
+        std::string arg0;
+        bool need_to_free_arg0 = false;
+        if (e.args[0]->expr_type == ExprType::Var) {
+            arg0 = e.args[0]->name;
+        }
+        else {
+            arg0 = alloc_temp16();
+            emit_expr(*e.args[0], arg0);     // number
+            need_to_free_arg0 = true;
+        }
+
+        emit("format_cell16s(" + target + ", " + arg0 + ")");
+
+        if (need_to_free_arg0) {
+            free_temp16(arg0);
+        }
+        break;
+    }
+    case TokenType::KeywordLen: {
+        assert(e.args.size() == 1);
+
+        std::string arg0;
+        bool need_to_free_arg0 = false;
+        if (e.args[0]->expr_type == ExprType::Var) {
+            arg0 = e.args[0]->name;
+        }
+        else {
+            arg0 = alloc_temp_string(e.args[0]->string_size);
+            emit_expr(*e.args[0], arg0);   // string
+            need_to_free_arg0 = true;
+        }
+
+        std::string index = alloc_temp16();
+        emit("set16(" + index + ", 0)");
+        emit("get_array8(" + arg0 + ", " + index + ", " + target + ")");
+        free_temp16(index);
+
+        if (need_to_free_arg0) {
+            free_temp_string(arg0);
+        }
+        break;
+    }
+    case TokenType::KeywordVal: {
+        assert(e.args.size() == 1);
+
+        std::string arg0;
+        bool need_to_free_arg0 = false;
+        if (e.args[0]->expr_type == ExprType::Var) {
+            arg0 = e.args[0]->name;
+        }
+        else {
+            arg0 = alloc_temp_string(e.args[0]->string_size);
+            emit_expr(*e.args[0], arg0);   // string
+            need_to_free_arg0 = true;
+        }
+
+        emit("string_val16s(" + arg0 + ", " + target + ")");
+
+        if (need_to_free_arg0) {
+            free_temp_string(arg0);
+        }
+        break;
+    }
+    case TokenType::KeywordChrDollar: {
+        assert(e.args.size() == 1);
+
+        std::string arg0;
+        bool need_to_free_arg0 = false;
+        if (e.args[0]->expr_type == ExprType::Var) {
+            arg0 = e.args[0]->name;
+        }
+        else {
+            arg0 = alloc_temp16();
+            emit_expr(*e.args[0], arg0);     // number
+            need_to_free_arg0 = true;
+        }
+
+        std::string t0 = alloc_temp16();
+        emit("set16(" + t0 + ", 0)");
+
+        std::string t1 = alloc_temp16();
+        emit("set16(" + t1 + ", 1)");
+
+        // string[0] = length, string[1] = char
+        emit("put_array8(" + target + ", " + t0 + ", " + t1 + ")");
+        emit("put_array8(" + target + ", " + t1 + ", " + arg0 + ")");
+
+        free_temp16(t0);
+        free_temp16(t1);
+
+        if (need_to_free_arg0) {
+            free_temp16(arg0);
+        }
+        break;
+    }
+    case TokenType::KeywordAsc: {
+        assert(e.args.size() == 1);
+
+        std::string arg0;
+        bool need_to_free_arg0 = false;
+        if (e.args[0]->expr_type == ExprType::Var) {
+            arg0 = e.args[0]->name;
+        }
+        else {
+            arg0 = alloc_temp_string(e.args[0]->string_size);
+            emit_expr(*e.args[0], arg0);   // string
+            need_to_free_arg0 = true;
+        }
+
+        // string[0] = length, string[1] = char
+        std::string t0 = alloc_temp16();
+        emit("set16(" + t0 + ", 0)");
+
+        std::string t1 = alloc_temp16();
+        emit("set16(" + t1 + ", 1)");
+
+        std::string len = alloc_temp16();
+
+        // target = len > 0 ? char code : 0
+        emit("get_array8(" + arg0 + ", " + t0 + ", " + len + ")");
+        emit("if(" + len + ")");
+        emit("get_array8(" + arg0 + ", " + t1 + ", " + target + ")");
+        emit("else");
+        emit("set16(" + target + ", 0)");
+        emit("endif");
+
+        free_temp16(t0);
+        free_temp16(t1);
+        free_temp16(len);
+
+        if (need_to_free_arg0) {
+            free_temp_string(arg0);
+        }
         break;
     }
     default:

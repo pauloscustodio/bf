@@ -383,11 +383,6 @@ Stmt Parser::parse_multiline_if(Expr condition) {
     // ENDIF
     expect(TokenType::KeywordEndIf, "Expected ENDIF");
 
-    // ENDIF must be followed by newline
-    if (!match(TokenType::Newline)) {
-        error_here("Expected newline after ENDIF");
-    }
-
     Stmt s;
     s.type = StmtType::If;
     s.if_stmt = std::move(if_stmt);
@@ -449,9 +444,6 @@ Stmt Parser::parse_while() {
 
     // Consume WEND and its newline
     expect(TokenType::KeywordWEnd, "Expected WEND");
-    if (!match(TokenType::Newline)) {
-        error_here("Expected newline after WEND");
-    }
 
     Stmt s;
     s.type = StmtType::While;
@@ -489,9 +481,7 @@ Stmt Parser::parse_for() {
     }
 
     // newline required
-    if (!match(TokenType::Newline)) {
-        error_here("Expected newline after FOR header");
-    }
+    expect(TokenType::Newline, "Expected newline after FOR header");
 
     // Body until NEXT
     f->body = parse_block_until({ TokenType::KeywordNext }, "NEXT");
@@ -509,11 +499,6 @@ Stmt Parser::parse_for() {
         advance();
     }
 
-    // end of line
-    if (!match(TokenType::Newline)) {
-        error_here("Expected newline after NEXT");
-    }
-
     Stmt s;
     s.type = StmtType::For;
     s.loc = kw.loc;
@@ -528,11 +513,6 @@ Stmt Parser::parse_dim() {
     expect(TokenType::LParen, "Expected '(' after array name");
     Expr size_expr = parse_expr();
     expect(TokenType::RParen, "Expected ')' after size expression");
-
-    // newline
-    if (!match(TokenType::Newline)) {
-        error_here("Expected newline after DIM");
-    }
 
     Stmt s;
     s.type = StmtType::Dim;
