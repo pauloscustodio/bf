@@ -1,7 +1,4 @@
 - SUB name(A, B, ...) \n block \n ENDSUB
 - FUNCTION name(A, B, ...) \n block \n name = return \n ENDFUNCTION
-- Strings: INPUT, PRINT, compare
-- Simplify expressions, e.g. -(-A), subexpressions with constants
 - FOR: optimizing away the direction test when step is constant
 - IF: optimize if expression is constant
-- WHILE: optimize if expression is constant

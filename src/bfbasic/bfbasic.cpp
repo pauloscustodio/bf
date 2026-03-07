@@ -33,18 +33,26 @@ std::string read_file(const std::string& filename) {
     return ss.str();
 }
 
-std::optional<int> fold_const_int_expr(const Expr& e) {
+std::optional<int> fold_const_int_expr(const Expr& e,
+                                       const SymbolTable* sym = nullptr) {
     switch (e.expr_type) {
 
     case ExprType::Number:
         return e.int_value;
 
-    case ExprType::Var:
-        return std::nullopt;   // variables are not constant
+    case ExprType::Var: {
+        if (sym) {
+            const Symbol* s = sym->get(e.name);
+            if (s && s->const_value) {
+                return *s->const_value;
+            }
+        }
+        return std::nullopt;
+    }
 
     case ExprType::BinOp: {
-        auto L = fold_const_int_expr(*e.left);
-        auto R = fold_const_int_expr(*e.right);
+        auto L = fold_const_int_expr(*e.left, sym);
+        auto R = fold_const_int_expr(*e.right, sym);
         if (!L || !R) {
             return std::nullopt;
         }
@@ -86,11 +94,11 @@ std::optional<int> fold_const_int_expr(const Expr& e) {
 
     case ExprType::RelOp: {
         if (e.operand_type == ValueType::String) {
-            return std::nullopt;   // string relational ops not folded here
+            return std::nullopt;
         }
 
-        auto L = fold_const_int_expr(*e.left);
-        auto R = fold_const_int_expr(*e.right);
+        auto L = fold_const_int_expr(*e.left, sym);
+        auto R = fold_const_int_expr(*e.right, sym);
         if (!L || !R) {
             return std::nullopt;
         }
@@ -114,7 +122,7 @@ std::optional<int> fold_const_int_expr(const Expr& e) {
         break;
     }
     case ExprType::UnaryOp: {
-        auto inner = fold_const_int_expr(*e.inner);
+        auto inner = fold_const_int_expr(*e.inner, sym);
         if (!inner) {
             return std::nullopt;
         }
@@ -133,14 +141,14 @@ std::optional<int> fold_const_int_expr(const Expr& e) {
     }
 
     case ExprType::ArrayAccess:
-        return std::nullopt;   // arrays are not constant
+        return std::nullopt;
 
     case ExprType::StringLiteral:
     case ExprType::Concat:
-        return std::nullopt;   // strings not folded here
+        return std::nullopt;
 
     case ExprType::Call:
-        return std::nullopt;   // functions not folded here
+        return std::nullopt;
 
     default:
         assert(0);
@@ -354,24 +362,32 @@ void mark_single_assignment_constants(StmtList& prog, SymbolTable& sym) {
     for (const auto& stmt : prog.statements) {
         switch (stmt->type) {
         case StmtType::Let: {
-            if (stmt->let_stmt->type == LetType::Normal &&
-                    stmt->let_stmt->expr.expr_type == ExprType::Number) {
+            if (stmt->let_stmt->type == LetType::Normal) {
                 std::string name = stmt->let_stmt->var;
                 Symbol* symbol = sym.get(name);
                 if (symbol &&
                         symbol->type == SymbolType::IntVar &&
-                        symbol->count_assignments == 1) {
-                    symbol->const_value = stmt->let_stmt->expr.int_value;
+                        symbol->count_assignments == 1 &&
+                        !symbol->const_value) {
+                    // Evaluate RHS using known constants from the symbol table
+                    // without mutating the AST.
+                    auto folded = fold_const_int_expr(stmt->let_stmt->expr, &sym);
+                    if (folded) {
+                        symbol->const_value = *folded;
+                    }
                 }
             }
-            else if (stmt->let_stmt->type == LetType::String &&
-                     stmt->let_stmt->expr.expr_type == ExprType::StringLiteral) {
+            else if (stmt->let_stmt->type == LetType::String) {
                 std::string name = stmt->let_stmt->var;
                 Symbol* symbol = sym.get(name);
                 if (symbol &&
                         symbol->type == SymbolType::StringVar &&
-                        symbol->count_assignments == 1) {
-                    symbol->const_string = stmt->let_stmt->expr.string_value;
+                        symbol->count_assignments == 1 &&
+                        !symbol->const_string) {
+                    auto folded = fold_const_string_expr(stmt->let_stmt->expr, sym);
+                    if (folded) {
+                        symbol->const_string = *folded;
+                    }
                 }
             }
             break;
