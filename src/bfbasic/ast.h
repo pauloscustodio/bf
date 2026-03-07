@@ -106,7 +106,8 @@ struct InputStmt {
 };
 
 enum class PrintElemType {
-    String,     // TODO: can be removed, Expr can represent string literals
+    String,     // needed to emit simple print_string calls for string
+    // literals instead of more complex expression evaluation
     Expr,
     Separator,
 };

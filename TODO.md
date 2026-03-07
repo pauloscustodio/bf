@@ -5,6 +5,3 @@
 - FOR: optimizing away the direction test when step is constant
 - IF: optimize if expression is constant
 - WHILE: optimize if expression is constant
-- Allow DIM A$(10), B$(10)
-- Fold constant string functions
-- Simplify PrintElement - String is not needed

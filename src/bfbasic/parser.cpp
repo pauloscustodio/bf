@@ -270,8 +270,13 @@ Stmt Parser::parse_print() {
             continue;
         }
 
-        // 2. String literal?
-        if (match(TokenType::StringLiteral)) {
+        // 2. Lone String literal?
+        if (match(TokenType::StringLiteral) &&
+                (peek_next().type == TokenType::Semicolon ||
+                 peek_next().type == TokenType::Comma ||
+                 peek_next().type == TokenType::Colon ||
+                 peek_next().type == TokenType::Newline ||
+                 peek_next().type == TokenType::EndOfFile)) {
             Token t = advance();
             PrintElem e;
             e.type = PrintElemType::String;
@@ -295,19 +300,6 @@ Stmt Parser::parse_print() {
     }
 
     return s;
-}
-
-PrintElem Parser::parse_print_elems() {
-    Token t = peek();
-
-    if (match(TokenType::StringLiteral)) {
-        advance();
-        return PrintElem::string(t.text);
-    }
-
-    // Otherwise, it's an expression
-    Expr e = parse_expr();
-    return PrintElem::expression(std::move(e));
 }
 
 Stmt Parser::parse_if() {

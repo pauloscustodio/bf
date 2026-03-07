@@ -43,7 +43,6 @@ private:
     Stmt parse_let_common(const SourceLoc& loc);
     Stmt parse_input();
     Stmt parse_print();
-    PrintElem parse_print_elems();
     Stmt parse_if();
     void parse_inline_stmt_list(StmtList& out);
     Stmt parse_multiline_if(Token kw, Expr condition);
