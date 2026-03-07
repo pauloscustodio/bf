@@ -30,6 +30,8 @@ struct Symbol {
     int count_assignments = 0;
     // set when count_assignments == 1 and RHS is a folded number
     std::optional<int> const_value;
+    // set when count_assignments == 1 and RHS is a folded string
+    std::optional<std::string> const_string;
 };
 
 class SymbolTable {

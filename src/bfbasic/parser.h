@@ -19,7 +19,7 @@ private:
     const std::vector<Token>& tokens;
     size_t pos = 0;
 
-    // --- Utility -------------------------------------------------------------
+    // Utility
 
     const Token& peek() const;
     const Token& peek_next() const;
@@ -31,7 +31,7 @@ private:
     [[noreturn]] void error_here(const std::string& msg) const;
     const Token& expect(TokenType t, const std::string& msg);
 
-    // --- Statements ----------------------------------------------------------
+    // Statements
 
     bool starts_statement(const Token& t) const;
     Stmt parse_single_statement();
@@ -55,7 +55,7 @@ private:
     Stmt parse_dim();
     void consume_end_of_statement();
 
-    // --- Expressions ---------------------------------------------------------
+    //  Expressions
 
     bool starts_expression(const Token& t) const;
     Expr parse_expr();

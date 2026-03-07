@@ -149,6 +149,34 @@ std::optional<int> fold_const_int_expr(const Expr& e) {
     return std::nullopt;
 }
 
+// Fold string expressions, consulting symbol table for constant vars
+std::optional<std::string> fold_const_string_expr(const Expr& e, SymbolTable& sym) {
+    switch (e.expr_type) {
+    case ExprType::StringLiteral:
+        return e.string_value;
+
+    case ExprType::Var: {
+        Symbol* s = sym.get(e.name);
+        if (s && s->const_string) {
+            return *s->const_string;
+        }
+        return std::nullopt;
+    }
+
+    case ExprType::Concat: {
+        auto L = fold_const_string_expr(*e.left, sym);
+        auto R = fold_const_string_expr(*e.right, sym);
+        if (!L || !R) {
+            return std::nullopt;
+        }
+        return *L + *R;
+    }
+
+    default:
+        return std::nullopt;
+    }
+}
+
 void collect_symbols_in_expr(Expr& e, SymbolTable& sym) {
     switch (e.expr_type) {
     case ExprType::Number:
@@ -236,6 +264,7 @@ void collect_symbols(StmtList& prog, SymbolTable& sym) {
                         stmt->loc,
                         "variable '" + name + "' is not a string variable");
                 }
+                symbol->count_assignments++;
                 break;
             }
             }
@@ -327,14 +356,22 @@ void mark_single_assignment_constants(StmtList& prog, SymbolTable& sym) {
         case StmtType::Let: {
             if (stmt->let_stmt->type == LetType::Normal &&
                     stmt->let_stmt->expr.expr_type == ExprType::Number) {
-                // only mark simple variables, not arrays or strings
                 std::string name = stmt->let_stmt->var;
                 Symbol* symbol = sym.get(name);
                 if (symbol &&
                         symbol->type == SymbolType::IntVar &&
                         symbol->count_assignments == 1) {
-                    // symbol is constant, can be optimized
                     symbol->const_value = stmt->let_stmt->expr.int_value;
+                }
+            }
+            else if (stmt->let_stmt->type == LetType::String &&
+                     stmt->let_stmt->expr.expr_type == ExprType::StringLiteral) {
+                std::string name = stmt->let_stmt->var;
+                Symbol* symbol = sym.get(name);
+                if (symbol &&
+                        symbol->type == SymbolType::StringVar &&
+                        symbol->count_assignments == 1) {
+                    symbol->const_string = stmt->let_stmt->expr.string_value;
                 }
             }
             break;
@@ -365,10 +402,17 @@ void fold_constants_in_expr(Expr& e, SymbolTable& sym) {
         break;
 
     case ExprType::Var: {
+        // need to fold constants here to handle cases like
+        // LET A = 1 : LET B = A + 2 : DIM C(B)
         Symbol* symbol = sym.get(e.name);
         if (symbol && symbol->const_value) {
             e = Expr::number(*symbol->const_value, e.loc);
         }
+        // Note: don't replace string vars with string literals here.
+        // The codegen can reference the variable's cell directly, which is
+        // more efficient than materializing a temporary copy of the literal.
+        // String constant propagation happens inside fold_const_string_expr
+        // when folding Concat nodes.
         break;
     }
 
@@ -407,6 +451,9 @@ void fold_constants_in_expr(Expr& e, SymbolTable& sym) {
     case ExprType::Concat:
         fold_constants_in_expr(*e.left, sym);
         fold_constants_in_expr(*e.right, sym);
+        if (auto folded = fold_const_string_expr(e, sym)) {
+            e = Expr::string_literal(*folded, e.loc);
+        }
         break;
 
     case ExprType::Call:
@@ -780,7 +827,7 @@ void finalize_array_sizes(StmtList& prog, SymbolTable& sym) {
 static std::size_t count_constant_symbols(const SymbolTable& sym) {
     std::size_t n = 0;
     for (const auto& kv : sym.all()) {
-        if (kv.second.const_value) {
+        if (kv.second.const_value || kv.second.const_string) {
             ++n;
         }
     }
