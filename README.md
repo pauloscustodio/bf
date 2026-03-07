@@ -69,8 +69,8 @@ usage: bfbasic [-o output_file] input_file
 
 Supported statements (one per line; blank lines allowed):
 - `[LET] var = expr` - assign integer expression to a variable.
-- `DIM var(size)` - allocates array, `A(i)` accesses element, 1 <= i <= size.
-- `INPUT var1 [, var2]` - read integers into `varN`.
+- `DIM var(size) [, var(size)...]` - allocates array, `A(i)` accesses element, 1 <= i <= size.
+- `INPUT var1 [, var2...]` - read integers into `varN`.
 - `PRINT [string|expr][,|;]...` - print values of expressions and strings
 - `IF expr THEN stmts [ELSE stmts]` - single line if-else.
 - `IF expr THEN`, ..., `[ELSE`, ..., `]ENDIF` - multi-line if-else.
@@ -83,7 +83,9 @@ Strings:
 - Must be DIM-ensinoned to the maximum size - `DIM A$(10)`.
 - Can be assigned - `[LET] A$ = "hello"`.
 - Can be concatenated - `[LET] A$ = B$ & C$`.
+- Can be printed and read - `PRINT A$`, `INPUT A$`.
 - String functions in expressions - `LEFT$`, `MID$`, `RIGHT$`, `STR$`, `LEN`, `VAL`, `CHR$`, `ASC`.
+- String comparison operators - `=`, `<>`, `<`, `<=`, `>`, `>=`.
 
 Expressions:
 - variables and decimal integers

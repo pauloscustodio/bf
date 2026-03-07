@@ -20,17 +20,19 @@ enum class ValueType {
 enum class ExprType {
     Number,
     Var,
-    BinOp,
-    UnaryOp,
-    ArrayAccess,     // A(i)
-    StringLiteral,   // "hello"
-    Concat,          // B$ & C$
-    Call             // LEFT$(...), MID$(...), RIGHT$(...)
+    BinOp,      // arithmetic only, operands are numeric, result is numeric
+    RelOp,      // relational, operands can be Int or String,
+    UnaryOp,    // unary operations, operands are numeric, result is numeric
+    ArrayAccess,    // A(i)
+    StringLiteral,  // "hello"
+    Concat,         // B$ & C$
+    Call,           // LEFT$(...), MID$(...), RIGHT$(...), ...
 };
 
 struct Expr {
     ExprType expr_type = ExprType::Number;   // filled in by parser
     ValueType value_type = ValueType::Int;
+    ValueType operand_type = ValueType::Int; // for RelOp, type of operands
     SourceLoc loc;
 
     // For Number
@@ -61,6 +63,8 @@ struct Expr {
     static Expr var(const std::string& n, const SourceLoc& loc);
     static Expr binop(TokenType op, Expr lhs, Expr rhs, const SourceLoc& loc);
     static Expr unary(TokenType op, Expr inner, const SourceLoc& loc);
+    static Expr relop(TokenType op, Expr lhs, Expr rhs, ValueType operand_type,
+                      const SourceLoc& loc);
     static Expr array_access(const std::string& n, std::unique_ptr<Expr> index,
                              const SourceLoc& loc);
     static Expr string_literal(std::string s, const SourceLoc& loc);
@@ -88,9 +92,13 @@ struct LetStmt {
     Expr expr;                      // RHS
 };
 
-struct DimStmt {
+struct DimElem {
     std::string var;
     std::unique_ptr<Expr> size_expr;
+};
+
+struct DimStmt {
+    std::vector<DimElem> elems;
 };
 
 struct InputStmt {

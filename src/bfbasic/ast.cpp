@@ -46,6 +46,19 @@ Expr Expr::unary(TokenType op, Expr inner, const SourceLoc& loc) {
     return e;
 }
 
+Expr Expr::relop(TokenType op, Expr lhs, Expr rhs,
+                 ValueType operand_type, const SourceLoc& loc) {
+    Expr e;
+    e.expr_type = ExprType::RelOp;
+    e.value_type = ValueType::Int;   // relational operations always return Int
+    e.operand_type = operand_type;
+    e.op = op;
+    e.left = std::make_unique<Expr>(std::move(lhs));
+    e.right = std::make_unique<Expr>(std::move(rhs));
+    e.loc = loc;
+    return e;
+}
+
 Expr Expr::array_access(const std::string& n, std::unique_ptr<Expr> index,
                         const SourceLoc& loc) {
     Expr e;

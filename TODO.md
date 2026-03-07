@@ -1,5 +1,3 @@
-- Strings:
-	- A$ < <= = <> >= > B$ - compare
 - SUB name(A, B, ...) \n block \n ENDSUB
 - FUNCTION name(A, B, ...) \n block \n name = return \n ENDFUNCTION
 - Strings: INPUT, PRINT, compare
@@ -11,4 +9,3 @@
 - Fold constant strings
 - Fold constant string functions
 - Simplify PrintElement - String is not needed
-- INPUT A$

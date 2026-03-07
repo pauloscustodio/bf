@@ -72,18 +72,6 @@ std::optional<int> fold_const_int_expr(const Expr& e) {
             return *L << *R;
         case TokenType::KeywordShr:
             return *L >> *R;
-        case TokenType::Equal:
-            return (*L == *R) ? 1 : 0;
-        case TokenType::NotEqual:
-            return (*L != *R) ? 1 : 0;
-        case TokenType::Less:
-            return (*L < *R) ? 1 : 0;
-        case TokenType::LessEqual:
-            return (*L <= *R) ? 1 : 0;
-        case TokenType::Greater:
-            return (*L > *R) ? 1 : 0;
-        case TokenType::GreaterEqual:
-            return (*L >= *R) ? 1 : 0;
         case TokenType::KeywordAnd:
             return (*L && *R) ? 1 : 0;
         case TokenType::KeywordOr:
@@ -96,6 +84,35 @@ std::optional<int> fold_const_int_expr(const Expr& e) {
         break;
     }
 
+    case ExprType::RelOp: {
+        if (e.operand_type == ValueType::String) {
+            return std::nullopt;   // string relational ops not folded here
+        }
+
+        auto L = fold_const_int_expr(*e.left);
+        auto R = fold_const_int_expr(*e.right);
+        if (!L || !R) {
+            return std::nullopt;
+        }
+
+        switch (e.op) {
+        case TokenType::Equal:
+            return (*L == *R) ? 1 : 0;
+        case TokenType::NotEqual:
+            return (*L != *R) ? 1 : 0;
+        case TokenType::Less:
+            return (*L < *R) ? 1 : 0;
+        case TokenType::LessEqual:
+            return (*L <= *R) ? 1 : 0;
+        case TokenType::Greater:
+            return (*L > *R) ? 1 : 0;
+        case TokenType::GreaterEqual:
+            return (*L >= *R) ? 1 : 0;
+        default:
+            assert(0);
+        }
+        break;
+    }
     case ExprType::UnaryOp: {
         auto inner = fold_const_int_expr(*e.inner);
         if (!inner) {
@@ -153,10 +170,11 @@ void const_int_expr_evaluator(StmtList& prog) {
         }
 
         case StmtType::Dim: {
-            auto folded = fold_const_int_expr(*stmt->dim_stmt->size_expr);
-            if (folded) {
-                stmt->dim_stmt->size_expr =
-                    std::make_unique<Expr>(Expr::number(*folded, stmt->loc));
+            for (auto& elem : stmt->dim_stmt->elems) {
+                auto folded = fold_const_int_expr(*elem.size_expr);
+                if (folded) {
+                    elem.size_expr = std::make_unique<Expr>(Expr::number(*folded, stmt->loc));
+                }
             }
             break;
         }
@@ -236,6 +254,8 @@ void collect_symbols_in_expr(Expr& e, SymbolTable& sym) {
         break;
     }
     case ExprType::BinOp:
+    case ExprType::RelOp:
+    case ExprType::Concat:
         collect_symbols_in_expr(*e.left, sym);
         collect_symbols_in_expr(*e.right, sym);
         break;
@@ -249,11 +269,6 @@ void collect_symbols_in_expr(Expr& e, SymbolTable& sym) {
         break;
 
     case ExprType::StringLiteral:
-        break;
-
-    case ExprType::Concat:
-        collect_symbols_in_expr(*e.left, sym);
-        collect_symbols_in_expr(*e.right, sym);
         break;
 
     case ExprType::Call:
@@ -322,26 +337,28 @@ void collect_symbols(StmtList& prog, SymbolTable& sym) {
             break;
 
         case StmtType::Dim: {
-            std::string name = stmt->dim_stmt->var;
-            bool is_string = is_string_var(name);
-            SymbolType type = is_string ?
-                              SymbolType::StringVar : SymbolType::IntArrayVar;
+            for (auto& elem : stmt->dim_stmt->elems) {
+                std::string name = elem.var;
+                bool is_string = is_string_var(name);
+                SymbolType type = is_string ?
+                                  SymbolType::StringVar : SymbolType::IntArrayVar;
 
-            auto folded = fold_const_int_expr(*stmt->dim_stmt->size_expr);
-            if (!folded) {
-                error_at(stmt->loc, "DIM size must be a constant expression");
+                auto folded = fold_const_int_expr(*elem.size_expr);
+                if (!folded) {
+                    error_at(stmt->loc,
+                             "DIM size must be a constant expression");
+                }
+
+                int size = *folded;
+                if (size <= 0) {
+                    error_at(stmt->loc, "DIM size must be > 0");
+                }
+
+                sym.declare(name, type, stmt->loc);
+
+                Symbol* symbol = sym.get(name);
+                symbol->array_size = size;
             }
-
-            int size = *folded;
-            if (size <= 0) {
-                error_at(stmt->loc, "DIM size must be > 0");
-            }
-
-            sym.declare(name, type, stmt->loc);
-
-            Symbol* symbol = sym.get(name);
-            symbol->array_size = size;
-
             break;
         }
         case StmtType::Input:
@@ -463,6 +480,19 @@ void fold_constants_in_expr(Expr& e, SymbolTable& sym) {
         }
         break;
 
+    case ExprType::RelOp:
+        if (e.operand_type == ValueType::String) {
+            // string relational ops not folded here
+            break;
+        }
+
+        fold_constants_in_expr(*e.left, sym);
+        fold_constants_in_expr(*e.right, sym);
+        if (auto folded = fold_const_int_expr(e)) {
+            e = Expr::number(*folded, e.loc);
+        }
+        break;
+
     case ExprType::UnaryOp:
         fold_constants_in_expr(*e.inner, sym);
         if (auto folded = fold_const_int_expr(e)) {
@@ -501,7 +531,9 @@ void fold_constants(StmtList& prog, SymbolTable& sym) {
             break;
 
         case StmtType::Dim:
-            fold_constants_in_expr(*stmt->dim_stmt->size_expr, sym);
+            for (auto& elem : stmt->dim_stmt->elems) {
+                fold_constants_in_expr(*elem.size_expr, sym);
+            }
             break;
 
         case StmtType::Input:
@@ -559,30 +591,47 @@ void semantic_check_in_expr(Expr& e, SymbolTable& sym) {
         }
         break;
     }
-    case ExprType::BinOp:
+    case ExprType::BinOp: {
         semantic_check_in_expr(*e.left, sym);
         semantic_check_in_expr(*e.right, sym);
+
+        // the other operators can only be applied to ints
         if (e.left->value_type == ValueType::String ||
                 e.right->value_type == ValueType::String) {
             error_at(
                 e.loc,
-                "operator '" + token_type_to_string(e.op) + "' cannot be applied to strings");
+                "operator '" + token_type_to_string(e.op) +
+                "' cannot be applied to strings");
         }
 
-        e.value_type = ValueType::Int;
+        e.value_type = ValueType::Int;  // result of comparison is always int
         break;
-
-    case ExprType::UnaryOp:
+    }
+    case ExprType::RelOp: {
+        semantic_check_in_expr(*e.left, sym);
+        semantic_check_in_expr(*e.right, sym);
+        if (e.left->value_type != e.right->value_type) {
+            error_at(
+                e.loc,
+                "operator '" + token_type_to_string(e.op) +
+                "' cannot be applied to different types");
+        }
+        e.operand_type = e.left->value_type;
+        e.value_type = ValueType::Int;  // result of comparison is always int
+        break;
+    }
+    case ExprType::UnaryOp: {
         semantic_check_in_expr(*e.inner, sym);
         if (e.inner->value_type == ValueType::String) {
             error_at(
                 e.loc,
-                "operator '" + token_type_to_string(e.op) + "' cannot be applied to strings");
+                "operator '" + token_type_to_string(e.op) +
+                "' cannot be applied to strings");
         }
 
         e.value_type = ValueType::Int;
         break;
-
+    }
     case ExprType::ArrayAccess: {
         // assertions for errors that should have been caught in collect_symbols
         Symbol* symbol = sym.get(e.name);
@@ -764,7 +813,9 @@ void semantic_check(StmtList& prog, SymbolTable& sym) {
             break;
         }
         case StmtType::Dim:
-            semantic_check_in_expr(*stmt->dim_stmt->size_expr, sym);
+            for (auto& elem : stmt->dim_stmt->elems) {
+                semantic_check_in_expr(*elem.size_expr, sym);
+            }
             break;
 
         case StmtType::Input:

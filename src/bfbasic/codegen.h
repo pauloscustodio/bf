@@ -49,5 +49,8 @@ private:
     void emit_expr(const Expr& e, const std::string& target);
     void emit_unary(const Expr& e, const std::string& target);
     void emit_binary(const Expr& e, const std::string& target);
+    void emit_relop(const Expr& e, const std::string& target);
+    void emit_relop_int(const Expr& e, const std::string& target);
+    void emit_relop_string(const Expr& e, const std::string& target);
     void emit_call(const Expr& e, const std::string& target);
 };

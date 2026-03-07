@@ -126,7 +126,12 @@ void CodeGen::emit_stmt(const Stmt& s) {
 
 void CodeGen::emit_input(const Stmt& s) {
     for (auto& v : s.input_stmt->vars) {
-        emit("scan_cell16s(" + v + ")");
+        if (sym.get(v)->type == SymbolType::StringVar) {
+            emit("scan_word(" + v + ")");
+        }
+        else {
+            emit("scan_cell16s(" + v + ")");
+        }
     }
 }
 
@@ -396,6 +401,10 @@ void CodeGen::emit_expr(const Expr& e, const std::string& target) {
         emit_binary(e, target);
         break;
 
+    case ExprType::RelOp:
+        emit_relop(e, target);
+        break;
+
     case ExprType::UnaryOp:
         emit_unary(e, target);
         break;
@@ -488,18 +497,10 @@ void CodeGen::emit_binary(const Expr& e, const std::string& target) {
     if (e.right->expr_type == ExprType::Var) {
         right = e.right->name;
     }
-    else if (e.right->value_type == ValueType::Int) {
+    else {
         right = alloc_temp16();
         emit_expr(*e.right, right);
         need_to_free_right = true;
-    }
-    else if (e.right->value_type == ValueType::String) {
-        right = alloc_temp_string(e.right->string_size);
-        emit_expr(*e.right, right);
-        need_to_free_right = true;
-    }
-    else {
-        assert(0);
     }
 
     switch (e.op) {
@@ -532,7 +533,56 @@ void CodeGen::emit_binary(const Expr& e, const std::string& target) {
         emit("shr16(" + target + ", " + right + ")");
         break;
 
-    // Relational (normalize to 0/1)
+    // Boolean logic (operates on 0/1)
+    case TokenType::KeywordAnd:
+        emit("and16(" + target + ", " + right + ")");
+        break;
+    case TokenType::KeywordOr:
+        emit("or16(" + target + ", " + right + ")");
+        break;
+    case TokenType::KeywordXor:
+        emit("xor16(" + target + ", " + right + ")");
+        break;
+
+    default:
+        assert(0);
+    }
+
+    if (need_to_free_right) {
+        free_temp16(right);
+    }
+}
+
+void CodeGen::emit_relop(const Expr& e, const std::string& target) {
+    if (e.operand_type == ValueType::Int) {
+        emit_relop_int(e, target);
+    }
+    else if (e.operand_type == ValueType::String) {
+        emit_relop_string(e, target);
+    }
+    else {
+        assert(0);
+    }
+}
+
+void CodeGen::emit_relop_int(const Expr& e, const std::string& target) {
+    // evaluate left into target
+    emit_expr(*e.left, target);
+
+    // Evaluate right into a temp
+    std::string right;
+    bool need_to_free_right = false;
+    if (e.right->expr_type == ExprType::Var) {
+        right = e.right->name;
+    }
+    else {
+        right = alloc_temp16();
+        emit_expr(*e.right, right);
+        need_to_free_right = true;
+    }
+
+    // output comparison code
+    switch (e.op) {
     case TokenType::Equal:
         emit("eq16s(" + target + ", " + right + ")");
         break;
@@ -551,29 +601,81 @@ void CodeGen::emit_binary(const Expr& e, const std::string& target) {
     case TokenType::GreaterEqual:
         emit("ge16s(" + target + ", " + right + ")");
         break;
-
-    // Boolean logic (operates on 0/1)
-    case TokenType::KeywordAnd:
-        emit("and16(" + target + ", " + right + ")");
-        break;
-    case TokenType::KeywordOr:
-        emit("or16(" + target + ", " + right + ")");
-        break;
-    case TokenType::KeywordXor:
-        emit("xor16(" + target + ", " + right + ")");
-        break;
-
     default:
         assert(0);
     }
 
     if (need_to_free_right) {
-        if (e.right->value_type == ValueType::Int) {
-            free_temp16(right);
-        }
-        else if (e.right->value_type == ValueType::String) {
-            free_temp_string(right);
-        }
+        free_temp16(right);
+    }
+}
+
+void CodeGen::emit_relop_string(const Expr& e, const std::string& target) {
+    // Evaluate left into a temp
+    std::string left;
+    bool need_to_free_left = false;
+    if (e.left->expr_type == ExprType::Var) {
+        left = e.left->name;
+    }
+    else {
+        left = alloc_temp_string(e.left->string_size);
+        emit_expr(*e.left, left);
+        need_to_free_left = true;
+    }
+
+    // Evaluate right into a temp
+    std::string right;
+    bool need_to_free_right = false;
+    if (e.right->expr_type == ExprType::Var) {
+        right = e.right->name;
+    }
+    else {
+        right = alloc_temp_string(e.right->string_size);
+        emit_expr(*e.right, right);
+        need_to_free_right = true;
+    }
+
+    // output comparison code
+    // cmp_string sets target to <0, 0, >0 for <, =, > respectively
+    // but sets only 8 bits, so we need to clear target before comparison and
+    // to compare against zero with signed 8bit comparison
+    // the result is 0/1, so the high byte of target is always zero
+    // and doesn't affect the result
+    std::string zero = alloc_temp16();
+    emit("clear16(" + zero + ")");
+    emit("clear16(" + target + ")");
+    emit("cmp_string(" + left + ", " + right + ", " + target + ")");
+
+    switch (e.op) {
+    case TokenType::Equal:
+        emit("eq8s(" + target + ", " + zero + ")");
+        break;
+    case TokenType::NotEqual:
+        emit("ne8s(" + target + ", " + zero + ")");
+        break;
+    case TokenType::Less:
+        emit("lt8s(" + target + ", " + zero + ")");
+        break;
+    case TokenType::LessEqual:
+        emit("le8s(" + target + ", " + zero + ")");
+        break;
+    case TokenType::Greater:
+        emit("gt8s(" + target + ", " + zero + ")");
+        break;
+    case TokenType::GreaterEqual:
+        emit("ge8s(" + target + ", " + zero + ")");
+        break;
+    default:
+        assert(0);
+    }
+
+    // free temps
+    free_temp16(zero);
+    if (need_to_free_left) {
+        free_temp_string(left);
+    }
+    if (need_to_free_right) {
+        free_temp_string(right);
     }
 }
 
@@ -735,7 +837,7 @@ void CodeGen::emit_call(const Expr& e, const std::string& target) {
         }
 
         std::string index = alloc_temp16();
-        emit("set16(" + index + ", 0)");
+        emit("clear16(" + index + ")");
         emit("get_array8(" + arg0 + ", " + index + ", " + target + ")");
         free_temp16(index);
 
@@ -780,7 +882,7 @@ void CodeGen::emit_call(const Expr& e, const std::string& target) {
         }
 
         std::string t0 = alloc_temp16();
-        emit("set16(" + t0 + ", 0)");
+        emit("clear16(" + t0 + ")");
 
         std::string t1 = alloc_temp16();
         emit("set16(" + t1 + ", 1)");
@@ -813,7 +915,7 @@ void CodeGen::emit_call(const Expr& e, const std::string& target) {
 
         // string[0] = length, string[1] = char
         std::string t0 = alloc_temp16();
-        emit("set16(" + t0 + ", 0)");
+        emit("clear16(" + t0 + ")");
 
         std::string t1 = alloc_temp16();
         emit("set16(" + t1 + ", 1)");
@@ -825,7 +927,7 @@ void CodeGen::emit_call(const Expr& e, const std::string& target) {
         emit("if(" + len + ")");
         emit("get_array8(" + arg0 + ", " + t1 + ", " + target + ")");
         emit("else");
-        emit("set16(" + target + ", 0)");
+        emit("clear16(" + target + ")");
         emit("endif");
 
         free_temp16(t0);

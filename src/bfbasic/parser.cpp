@@ -509,16 +509,30 @@ Stmt Parser::parse_for() {
 Stmt Parser::parse_dim() {
     advance(); // DIM
 
-    Token var = expect(TokenType::Identifier, "Expected array name after DIM");
-    expect(TokenType::LParen, "Expected '(' after array name");
-    Expr size_expr = parse_expr();
-    expect(TokenType::RParen, "Expected ')' after size expression");
-
     Stmt s;
     s.type = StmtType::Dim;
     s.dim_stmt = std::make_unique<DimStmt>();
-    s.dim_stmt->var = var.text;
-    s.dim_stmt->size_expr = std::make_unique<Expr>(std::move(size_expr));
+
+    while (true) {
+        Token var = expect(TokenType::Identifier,
+                           "Expected array name after DIM");
+        expect(TokenType::LParen,
+               "Expected '(' after array name");
+        Expr size_expr = parse_expr();
+        expect(TokenType::RParen,
+               "Expected ')' after size expression");
+
+        DimElem elem;
+        elem.var = var.text;
+        elem.size_expr = std::make_unique<Expr>(std::move(size_expr));
+        s.dim_stmt->elems.push_back(std::move(elem));
+
+        if (!match(TokenType::Comma)) {
+            break;
+        }
+        advance(); // consume comma
+    }
+
     return s;
 }
 
@@ -619,7 +633,8 @@ Expr Parser::parse_relational() {
 
         Token op = advance();
         Expr right = parse_shift();
-        left = Expr::binop(op.type, std::move(left), std::move(right), op.loc);
+        left = Expr::relop(op.type, std::move(left), std::move(right),
+                           left.value_type, op.loc);
     }
 
     return left;
