@@ -149,99 +149,6 @@ std::optional<int> fold_const_int_expr(const Expr& e) {
     return std::nullopt;
 }
 
-void const_int_expr_evaluator(StmtList& prog) {
-    for (auto& stmt : prog.statements) {
-        switch (stmt->type) {
-
-        case StmtType::Let: {
-            if (stmt->let_stmt->index) {
-                auto folded_idx = fold_const_int_expr(*stmt->let_stmt->index);
-                if (folded_idx) {
-                    stmt->let_stmt->index =
-                        std::make_unique<Expr>(Expr::number(*folded_idx, stmt->loc));
-                }
-            }
-
-            auto folded = fold_const_int_expr(stmt->let_stmt->expr);
-            if (folded) {
-                stmt->let_stmt->expr = Expr::number(*folded, stmt->loc);
-            }
-            break;
-        }
-
-        case StmtType::Dim: {
-            for (auto& elem : stmt->dim_stmt->elems) {
-                auto folded = fold_const_int_expr(*elem.size_expr);
-                if (folded) {
-                    elem.size_expr = std::make_unique<Expr>(Expr::number(*folded, stmt->loc));
-                }
-            }
-            break;
-        }
-
-        case StmtType::Input:
-            break;  // no expressions to fold
-
-        case StmtType::Print: {
-            for (auto& item : stmt->print_stmt->elems) {
-                if (item.type == PrintElemType::Expr) {
-                    auto folded = fold_const_int_expr(item.expr);
-                    if (folded) {
-                        item.expr = Expr::number(*folded, stmt->loc);
-                    }
-                }
-            }
-            break;
-        }
-
-        case StmtType::If: {
-            auto folded = fold_const_int_expr(stmt->if_stmt->condition);
-            if (folded) {
-                stmt->if_stmt->condition = Expr::number(*folded, stmt->loc);
-            }
-
-            // recurse
-            const_int_expr_evaluator(stmt->if_stmt->then_block);
-            const_int_expr_evaluator(stmt->if_stmt->else_block);
-            break;
-        }
-
-        case StmtType::While: {
-            auto folded = fold_const_int_expr(stmt->while_stmt->condition);
-            if (folded) {
-                stmt->while_stmt->condition = Expr::number(*folded, stmt->loc);
-            }
-
-            // recurse
-            const_int_expr_evaluator(stmt->while_stmt->body);
-            break;
-        }
-
-        case StmtType::For: {
-            auto folded = fold_const_int_expr(stmt->for_stmt->start_expr);
-            if (folded) {
-                stmt->for_stmt->start_expr = Expr::number(*folded, stmt->loc);
-            }
-            folded = fold_const_int_expr(stmt->for_stmt->end_expr);
-            if (folded) {
-                stmt->for_stmt->end_expr = Expr::number(*folded, stmt->loc);
-            }
-            folded = fold_const_int_expr(stmt->for_stmt->step_expr);
-            if (folded) {
-                stmt->for_stmt->step_expr = Expr::number(*folded, stmt->loc);
-            }
-
-            // recurse
-            const_int_expr_evaluator(stmt->for_stmt->body);
-            break;
-        }
-
-        default:
-            assert(0);
-        }
-    }
-}
-
 void collect_symbols_in_expr(Expr& e, SymbolTable& sym) {
     switch (e.expr_type) {
     case ExprType::Number:
@@ -343,21 +250,14 @@ void collect_symbols(StmtList& prog, SymbolTable& sym) {
                 SymbolType type = is_string ?
                                   SymbolType::StringVar : SymbolType::IntArrayVar;
 
+                // Try to fold now; if not yet possible, defer check to finalize_array_sizes
                 auto folded = fold_const_int_expr(*elem.size_expr);
-                if (!folded) {
-                    error_at(stmt->loc,
-                             "DIM size must be a constant expression");
-                }
-
-                int size = *folded;
-                if (size <= 0) {
-                    error_at(stmt->loc, "DIM size must be > 0");
-                }
 
                 sym.declare(name, type, stmt->loc);
 
+                // 0 array_size means "unresolved yet"
                 Symbol* symbol = sym.get(name);
-                symbol->array_size = size;
+                symbol->array_size = folded ? *folded : 0;
             }
             break;
         }
@@ -852,6 +752,41 @@ void semantic_check(StmtList& prog, SymbolTable& sym) {
     }
 }
 
+void finalize_array_sizes(StmtList& prog, SymbolTable& sym) {
+    for (auto& stmt : prog.statements) {
+        if (stmt->type != StmtType::Dim) {
+            continue;
+        }
+
+        for (auto& elem : stmt->dim_stmt->elems) {
+            // After fold_constants, size_expr must be a number
+            auto folded = fold_const_int_expr(*elem.size_expr);
+            if (!folded) {
+                error_at(stmt->loc, "DIM size must be a constant expression");
+            }
+            int size = *folded;
+            if (size <= 0) {
+                error_at(stmt->loc, "DIM size must be > 0");
+            }
+
+            Symbol* symbol = sym.get(elem.var);
+            assert(symbol);
+            symbol->array_size = size;
+        }
+    }
+}
+
+// helper to count discovered constants
+static std::size_t count_constant_symbols(const SymbolTable& sym) {
+    std::size_t n = 0;
+    for (const auto& kv : sym.all()) {
+        if (kv.second.const_value) {
+            ++n;
+        }
+    }
+    return n;
+}
+
 std::string compile(const std::string& source) {
     Lexer lexer(source);
     auto tokens = lexer.tokenize();
@@ -859,14 +794,22 @@ std::string compile(const std::string& source) {
     Parser parser(tokens);
     Program prog = parser.parse_program();
 
-    // need to fold constant integer expressions before symbol collection,
-    // because array sizes in DIM statements must be constant expressions
-    const_int_expr_evaluator(prog);
-
     SymbolTable sym;
     collect_symbols(prog, sym);
-    mark_single_assignment_constants(prog, sym);
-    fold_constants(prog, sym);
+
+    // propagate single-assignment constants to a fixed point
+    std::size_t last_const = 0;
+    while (true) {
+        mark_single_assignment_constants(prog, sym);
+        fold_constants(prog, sym);
+        std::size_t now_const = count_constant_symbols(sym);
+        if (now_const == last_const) {
+            break;
+        }
+        last_const = now_const;
+    }
+
+    finalize_array_sizes(prog, sym);
     semantic_check(prog, sym);
 
     CodeGen cg(sym);

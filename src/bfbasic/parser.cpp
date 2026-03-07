@@ -326,7 +326,7 @@ Stmt Parser::parse_if() {
     // THEN followed by newline -> multi-line IF
     if (match(TokenType::Newline)) {
         advance(); // consume newline
-        return parse_multiline_if(std::move(condition));
+        return parse_multiline_if(kw, std::move(condition));
     }
 
     // single-line IF
@@ -365,7 +365,7 @@ void Parser::parse_inline_stmt_list(StmtList& out) {
     parse_statement_list_on_line(out.statements);
 }
 
-Stmt Parser::parse_multiline_if(Expr condition) {
+Stmt Parser::parse_multiline_if(Token kw, Expr condition) {
     auto if_stmt = std::make_unique<IfStmt>();
     if_stmt->condition = std::move(condition);
 
@@ -385,6 +385,7 @@ Stmt Parser::parse_multiline_if(Expr condition) {
 
     Stmt s;
     s.type = StmtType::If;
+    s.loc = kw.loc;
     s.if_stmt = std::move(if_stmt);
     return s;
 }
@@ -507,15 +508,18 @@ Stmt Parser::parse_for() {
 }
 
 Stmt Parser::parse_dim() {
-    advance(); // DIM
+    Token kw = advance(); // DIM
 
     Stmt s;
     s.type = StmtType::Dim;
+    s.loc = kw.loc;
     s.dim_stmt = std::make_unique<DimStmt>();
 
     while (true) {
         Token var = expect(TokenType::Identifier,
-                           "Expected array name after DIM");
+                           s.dim_stmt->elems.empty() ?
+                           "Expected array name after DIM" :
+                           "Expected array name after ','");
         expect(TokenType::LParen,
                "Expected '(' after array name");
         Expr size_expr = parse_expr();

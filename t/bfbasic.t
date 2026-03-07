@@ -37,7 +37,10 @@ set16(B, 13)
 scan_cell16s(X)
 alloc_cell16(_BFB1)
 copy16(X, _BFB1)
-mul16s(_BFB1, B)
+alloc_cell16(_BFB2)
+set16(_BFB2, 13)
+mul16s(_BFB1, _BFB2)
+free_cell16(_BFB2)
 move16(_BFB1, Y)
 free_cell16(_BFB1)
 print_cell16s(Y)
@@ -52,14 +55,14 @@ run_ok("bfbasic -o $test.bfpp < $test.bas");
 check_text_file("$test.bfpp", $compiled);
 
 # parse from input file, output to file
-run_ok("bfbasic -o $test.bfpp $test.bas");
+run_ok("bfbasic $test.bas -o $test.bfpp");
 check_text_file("$test.bfpp", $compiled);
 
 # parse from input file, output to stdout
 capture_ok("bfbasic $test.bas", $compiled);
 
 # convert to bf
-run_ok("bfpp -o $test.bf $test.bfpp");
+run_ok("bfpp $test.bfpp -o $test.bf");
 
 # run the code
 capture_ok("echo 27 | bf $test.bf", <<END);
@@ -73,7 +76,7 @@ LET A = 10 : : LET B = A + 3 :
 INPUT X : LET Y = X * B : PRINT Y
 :
 END
-run_ok("bfbasic -o $test.bfpp $test.bas");
+run_ok("bfbasic $test.bas -o $test.bfpp");
 check_text_file("$test.bfpp", $compiled);
 
 # check the same BASIC program with _
@@ -104,12 +107,12 @@ B _
 PRINT _
 Y _
 END
-run_ok("bfbasic -o $test.bfpp $test.bas");
+run_ok("bfbasic $test.bas -o $test.bfpp");
 check_text_file("$test.bfpp", $compiled);
 
 # test final _ in the file
 spew("$test.bas", "LET A = 10 : LET B = A + 3 : INPUT X : LET Y = X * B : PRINT Y _");
-capture_nok("bfbasic -o $test.bfpp $test.bas", <<END);
+capture_nok("bfbasic $test.bas -o $test.bfpp", <<END);
 Error at line 1: Line continuation '_' must be followed by a newline
 END
 

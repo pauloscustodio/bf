@@ -46,7 +46,7 @@ private:
     PrintElem parse_print_elems();
     Stmt parse_if();
     void parse_inline_stmt_list(StmtList& out);
-    Stmt parse_multiline_if(Expr condition);
+    Stmt parse_multiline_if(Token kw, Expr condition);
     StmtList parse_block_until(
         std::initializer_list<TokenType> terminators,
         const std::string& terminator_name);
