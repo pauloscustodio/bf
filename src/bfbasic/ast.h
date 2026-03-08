@@ -10,6 +10,7 @@
 #include "lexer.h"
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 enum class ValueType {
@@ -53,7 +54,6 @@ struct Expr {
 
     // For ArrayAccess
     std::unique_ptr<Expr> index;
-    bool is_string_array = false;  // filled by semantic pass
 
     // For function call
     TokenType func;
@@ -146,6 +146,22 @@ struct ForStmt {
     StmtList body;
 };
 
+struct Param {
+    std::string name;
+    ValueType type;   // Int or String
+};
+
+struct SubDecl {
+    std::string name;
+    std::vector<Param> params;
+    StmtList body;
+};
+
+struct CallStmt {
+    std::string name;
+    std::vector<Expr> args;
+};
+
 enum class StmtType {
     Let,
     Dim,
@@ -154,6 +170,8 @@ enum class StmtType {
     If,
     While,
     For,
+    Call,
+    SubDecl,
 };
 
 struct Stmt {
@@ -167,6 +185,11 @@ struct Stmt {
     std::unique_ptr<IfStmt> if_stmt;            // IF
     std::unique_ptr<WhileStmt> while_stmt;      // WHILE
     std::unique_ptr<ForStmt> for_stmt;          // FOR
+    std::unique_ptr<CallStmt> call_stmt;        // Call SUB
+    std::unique_ptr<SubDecl> sub_decl;          // SUB definition
 };
 
-using Program = StmtList;
+struct Program {
+    StmtList stmts;
+    std::unordered_map<std::string, std::unique_ptr<SubDecl>> subroutines;
+};

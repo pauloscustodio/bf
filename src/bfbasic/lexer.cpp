@@ -224,35 +224,8 @@ void Lexer::skip_whitespace() {
 Token Lexer::identifier_or_keyword() {
     // Keyword lookup table
     static const std::unordered_map<std::string, TokenType> keywords = {
-        {"LET", TokenType::KeywordLet},
-        {"INPUT", TokenType::KeywordInput},
-        {"PRINT", TokenType::KeywordPrint},
-        {"IF", TokenType::KeywordIf},
-        {"THEN", TokenType::KeywordThen},
-        {"ELSE", TokenType::KeywordElse},
-        {"ENDIF", TokenType::KeywordEndIf},
-        {"WHILE", TokenType::KeywordWhile},
-        {"WEND", TokenType::KeywordWEnd},
-        {"FOR", TokenType::KeywordFor},
-        {"TO", TokenType::KeywordTo},
-        {"STEP", TokenType::KeywordStep},
-        {"NEXT", TokenType::KeywordNext},
-        {"DIM", TokenType::KeywordDim},
-        {"MOD", TokenType::KeywordMod},
-        {"SHL", TokenType::KeywordShl},
-        {"SHR", TokenType::KeywordShr},
-        {"NOT", TokenType::KeywordNot},
-        {"AND", TokenType::KeywordAnd},
-        {"OR", TokenType::KeywordOr},
-        {"XOR", TokenType::KeywordXor},
-        {"LEFT$", TokenType::KeywordLeftDollar},
-        {"MID$", TokenType::KeywordMidDollar},
-        {"RIGHT$", TokenType::KeywordRightDollar},
-        {"STR$", TokenType::KeywordStrDollar},
-        {"LEN", TokenType::KeywordLen},
-        {"VAL", TokenType::KeywordVal},
-        {"CHR$", TokenType::KeywordChrDollar},
-        {"ASC", TokenType::KeywordAsc},
+#define X(name, text) {text, TokenType::name},
+#include "token_type.def"
     };
 
     // IDENTIFIER - store uppercase name in text

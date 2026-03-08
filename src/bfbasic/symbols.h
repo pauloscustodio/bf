@@ -36,6 +36,7 @@ struct Symbol {
 
 class SymbolTable {
 public:
+    void clear();
     void declare(const std::string& name, SymbolType type,
                  const SourceLoc& loc);
     void mark_allocated(const std::string& name);

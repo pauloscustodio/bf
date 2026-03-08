@@ -21,7 +21,23 @@ Program Parser::parse_program() {
             continue;
         }
 
-        parse_statement_list_on_line(prog.statements);
+        // Subroutine declarations are top-level only
+        if (match(TokenType::KeywordSub)) {
+            Stmt s = parse_sub();
+            std::string name = s.sub_decl->name;
+            SourceLoc loc = s.loc;
+
+            auto it = prog.subroutines.find(name);
+            if (it != prog.subroutines.end()) {
+                error_at(loc, "subroutine '" + name + "' already defined");
+            }
+
+            prog.subroutines.emplace(name, std::move(s.sub_decl));
+            consume_end_of_statement();
+            continue;
+        }
+
+        parse_statement_list_on_line(prog.stmts.statements);
         consume_end_of_statement();
     }
 
@@ -96,6 +112,7 @@ bool Parser::starts_statement(const Token& t) const {
     case TokenType::KeywordWhile:
     case TokenType::KeywordFor:
     case TokenType::KeywordDim:
+    case TokenType::KeywordCall:
         return true;
 
     case TokenType::Identifier:
@@ -103,7 +120,7 @@ bool Parser::starts_statement(const Token& t) const {
             return true; // LET without keyword: A = expr
         }
         if(peek_next().type == TokenType::LParen) {
-            return true; // Array assignment: A(expr) = expr
+            return true; // Array assignment A(expr) = expr, or call name(args)
         }
         return false;
 
@@ -134,14 +151,63 @@ Stmt Parser::parse_single_statement() {
     if (match(TokenType::KeywordDim)) {
         return parse_dim();
     }
+    if (match(TokenType::KeywordCall)) {
+        return parse_call();
+    }
 
-    // optional LET: both A = expr and A(expr) = expr
-    if (match(TokenType::Identifier) &&
-            (peek_next().type == TokenType::Equal || peek_next().type == TokenType::LParen)) {
+    // Identifier followed by '(' — disambiguate array assignment vs call
+    // A(expr) = expr  -> array assignment (has '=' after ')')
+    // name(expr, ...) -> subroutine call  (no '=' after ')')
+    if (match(TokenType::Identifier) && peek_next().type == TokenType::LParen) {
+        // Scan ahead to find the matching ')' and check for '='
+        size_t depth = 0;
+        bool found_rparen = false;
+        bool is_assignment = false;
+
+        // skip identifier
+        size_t scan = pos + 1;
+        // skip '('
+        if (scan < tokens.size() && tokens[scan].type == TokenType::LParen) {
+            scan++;
+            depth = 1;
+        }
+        while (scan < tokens.size() && depth > 0) {
+            if (tokens[scan].type == TokenType::LParen) {
+                depth++;
+            }
+            else if (tokens[scan].type == TokenType::RParen) {
+                depth--;
+                if (depth == 0) {
+                    found_rparen = true;
+                    scan++;
+                    break;
+                }
+            }
+            else if (tokens[scan].type == TokenType::EndOfFile) {
+                break;
+            }
+            scan++;
+        }
+
+        if (found_rparen && scan < tokens.size() &&
+                tokens[scan].type == TokenType::Equal) {
+            is_assignment = true;
+        }
+
+        if (is_assignment) {
+            return parse_let_without_keyword();
+        }
+        else {
+            return parse_call_without_keyword();
+        }
+    }
+
+    // optional LET: A = expr
+    if (match(TokenType::Identifier) && peek_next().type == TokenType::Equal) {
         return parse_let_without_keyword();
     }
 
-    error_here("Expected LET, INPUT, PRINT, IF, WHILE, FOR or DIM");
+    error_here("Expected LET, INPUT, PRINT, IF, WHILE, FOR, DIM or CALL");
 }
 
 void Parser::parse_statement_list_on_line(
@@ -529,6 +595,96 @@ Stmt Parser::parse_dim() {
         advance(); // consume comma
     }
 
+    return s;
+}
+
+Stmt Parser::parse_sub() {
+    Token kw = advance(); // SUB
+
+    Token name = expect(TokenType::Identifier,
+                        "Expected subroutine name after SUB");
+
+    // Parse parameter list: (param1, param2$, ...)
+    expect(TokenType::LParen,
+           "Expected '(' after subroutine name");
+
+    std::vector<Param> params;
+    if (!match(TokenType::RParen)) {
+        Token p = expect(TokenType::Identifier,
+                         "Expected parameter name");
+        ValueType type = is_string_var(p.text) ?
+                         ValueType::String : ValueType::Int;
+        params.push_back({ p.text, type });
+
+        while (match(TokenType::Comma)) {
+            advance(); // consume comma
+            p = expect(TokenType::Identifier,
+                       "Expected parameter name after ','");
+            type = is_string_var(p.text) ?
+                   ValueType::String : ValueType::Int;
+            params.push_back({ p.text, type });
+        }
+    }
+
+    expect(TokenType::RParen,
+           "Expected ')' after parameter list");
+
+    // Require newline after SUB header
+    expect(TokenType::Newline,
+           "Expected newline after SUB header");
+
+    // Body until ENDSUB
+    StmtList body = parse_block_until({ TokenType::KeywordEndSub }, "ENDSUB");
+
+    expect(TokenType::KeywordEndSub,
+           "Expected ENDSUB");
+
+    Stmt s;
+    s.type = StmtType::SubDecl;
+    s.loc = kw.loc;
+    s.sub_decl = std::make_unique<SubDecl>();
+    s.sub_decl->name = name.text;
+    s.sub_decl->params = std::move(params);
+    s.sub_decl->body = std::move(body);
+
+    return s;
+}
+
+Stmt Parser::parse_call() {
+    Token kw = advance(); // CALL
+    return parse_call_common(kw.loc);
+}
+
+Stmt Parser::parse_call_without_keyword() {
+    Token name = peek();
+    return parse_call_common(name.loc);
+}
+
+Stmt Parser::parse_call_common(const SourceLoc& loc) {
+    Token name = expect(TokenType::Identifier,
+                        "Expected subroutine name after CALL");
+
+    expect(TokenType::LParen,
+           "Expected '(' after subroutine name");
+
+    auto cs = std::make_unique<CallStmt>();
+    cs->name = name.text;
+
+    if (!match(TokenType::RParen)) {
+        cs->args.push_back(parse_expr());
+        while (match(TokenType::Comma)) {
+            advance(); // consume comma
+            cs->args.push_back(parse_expr());
+        }
+    }
+
+    expect(TokenType::RParen,
+           "Expected ')' after argument list");
+
+    Stmt s;
+    s.type = StmtType::Call;
+    s.loc = loc;
+    s.call_stmt = std::move(cs);
     return s;
 }
 

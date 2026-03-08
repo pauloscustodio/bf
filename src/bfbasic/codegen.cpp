@@ -12,13 +12,13 @@ CodeGen::CodeGen(SymbolTable& sym)
     : sym(sym), temp_counter(0) {
 }
 
-std::string CodeGen::generate(const Program& prog) {
+std::string CodeGen::generate(const StmtList& stmts) {
     out.clear();
 
     emit_prelude();
     emit_var_allocs();
 
-    for (const auto& s : prog.statements) {
+    for (const auto& s : stmts.statements) {
         emit_stmt(*s);
     }
 

@@ -9,6 +9,10 @@
 #include "symbols.h"
 #include <iostream>
 
+void SymbolTable::clear() {
+    table.clear();
+}
+
 void SymbolTable::declare(const std::string& name, SymbolType type,
                           const SourceLoc& loc) {
     auto it = table.find(name);
@@ -58,3 +62,4 @@ const Symbol* SymbolTable::get(const std::string& name) const {
         return &it->second;
     }
 }
+

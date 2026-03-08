@@ -12,7 +12,7 @@
 class CodeGen {
 public:
     CodeGen(SymbolTable& sym);
-    std::string generate(const Program& prog);
+    std::string generate(const StmtList& stmts);
 
 private:
     SymbolTable& sym;

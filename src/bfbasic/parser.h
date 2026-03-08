@@ -52,6 +52,10 @@ private:
     Stmt parse_while();
     Stmt parse_for();
     Stmt parse_dim();
+    Stmt parse_sub();
+    Stmt parse_call();
+    Stmt parse_call_without_keyword();
+    Stmt parse_call_common(const SourceLoc& loc);
     void consume_end_of_statement();
 
     //  Expressions

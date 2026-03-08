@@ -58,7 +58,7 @@ spew("$test.bas", <<END);
 NEXT
 END
 capture_nok("bfbasic $test.bas -o $test.bfpp", <<END);
-Error at line 1: Expected LET, INPUT, PRINT, IF, WHILE, FOR or DIM
+Error at line 1: Expected LET, INPUT, PRINT, IF, WHILE, FOR, DIM or CALL
 END
 
 spew("$test.bas", <<END);

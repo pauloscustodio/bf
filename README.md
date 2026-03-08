@@ -76,6 +76,7 @@ Supported statements (one per line; blank lines allowed):
 - `IF expr THEN`, ..., `[ELSE`, ..., `]ENDIF` - multi-line if-else.
 - `WHILE expr`, ..., `WEND` - loops controled on an expression.
 - `FOR var = expr TO expr [STEP expr]`, ..., `NEXT` - counted loops.
+- `SUB name(param,param$,...) ... ENDSUB` - define subroutine, called with `[CALL name(arg1,arg2$,...)`.
 - a colon (`:`) can be used to separate statements in the same line.
 - a single `_` followed by newline is considered white space and ignored.
 
