@@ -25,16 +25,21 @@
     <ClCompile Include="..\..\..\src\common\utils.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\..\Makefile" />
+    <None Include="..\..\..\README.md" />
+    <None Include="..\..\..\TODO.md" />
     <None Include="..\..\..\t\bf.t" />
     <None Include="..\..\..\t\bfbasic.t" />
     <None Include="..\..\..\t\bfbasic_dim.t" />
     <None Include="..\..\..\t\bfbasic_expr_int.t" />
     <None Include="..\..\..\t\bfbasic_expr_string.t" />
     <None Include="..\..\..\t\bfbasic_for.t" />
+    <None Include="..\..\..\t\bfbasic_function.t" />
     <None Include="..\..\..\t\bfbasic_if.t" />
     <None Include="..\..\..\t\bfbasic_input.t" />
     <None Include="..\..\..\t\bfbasic_let.t" />
     <None Include="..\..\..\t\bfbasic_print.t" />
+    <None Include="..\..\..\t\bfbasic_sub.t" />
     <None Include="..\..\..\t\bfbasic_while.t" />
     <None Include="..\..\..\t\bfpp.t" />
     <None Include="..\..\..\t\bfpp_abs16.t" />

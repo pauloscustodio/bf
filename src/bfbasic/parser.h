@@ -53,6 +53,7 @@ private:
     Stmt parse_for();
     Stmt parse_dim();
     Stmt parse_sub();
+    Stmt parse_function();
     Stmt parse_call();
     Stmt parse_call_without_keyword();
     Stmt parse_call_common(const SourceLoc& loc);

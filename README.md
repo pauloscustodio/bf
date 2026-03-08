@@ -77,6 +77,7 @@ Supported statements (one per line; blank lines allowed):
 - `WHILE expr`, ..., `WEND` - loops controled on an expression.
 - `FOR var = expr TO expr [STEP expr]`, ..., `NEXT` - counted loops.
 - `SUB name(param,param$,...) ... ENDSUB` - define subroutine, called with `[CALL name(arg1,arg2$,...)`.
+- `FUNCTION name[$](param,param$,...) ... ENDFUNCTION` - define function that can be called inside expressions. Function must assign to `name[$]` the return value.
 - a colon (`:`) can be used to separate statements in the same line.
 - a single `_` followed by newline is considered white space and ignored.
 

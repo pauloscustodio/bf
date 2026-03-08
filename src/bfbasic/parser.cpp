@@ -37,6 +37,27 @@ Program Parser::parse_program() {
             continue;
         }
 
+        // Function declarations are top-level only
+        if (match(TokenType::KeywordFunction)) {
+            Stmt s = parse_function();
+            std::string name = s.func_decl->name;
+            SourceLoc loc = s.loc;
+
+            auto it = prog.functions.find(name);
+            if (it != prog.functions.end()) {
+                error_at(loc, "function '" + name + "' already defined");
+            }
+
+            // Also check for clash with subroutines
+            if (prog.subroutines.count(name)) {
+                error_at(loc, "function '" + name + "' conflicts with subroutine name");
+            }
+
+            prog.functions.emplace(name, std::move(s.func_decl));
+            consume_end_of_statement();
+            continue;
+        }
+
         parse_statement_list_on_line(prog.stmts.statements);
         consume_end_of_statement();
     }
@@ -650,6 +671,63 @@ Stmt Parser::parse_sub() {
     return s;
 }
 
+Stmt Parser::parse_function() {
+    Token kw = advance(); // FUNCTION
+
+    Token name = expect(TokenType::Identifier,
+                        "Expected function name after FUNCTION");
+
+    ValueType return_type = is_string_var(name.text)
+                            ? ValueType::String : ValueType::Int;
+
+    // Parse parameter list: (param1, param2$, ...)
+    expect(TokenType::LParen,
+           "Expected '(' after function name");
+
+    std::vector<Param> params;
+    if (!match(TokenType::RParen)) {
+        Token p = expect(TokenType::Identifier,
+                         "Expected parameter name");
+        ValueType type = is_string_var(p.text) ?
+                         ValueType::String : ValueType::Int;
+        params.push_back({ p.text, type });
+
+        while (match(TokenType::Comma)) {
+            advance(); // consume comma
+            p = expect(TokenType::Identifier,
+                       "Expected parameter name after ','");
+            type = is_string_var(p.text) ?
+                   ValueType::String : ValueType::Int;
+            params.push_back({ p.text, type });
+        }
+    }
+
+    expect(TokenType::RParen,
+           "Expected ')' after parameter list");
+
+    // Require newline after FUNCTION header
+    expect(TokenType::Newline,
+           "Expected newline after FUNCTION header");
+
+    // Body until ENDFUNCTION
+    StmtList body = parse_block_until(
+    { TokenType::KeywordEndFunction }, "ENDFUNCTION");
+
+    expect(TokenType::KeywordEndFunction,
+           "Expected ENDFUNCTION");
+
+    Stmt s;
+    s.type = StmtType::SubDecl; // reuse StmtType; func_decl pointer distinguishes
+    s.loc = kw.loc;
+    s.func_decl = std::make_unique<FuncDecl>();
+    s.func_decl->name = name.text;
+    s.func_decl->return_type = return_type;
+    s.func_decl->params = std::move(params);
+    s.func_decl->body = std::move(body);
+
+    return s;
+}
+
 Stmt Parser::parse_call() {
     Token kw = advance(); // CALL
     return parse_call_common(kw.loc);
@@ -902,19 +980,39 @@ Expr Parser::parse_primary() {
         return Expr::call(fn, std::move(args), fn.loc);
     }
 
+    // Identifier: variable, array access, or user-defined function call
     if (match(TokenType::Identifier)) {
         Token var = advance();
         bool is_string = is_string_var(var.text);
 
         if (match(TokenType::LParen)) {
-            if (is_string) {
-                error_at(var.loc,
-                         "string variable '" + var.text + "' cannot be indexed");
-            }
             advance();
-            auto index = std::make_unique<Expr>(parse_expr());
+
+            // Parse argument list (works for both array access and function call)
+            std::vector<std::unique_ptr<Expr>> args;
+            if (!match(TokenType::RParen)) {
+                args.push_back(std::make_unique<Expr>(parse_expr()));
+                while (match(TokenType::Comma)) {
+                    advance();
+                    args.push_back(std::make_unique<Expr>(parse_expr()));
+                }
+            }
+
             expect(TokenType::RParen, "Expected ')'");
-            return Expr::array_access(var.text, std::move(index), t.loc);
+
+            // Multiple args or string name: must be a user-defined function call.
+            // Single arg with non-string name: parse as array access; the
+            // reclassify pass will convert to Call if name is a function.
+            if (args.size() == 1 && !is_string) {
+                return Expr::array_access(var.text, std::move(args[0]), t.loc);
+            }
+            else {
+                Token fn_tok;
+                fn_tok.type = TokenType::Identifier;
+                fn_tok.text = var.text;
+                fn_tok.loc = var.loc;
+                return Expr::call(fn_tok, std::move(args), t.loc);
+            }
         }
 
         return Expr::var(var.text, t.loc);

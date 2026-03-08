@@ -157,6 +157,13 @@ struct SubDecl {
     StmtList body;
 };
 
+struct FuncDecl {
+    std::string name;          // "F" or "F$"
+    ValueType return_type;     // Int or String
+    std::vector<Param> params; // same Param as SUB
+    StmtList body;             // must contain at least one assignment to name
+};
+
 struct CallStmt {
     std::string name;
     std::vector<Expr> args;
@@ -187,9 +194,11 @@ struct Stmt {
     std::unique_ptr<ForStmt> for_stmt;          // FOR
     std::unique_ptr<CallStmt> call_stmt;        // Call SUB
     std::unique_ptr<SubDecl> sub_decl;          // SUB definition
+    std::unique_ptr<FuncDecl> func_decl;        // FUNCTION definition
 };
 
 struct Program {
     StmtList stmts;
     std::unordered_map<std::string, std::unique_ptr<SubDecl>> subroutines;
+    std::unordered_map<std::string, std::unique_ptr<FuncDecl>> functions;
 };

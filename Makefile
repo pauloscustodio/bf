@@ -55,4 +55,11 @@ clean:
 test: bf$(_EXE) bfpp$(_EXE) bfbasic$(_EXE)
 	perl -S prove -j9 --state=slow,save t/*.t
 
+install:
+ifndef TARGET
+	$(error TARGET is not defined. Usage: make install TARGET=/path/to/dir)
+endif
+	@test -d "$(TARGET)" || (echo "ERROR: TARGET '$(TARGET)' is not a directory" && exit 1)
+	cp bf$(_EXE) bfpp$(_EXE) bfbasic$(_EXE) $(TARGET)
+
 -include $(DEPENDS)

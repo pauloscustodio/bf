@@ -13,6 +13,7 @@
 #include "utils.h"
 #include <cassert>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <optional>
 #include <sstream>
@@ -36,6 +37,115 @@ std::string read_file(const std::string& filename) {
     ss << in.rdbuf();
     return ss.str();
 }
+
+//-----------------------------------------------------------------------------
+// Reclassify ArrayAccess nodes that are actually user-defined function calls.
+// The parser cannot distinguish F(x) as array vs function at parse time for
+// single-argument calls, so we fix it here using prog.functions.
+//-----------------------------------------------------------------------------
+
+static void reclassify_func_calls_in_expr(Expr& e, const Program& prog) {
+    switch (e.expr_type) {
+    case ExprType::Number:
+    case ExprType::StringLiteral:
+    case ExprType::Var:
+        break;
+
+    case ExprType::BinOp:
+    case ExprType::RelOp:
+    case ExprType::Concat:
+        reclassify_func_calls_in_expr(*e.left, prog);
+        reclassify_func_calls_in_expr(*e.right, prog);
+        break;
+
+    case ExprType::UnaryOp:
+        reclassify_func_calls_in_expr(*e.inner, prog);
+        break;
+
+    case ExprType::ArrayAccess:
+        reclassify_func_calls_in_expr(*e.index, prog);
+        // Check if this is actually a user-defined function call
+        if (prog.functions.count(e.name)) {
+            // Reclassify: ArrayAccess(name, index) -> Call(name, [index])
+            e.expr_type = ExprType::Call;
+            e.func = TokenType::Identifier;
+            e.args.push_back(std::move(e.index));
+            e.index.reset();
+        }
+        break;
+
+    case ExprType::Call:
+        for (auto& arg : e.args) {
+            reclassify_func_calls_in_expr(*arg, prog);
+        }
+        break;
+
+    default:
+        break;
+    }
+}
+
+static void reclassify_func_calls(StmtList& stmts, const Program& prog) {
+    for (auto& stmt : stmts.statements) {
+        switch (stmt->type) {
+        case StmtType::Let:
+            if (stmt->let_stmt->index) {
+                reclassify_func_calls_in_expr(*stmt->let_stmt->index, prog);
+            }
+            reclassify_func_calls_in_expr(stmt->let_stmt->expr, prog);
+            break;
+
+        case StmtType::Dim:
+            for (auto& elem : stmt->dim_stmt->elems) {
+                reclassify_func_calls_in_expr(*elem.size_expr, prog);
+            }
+            break;
+
+        case StmtType::Input:
+            break;
+
+        case StmtType::Print:
+            for (auto& item : stmt->print_stmt->elems) {
+                if (item.type == PrintElemType::Expr) {
+                    reclassify_func_calls_in_expr(item.expr, prog);
+                }
+            }
+            break;
+
+        case StmtType::If:
+            reclassify_func_calls_in_expr(stmt->if_stmt->condition, prog);
+            reclassify_func_calls(stmt->if_stmt->then_block, prog);
+            reclassify_func_calls(stmt->if_stmt->else_block, prog);
+            break;
+
+        case StmtType::While:
+            reclassify_func_calls_in_expr(stmt->while_stmt->condition, prog);
+            reclassify_func_calls(stmt->while_stmt->body, prog);
+            break;
+
+        case StmtType::For:
+            reclassify_func_calls_in_expr(stmt->for_stmt->start_expr, prog);
+            reclassify_func_calls_in_expr(stmt->for_stmt->end_expr, prog);
+            reclassify_func_calls_in_expr(stmt->for_stmt->step_expr, prog);
+            reclassify_func_calls(stmt->for_stmt->body, prog);
+            break;
+
+        case StmtType::Call:
+            for (auto& arg : stmt->call_stmt->args) {
+                reclassify_func_calls_in_expr(arg, prog);
+            }
+            break;
+
+        case StmtType::SubDecl:
+            break;
+
+        default:
+            assert(0);
+        }
+    }
+}
+
+//-----------------------------------------------------------------------------
 
 std::optional<int> fold_const_int_expr(const Expr& e,
                                        const SymbolTable* sym = nullptr) {
@@ -195,9 +305,9 @@ void collect_symbols_in_expr(Expr& e, SymbolTable& sym, const Program& prog) {
         break;
 
     case ExprType::Var: {
-        if (prog.subroutines.count(e.name)) {
+        if (prog.subroutines.count(e.name) || prog.functions.count(e.name)) {
             error_at(e.loc,
-                     "variable '" + e.name + "' conflicts with subroutine name");
+                     "variable '" + e.name + "' conflicts with subroutine or function name");
         }
         bool is_string = is_string_var(e.name);
         SymbolType type = is_string ? SymbolType::StringVar : SymbolType::IntVar;
@@ -240,9 +350,9 @@ void collect_symbols(StmtList& stmts, SymbolTable& sym, const Program& prog) {
             switch (stmt->let_stmt->type) {
             case LetType::Normal: {
                 std::string name = stmt->let_stmt->var;
-                if (prog.subroutines.count(name)) {
+                if (prog.subroutines.count(name) || prog.functions.count(name)) {
                     error_at(stmt->loc,
-                             "variable '" + name + "' conflicts with subroutine name");
+                             "variable '" + name + "' conflicts with subroutine or function name");
                 }
                 bool is_string = is_string_var(name);
                 SymbolType type = is_string ?
@@ -295,9 +405,9 @@ void collect_symbols(StmtList& stmts, SymbolTable& sym, const Program& prog) {
         case StmtType::Dim: {
             for (auto& elem : stmt->dim_stmt->elems) {
                 std::string name = elem.var;
-                if (prog.subroutines.count(name)) {
+                if (prog.subroutines.count(name) || prog.functions.count(name)) {
                     error_at(stmt->loc,
-                             "variable '" + name + "' conflicts with subroutine name");
+                             "variable '" + name + "' conflicts with subroutine or function name");
                 }
                 bool is_string = is_string_var(name);
                 SymbolType type = is_string ?
@@ -316,9 +426,9 @@ void collect_symbols(StmtList& stmts, SymbolTable& sym, const Program& prog) {
         }
         case StmtType::Input:
             for (auto& name : stmt->input_stmt->vars) {
-                if (prog.subroutines.count(name)) {
+                if (prog.subroutines.count(name) || prog.functions.count(name)) {
                     error_at(stmt->loc,
-                             "variable '" + name + "' conflicts with subroutine name");
+                             "variable '" + name + "' conflicts with subroutine or function name");
                 }
                 bool is_string = is_string_var(name);
                 SymbolType type = is_string ?
@@ -352,9 +462,9 @@ void collect_symbols(StmtList& stmts, SymbolTable& sym, const Program& prog) {
 
         case StmtType::For: {
             std::string name = stmt->for_stmt->var;
-            if (prog.subroutines.count(name)) {
+            if (prog.subroutines.count(name) || prog.functions.count(name)) {
                 error_at(stmt->loc,
-                         "variable '" + name + "' conflicts with subroutine name");
+                         "variable '" + name + "' conflicts with subroutine or function name");
             }
             bool is_string = is_string_var(name);
             if (is_string) {
@@ -583,7 +693,97 @@ void fold_constants(StmtList& stmts, SymbolTable& sym) {
     }
 }
 
-void semantic_check_in_expr(Expr& e, SymbolTable& sym) {
+// Compute the maximum string_size across all return-value assignments
+// in a function body. Does NOT call semantic_check_in_expr; instead it
+// estimates string sizes structurally from the raw AST, substituting
+// parameter sizes from the call-site argument sizes.
+static int estimate_expr_string_size(const Expr& e,
+                                     const std::unordered_map<std::string, int>& param_sizes) {
+    switch (e.expr_type) {
+    case ExprType::StringLiteral:
+        return static_cast<int>(e.string_value.size());
+
+    case ExprType::Var: {
+        auto it = param_sizes.find(e.name);
+        if (it != param_sizes.end()) {
+            return it->second;
+        }
+        return 0; // unknown local; will be sized after inlining
+    }
+
+    case ExprType::Concat: {
+        int l = estimate_expr_string_size(*e.left, param_sizes);
+        int r = estimate_expr_string_size(*e.right, param_sizes);
+        return l + r;
+    }
+
+    case ExprType::Call:
+        // Built-in string functions: conservative upper bounds
+        switch (e.func) {
+        case TokenType::KeywordLeftDollar:
+        case TokenType::KeywordMidDollar:
+        case TokenType::KeywordRightDollar:
+            if (!e.args.empty()) {
+                return estimate_expr_string_size(*e.args[0], param_sizes);
+            }
+            return 0;
+        case TokenType::KeywordStrDollar:
+            return 1 + 5 + 1; // -32768 + space
+        case TokenType::KeywordChrDollar:
+            return 1;
+        default:
+            return 0;
+        }
+
+    default:
+        return 0;
+    }
+}
+
+static int compute_func_return_string_size(const FuncDecl& func,
+        const std::vector<std::unique_ptr<Expr>>& call_args) {
+    // Build a map from parameter name -> call-site string_size
+    std::unordered_map<std::string, int> param_sizes;
+    for (size_t i = 0; i < func.params.size() && i < call_args.size(); ++i) {
+        if (func.params[i].type == ValueType::String) {
+            param_sizes[func.params[i].name] = call_args[i]->string_size;
+        }
+    }
+
+    // Walk the body looking for assignments to the function name
+    int max_size = 0;
+    std::function<void(const StmtList&)> walk = [&](const StmtList & stmts) {
+        for (const auto& stmt : stmts.statements) {
+            switch (stmt->type) {
+            case StmtType::Let:
+                if (stmt->let_stmt->type == LetType::String &&
+                        stmt->let_stmt->var == func.name) {
+                    int s = estimate_expr_string_size(stmt->let_stmt->expr, param_sizes);
+                    if (s > max_size) {
+                        max_size = s;
+                    }
+                }
+                break;
+            case StmtType::If:
+                walk(stmt->if_stmt->then_block);
+                walk(stmt->if_stmt->else_block);
+                break;
+            case StmtType::While:
+                walk(stmt->while_stmt->body);
+                break;
+            case StmtType::For:
+                walk(stmt->for_stmt->body);
+                break;
+            default:
+                break;
+            }
+        }
+    };
+    walk(func.body);
+    return max_size;
+}
+
+void semantic_check_in_expr(Expr& e, SymbolTable& sym, const Program& prog) {
     switch (e.expr_type) {
     case ExprType::Number:
         assert(e.value_type == ValueType::Int);
@@ -605,8 +805,8 @@ void semantic_check_in_expr(Expr& e, SymbolTable& sym) {
         break;
     }
     case ExprType::BinOp: {
-        semantic_check_in_expr(*e.left, sym);
-        semantic_check_in_expr(*e.right, sym);
+        semantic_check_in_expr(*e.left, sym, prog);
+        semantic_check_in_expr(*e.right, sym, prog);
 
         // the other operators can only be applied to ints
         if (e.left->value_type == ValueType::String ||
@@ -621,8 +821,8 @@ void semantic_check_in_expr(Expr& e, SymbolTable& sym) {
         break;
     }
     case ExprType::RelOp: {
-        semantic_check_in_expr(*e.left, sym);
-        semantic_check_in_expr(*e.right, sym);
+        semantic_check_in_expr(*e.left, sym, prog);
+        semantic_check_in_expr(*e.right, sym, prog);
         if (e.left->value_type != e.right->value_type) {
             error_at(
                 e.loc,
@@ -634,7 +834,7 @@ void semantic_check_in_expr(Expr& e, SymbolTable& sym) {
         break;
     }
     case ExprType::UnaryOp: {
-        semantic_check_in_expr(*e.inner, sym);
+        semantic_check_in_expr(*e.inner, sym, prog);
         if (e.inner->value_type == ValueType::String) {
             error_at(
                 e.loc,
@@ -655,12 +855,12 @@ void semantic_check_in_expr(Expr& e, SymbolTable& sym) {
 
         e.value_type = ValueType::Int;
 
-        semantic_check_in_expr(*e.index, sym);
+        semantic_check_in_expr(*e.index, sym, prog);
         break;
     }
     case ExprType::Concat:
-        semantic_check_in_expr(*e.left, sym);
-        semantic_check_in_expr(*e.right, sym);
+        semantic_check_in_expr(*e.left, sym, prog);
+        semantic_check_in_expr(*e.right, sym, prog);
         if (e.left->value_type == ValueType::Int ||
                 e.right->value_type == ValueType::Int) {
             error_at(
@@ -674,9 +874,56 @@ void semantic_check_in_expr(Expr& e, SymbolTable& sym) {
 
     case ExprType::Call:
         for (const auto& arg : e.args) {
-            semantic_check_in_expr(*arg, sym);
+            semantic_check_in_expr(*arg, sym, prog);
         }
 
+        // User-defined function call
+        if (e.func == TokenType::Identifier) {
+            auto it = prog.functions.find(e.name);
+            if (it == prog.functions.end()) {
+                error_at(e.loc,
+                         "undefined function '" + e.name + "'");
+            }
+
+            const FuncDecl& func = *it->second;
+
+            // Check argument count
+            if (e.args.size() != func.params.size()) {
+                error_at(e.loc,
+                         "function '" + func.name + "' expects " +
+                         std::to_string(func.params.size()) + " argument(s), got " +
+                         std::to_string(e.args.size()));
+            }
+
+            // Check argument types
+            for (size_t i = 0; i < e.args.size() && i < func.params.size(); ++i) {
+                ValueType arg_type = e.args[i]->value_type;
+                ValueType param_type = func.params[i].type;
+                if (arg_type != param_type) {
+                    std::string expected = (param_type == ValueType::String)
+                                           ? "string" : "integer";
+                    std::string got = (arg_type == ValueType::String)
+                                      ? "string" : "integer";
+                    error_at(e.args[i]->loc,
+                             "argument " + std::to_string(i + 1) + " of '" +
+                             func.name + "' expects " + expected +
+                             " but got " + got);
+                }
+            }
+
+            e.value_type = func.return_type;
+
+            // Compute string_size for string-returning functions
+            if (func.return_type == ValueType::String) {
+                e.string_size = compute_func_return_string_size(func, e.args);
+                if (e.string_size <= 0) {
+                    e.string_size = 1; // minimum fallback
+                }
+            }
+            break;
+        }
+
+        // Built-in function call
         switch (e.func) {
         case TokenType::KeywordLeftDollar:
             if (e.args.size() != 2) {
@@ -791,9 +1038,9 @@ void semantic_check(StmtList& stmts, SymbolTable& sym, const Program& prog) {
         switch (stmt->type) {
         case StmtType::Let: {
             if (stmt->let_stmt->index) {
-                semantic_check_in_expr(*stmt->let_stmt->index, sym);
+                semantic_check_in_expr(*stmt->let_stmt->index, sym, prog);
             }
-            semantic_check_in_expr(stmt->let_stmt->expr, sym);
+            semantic_check_in_expr(stmt->let_stmt->expr, sym, prog);
 
             switch (stmt->let_stmt->type) {
             case LetType::Normal:
@@ -827,7 +1074,7 @@ void semantic_check(StmtList& stmts, SymbolTable& sym, const Program& prog) {
         }
         case StmtType::Dim:
             for (auto& elem : stmt->dim_stmt->elems) {
-                semantic_check_in_expr(*elem.size_expr, sym);
+                semantic_check_in_expr(*elem.size_expr, sym, prog);
             }
             break;
 
@@ -837,26 +1084,26 @@ void semantic_check(StmtList& stmts, SymbolTable& sym, const Program& prog) {
         case StmtType::Print:
             for (auto& item : stmt->print_stmt->elems) {
                 if (item.type == PrintElemType::Expr) {
-                    semantic_check_in_expr(item.expr, sym);
+                    semantic_check_in_expr(item.expr, sym, prog);
                 }
             }
             break;
 
         case StmtType::If:
-            semantic_check_in_expr(stmt->if_stmt->condition, sym);
+            semantic_check_in_expr(stmt->if_stmt->condition, sym, prog);
             semantic_check(stmt->if_stmt->then_block, sym, prog);
             semantic_check(stmt->if_stmt->else_block, sym, prog);
             break;
 
         case StmtType::While:
-            semantic_check_in_expr(stmt->while_stmt->condition, sym);
+            semantic_check_in_expr(stmt->while_stmt->condition, sym, prog);
             semantic_check(stmt->while_stmt->body, sym, prog);
             break;
 
         case StmtType::For:
-            semantic_check_in_expr(stmt->for_stmt->start_expr, sym);
-            semantic_check_in_expr(stmt->for_stmt->end_expr, sym);
-            semantic_check_in_expr(stmt->for_stmt->step_expr, sym);
+            semantic_check_in_expr(stmt->for_stmt->start_expr, sym, prog);
+            semantic_check_in_expr(stmt->for_stmt->end_expr, sym, prog);
+            semantic_check_in_expr(stmt->for_stmt->step_expr, sym, prog);
             semantic_check(stmt->for_stmt->body, sym, prog);
             break;
 
@@ -880,7 +1127,7 @@ void semantic_check(StmtList& stmts, SymbolTable& sym, const Program& prog) {
 
             // Semantic-check each argument expression and verify type match
             for (size_t i = 0; i < stmt->call_stmt->args.size(); ++i) {
-                semantic_check_in_expr(stmt->call_stmt->args[i], sym);
+                semantic_check_in_expr(stmt->call_stmt->args[i], sym, prog);
 
                 if (i < sub.params.size()) {
                     ValueType arg_type = stmt->call_stmt->args[i].value_type;
@@ -962,6 +1209,124 @@ void check_sub_body_no_recursion(const StmtList& stmts,
     }
 }
 
+// Check that a function body does not call itself (recursion not supported)
+// and contains at least one assignment to the function name
+static void check_func_body_no_recursion_in_expr(const Expr& e,
+        const std::string& func_name) {
+    switch (e.expr_type) {
+    case ExprType::Call:
+        if (e.func == TokenType::Identifier && e.name == func_name) {
+            error_at(e.loc,
+                     "function '" + func_name + "' cannot call itself (recursion is not supported)");
+        }
+        for (const auto& arg : e.args) {
+            check_func_body_no_recursion_in_expr(*arg, func_name);
+        }
+        break;
+    case ExprType::BinOp:
+    case ExprType::RelOp:
+    case ExprType::Concat:
+        check_func_body_no_recursion_in_expr(*e.left, func_name);
+        check_func_body_no_recursion_in_expr(*e.right, func_name);
+        break;
+    case ExprType::UnaryOp:
+        check_func_body_no_recursion_in_expr(*e.inner, func_name);
+        break;
+    case ExprType::ArrayAccess:
+        if (e.name == func_name) {
+            error_at(e.loc,
+                     "function '" + func_name + "' cannot call itself (recursion is not supported)");
+        }
+        check_func_body_no_recursion_in_expr(*e.index, func_name);
+        break;
+    default:
+        break;
+    }
+}
+
+static void check_func_body_no_recursion(const StmtList& stmts,
+        const std::string& func_name) {
+    for (const auto& stmt : stmts.statements) {
+        switch (stmt->type) {
+        case StmtType::Let:
+            if (stmt->let_stmt->index) {
+                check_func_body_no_recursion_in_expr(*stmt->let_stmt->index, func_name);
+            }
+            check_func_body_no_recursion_in_expr(stmt->let_stmt->expr, func_name);
+            break;
+        case StmtType::Dim:
+            for (const auto& elem : stmt->dim_stmt->elems) {
+                check_func_body_no_recursion_in_expr(*elem.size_expr, func_name);
+            }
+            break;
+        case StmtType::Print:
+            for (const auto& item : stmt->print_stmt->elems) {
+                if (item.type == PrintElemType::Expr) {
+                    check_func_body_no_recursion_in_expr(item.expr, func_name);
+                }
+            }
+            break;
+        case StmtType::If:
+            check_func_body_no_recursion_in_expr(stmt->if_stmt->condition, func_name);
+            check_func_body_no_recursion(stmt->if_stmt->then_block, func_name);
+            check_func_body_no_recursion(stmt->if_stmt->else_block, func_name);
+            break;
+        case StmtType::While:
+            check_func_body_no_recursion_in_expr(stmt->while_stmt->condition, func_name);
+            check_func_body_no_recursion(stmt->while_stmt->body, func_name);
+            break;
+        case StmtType::For:
+            check_func_body_no_recursion_in_expr(stmt->for_stmt->start_expr, func_name);
+            check_func_body_no_recursion_in_expr(stmt->for_stmt->end_expr, func_name);
+            check_func_body_no_recursion_in_expr(stmt->for_stmt->step_expr, func_name);
+            check_func_body_no_recursion(stmt->for_stmt->body, func_name);
+            break;
+        case StmtType::Call:
+            for (const auto& arg : stmt->call_stmt->args) {
+                check_func_body_no_recursion_in_expr(arg, func_name);
+            }
+            break;
+        default:
+            break;
+        }
+    }
+}
+
+// Check that the function body assigns to the function name at least once
+static bool has_return_assignment(const StmtList& stmts,
+                                  const std::string& func_name) {
+    for (const auto& stmt : stmts.statements) {
+        switch (stmt->type) {
+        case StmtType::Let:
+            if ((stmt->let_stmt->type == LetType::Normal ||
+                    stmt->let_stmt->type == LetType::String) &&
+                    stmt->let_stmt->var == func_name) {
+                return true;
+            }
+            break;
+        case StmtType::If:
+            if (has_return_assignment(stmt->if_stmt->then_block, func_name) ||
+                    has_return_assignment(stmt->if_stmt->else_block, func_name)) {
+                return true;
+            }
+            break;
+        case StmtType::While:
+            if (has_return_assignment(stmt->while_stmt->body, func_name)) {
+                return true;
+            }
+            break;
+        case StmtType::For:
+            if (has_return_assignment(stmt->for_stmt->body, func_name)) {
+                return true;
+            }
+            break;
+        default:
+            break;
+        }
+    }
+    return false;
+}
+
 void finalize_array_sizes(StmtList& stmts, SymbolTable& sym) {
     for (auto& stmt : stmts.statements) {
         if (stmt->type != StmtType::Dim) {
@@ -998,7 +1363,7 @@ static std::size_t count_constant_symbols(const SymbolTable& sym) {
 }
 
 //-----------------------------------------------------------------------------
-// Subroutine inlining
+// Subroutine and function inlining
 //-----------------------------------------------------------------------------
 
 // Collect all identifiers defined (assigned/declared) inside a SubDecl body.
@@ -1095,22 +1460,28 @@ static void collect_local_vars(const StmtList& stmts,
 // The $ suffix must be preserved for string variables.
 using RenameMap = std::unordered_map<std::string, std::string>;
 
-static RenameMap build_rename_map(const SubDecl& sub,
+static RenameMap build_rename_map(const std::string& decl_name,
+                                  const std::vector<Param>& params,
                                   const std::unordered_set<std::string>& locals,
                                   int instance,
                                   const SymbolTable& sym) {
     RenameMap map;
-    std::string prefix = sub.name + "_" + std::to_string(instance) + "_";
+    std::string prefix = decl_name + "_" + std::to_string(instance) + "_";
 
     // Parameters always get renamed
-    for (const auto& p : sub.params) {
+    for (const auto& p : params) {
         map[p.name] = prefix + p.name;
+    }
+
+    // The function return variable (decl_name itself) gets renamed too
+    if (!map.count(decl_name)) {
+        map[decl_name] = prefix + decl_name;
     }
 
     // Local variables (not already in symbol table = not global) get renamed
     for (const auto& var : locals) {
         if (map.count(var)) {
-            continue; // already a parameter
+            continue; // already a parameter or return var
         }
         if (sym.get(var) != nullptr) {
             continue; // global variable, don't rename
@@ -1176,6 +1547,7 @@ static Expr deep_copy_expr(const Expr& e, const RenameMap& map) {
         break;
 
     case ExprType::Call:
+        c.name = e.name; // don't rename built-in or user function names
         for (const auto& arg : e.args) {
             c.args.push_back(deep_copy_expr_ptr(*arg, map));
         }
@@ -1291,8 +1663,282 @@ static void deep_copy_stmts(const StmtList& src, const RenameMap& map,
     }
 }
 
+// Helper: emit parameter setup stmts (DIM for strings, LET for assignment)
+// into new_stmts. Shared between SUB and FUNCTION inlining.
+static void emit_param_setup(const std::vector<Param>& params,
+                             const std::vector<Expr>& call_args,
+                             const std::vector<std::unique_ptr<Expr>>& call_expr_args,
+                             const RenameMap& map,
+                             const SourceLoc& loc,
+                             std::vector<std::unique_ptr<Stmt>>& new_stmts) {
+    // Determine which arg list to use (statement Call uses vector<Expr>,
+    // expression Call uses vector<unique_ptr<Expr>>)
+    size_t n = params.size();
+    for (size_t i = 0; i < n; ++i) {
+        bool is_str = (params[i].type == ValueType::String);
+        std::string renamed = rename_var(params[i].name, map);
+
+        const Expr& arg = call_args.empty()
+                          ? *call_expr_args[i]
+                          : call_args[i];
+
+        if (is_str) {
+            int arg_size = arg.string_size;
+            if (arg_size <= 0) {
+                arg_size = 1;
+            }
+
+            auto dim = std::make_unique<DimStmt>();
+            DimElem elem;
+            elem.var = renamed;
+            elem.size_expr = std::make_unique<Expr>(Expr::number(arg_size, loc));
+            dim->elems.push_back(std::move(elem));
+
+            auto ds = std::make_unique<Stmt>();
+            ds->type = StmtType::Dim;
+            ds->loc = loc;
+            ds->dim_stmt = std::move(dim);
+            new_stmts.push_back(std::move(ds));
+        }
+
+        auto let = std::make_unique<LetStmt>();
+        let->var = renamed;
+        let->type = is_str ? LetType::String : LetType::Normal;
+        RenameMap empty_map;
+        let->expr = deep_copy_expr(arg, empty_map);
+
+        auto s = std::make_unique<Stmt>();
+        s->type = StmtType::Let;
+        s->loc = loc;
+        s->let_stmt = std::move(let);
+        new_stmts.push_back(std::move(s));
+    }
+}
+
 // Inline all CALL statements in a StmtList.
 // Returns true if any inlining was performed.
+static bool inline_calls(StmtList& stmts, const Program& prog,
+                         const SymbolTable& sym);
+
+// Inline user-defined function calls inside an expression.
+// Emits the function body as statements before the expression,
+// and replaces the Call node with a Var referencing the renamed return variable.
+// Returns true if any inlining was performed.
+static bool inline_func_calls_in_expr(Expr& e, const Program& prog,
+                                      const SymbolTable& sym,
+                                      std::vector<std::unique_ptr<Stmt>>& pre_stmts) {
+    bool changed = false;
+
+    switch (e.expr_type) {
+    case ExprType::Number:
+    case ExprType::StringLiteral:
+    case ExprType::Var:
+        break;
+
+    case ExprType::BinOp:
+    case ExprType::RelOp:
+    case ExprType::Concat:
+        if (inline_func_calls_in_expr(*e.left, prog, sym, pre_stmts)) {
+            changed = true;
+        }
+        if (inline_func_calls_in_expr(*e.right, prog, sym, pre_stmts)) {
+            changed = true;
+        }
+        break;
+
+    case ExprType::UnaryOp:
+        if (inline_func_calls_in_expr(*e.inner, prog, sym, pre_stmts)) {
+            changed = true;
+        }
+        break;
+
+    case ExprType::ArrayAccess:
+        if (inline_func_calls_in_expr(*e.index, prog, sym, pre_stmts)) {
+            changed = true;
+        }
+        break;
+
+    case ExprType::Call:
+        // First recurse into arguments
+        for (auto& arg : e.args) {
+            if (inline_func_calls_in_expr(*arg, prog, sym, pre_stmts)) {
+                changed = true;
+            }
+        }
+
+        // If this is a user-defined function call, inline it
+        if (e.func == TokenType::Identifier) {
+            auto it = prog.functions.find(e.name);
+            if (it != prog.functions.end()) {
+                changed = true;
+                const FuncDecl& func = *it->second;
+                int instance = ++g_inline_counter;
+
+                // Collect local vars in function body
+                std::unordered_set<std::string> locals;
+                for (const auto& p : func.params) {
+                    locals.insert(p.name);
+                }
+                locals.insert(func.name); // return variable
+                collect_local_vars(func.body, locals);
+
+                // Build rename map
+                RenameMap map = build_rename_map(
+                                    func.name, func.params, locals, instance, sym);
+
+                std::string renamed_return = rename_var(func.name, map);
+
+                // Emit DIM for string return variable
+                if (func.return_type == ValueType::String) {
+                    auto dim = std::make_unique<DimStmt>();
+                    DimElem elem;
+                    elem.var = renamed_return;
+                    int ret_size = e.string_size > 0 ? e.string_size : 1;
+                    elem.size_expr = std::make_unique<Expr>(
+                                         Expr::number(ret_size, e.loc));
+                    dim->elems.push_back(std::move(elem));
+
+                    auto ds = std::make_unique<Stmt>();
+                    ds->type = StmtType::Dim;
+                    ds->loc = e.loc;
+                    ds->dim_stmt = std::move(dim);
+                    pre_stmts.push_back(std::move(ds));
+                }
+
+                // Emit parameter setup
+                std::vector<Expr> empty_args;
+                emit_param_setup(func.params, empty_args, e.args,
+                                 map, e.loc, pre_stmts);
+
+                // Deep-copy function body with renaming
+                deep_copy_stmts(func.body, map, pre_stmts);
+
+                // Replace this Call expression with Var(renamed_return)
+                e = Expr::var(renamed_return, e.loc);
+            }
+        }
+        break;
+
+    default:
+        break;
+    }
+
+    return changed;
+}
+
+// Walk all expressions in a statement list and inline function calls.
+// Returns true if any inlining was performed.
+static bool inline_func_calls(StmtList& stmts, const Program& prog,
+                              const SymbolTable& sym) {
+    bool changed = false;
+    std::vector<std::unique_ptr<Stmt>> new_stmts;
+
+    for (auto& stmt : stmts.statements) {
+        // Recurse into nested blocks
+        switch (stmt->type) {
+        case StmtType::If:
+            if (inline_func_calls(stmt->if_stmt->then_block, prog, sym)) {
+                changed = true;
+            }
+            if (inline_func_calls(stmt->if_stmt->else_block, prog, sym)) {
+                changed = true;
+            }
+            break;
+        case StmtType::While:
+            if (inline_func_calls(stmt->while_stmt->body, prog, sym)) {
+                changed = true;
+            }
+            break;
+        case StmtType::For:
+            if (inline_func_calls(stmt->for_stmt->body, prog, sym)) {
+                changed = true;
+            }
+            break;
+        default:
+            break;
+        }
+
+        // Collect pre-statements from inlining function calls in expressions
+        std::vector<std::unique_ptr<Stmt>> pre_stmts;
+
+        switch (stmt->type) {
+        case StmtType::Let:
+            if (stmt->let_stmt->index) {
+                if (inline_func_calls_in_expr(*stmt->let_stmt->index, prog, sym, pre_stmts)) {
+                    changed = true;
+                }
+            }
+            if (inline_func_calls_in_expr(stmt->let_stmt->expr, prog, sym, pre_stmts)) {
+                changed = true;
+            }
+            break;
+
+        case StmtType::Dim:
+            for (auto& elem : stmt->dim_stmt->elems) {
+                if (inline_func_calls_in_expr(*elem.size_expr, prog, sym, pre_stmts)) {
+                    changed = true;
+                }
+            }
+            break;
+
+        case StmtType::Print:
+            for (auto& item : stmt->print_stmt->elems) {
+                if (item.type == PrintElemType::Expr) {
+                    if (inline_func_calls_in_expr(item.expr, prog, sym, pre_stmts)) {
+                        changed = true;
+                    }
+                }
+            }
+            break;
+
+        case StmtType::If:
+            if (inline_func_calls_in_expr(stmt->if_stmt->condition, prog, sym, pre_stmts)) {
+                changed = true;
+            }
+            break;
+
+        case StmtType::While:
+            if (inline_func_calls_in_expr(stmt->while_stmt->condition, prog, sym, pre_stmts)) {
+                changed = true;
+            }
+            break;
+
+        case StmtType::For:
+            if (inline_func_calls_in_expr(stmt->for_stmt->start_expr, prog, sym, pre_stmts)) {
+                changed = true;
+            }
+            if (inline_func_calls_in_expr(stmt->for_stmt->end_expr, prog, sym, pre_stmts)) {
+                changed = true;
+            }
+            if (inline_func_calls_in_expr(stmt->for_stmt->step_expr, prog, sym, pre_stmts)) {
+                changed = true;
+            }
+            break;
+
+        case StmtType::Call:
+            for (auto& arg : stmt->call_stmt->args) {
+                if (inline_func_calls_in_expr(arg, prog, sym, pre_stmts)) {
+                    changed = true;
+                }
+            }
+            break;
+
+        default:
+            break;
+        }
+
+        // Emit pre-statements, then the original statement
+        for (auto& ps : pre_stmts) {
+            new_stmts.push_back(std::move(ps));
+        }
+        new_stmts.push_back(std::move(stmt));
+    }
+
+    stmts.statements = std::move(new_stmts);
+    return changed;
+}
+
+// Inline all CALL statements (SUB calls) in a StmtList.
 static bool inline_calls(StmtList& stmts, const Program& prog,
                          const SymbolTable& sym) {
     bool changed = false;
@@ -1345,50 +1991,13 @@ static bool inline_calls(StmtList& stmts, const Program& prog,
         collect_local_vars(sub.body, locals);
 
         // Build rename map
-        RenameMap map = build_rename_map(sub, locals, instance, sym);
+        RenameMap map = build_rename_map(
+                            sub.name, sub.params, locals, instance, sym);
 
-        // Emit parameter assignments: renamed_param = arg_expr
-        // For string parameters, emit a DIM first to allocate the buffer.
-        for (size_t i = 0; i < sub.params.size(); ++i) {
-            bool is_str = (sub.params[i].type == ValueType::String);
-            std::string renamed = rename_var(sub.params[i].name, map);
-
-            if (is_str) {
-                // Determine the size from the argument's string_size
-                // (filled by semantic_check before inlining)
-                int arg_size = call.args[i].string_size;
-                if (arg_size <= 0) {
-                    arg_size = 1; // minimum
-                }
-
-                // Emit: DIM renamed$(arg_size)
-                auto dim = std::make_unique<DimStmt>();
-                DimElem elem;
-                elem.var = renamed;
-                elem.size_expr = std::make_unique<Expr>(
-                                     Expr::number(arg_size, stmt->loc));
-                dim->elems.push_back(std::move(elem));
-
-                auto ds = std::make_unique<Stmt>();
-                ds->type = StmtType::Dim;
-                ds->loc = stmt->loc;
-                ds->dim_stmt = std::move(dim);
-                new_stmts.push_back(std::move(ds));
-            }
-
-            // Emit: LET renamed = arg_expr  (or LET renamed$ = arg_expr)
-            auto let = std::make_unique<LetStmt>();
-            let->var = renamed;
-            RenameMap empty_map;
-            let->expr = deep_copy_expr(call.args[i], empty_map);
-            let->type = is_str ? LetType::String : LetType::Normal;
-
-            auto s = std::make_unique<Stmt>();
-            s->type = StmtType::Let;
-            s->loc = stmt->loc;
-            s->let_stmt = std::move(let);
-            new_stmts.push_back(std::move(s));
-        }
+        // Emit parameter setup
+        std::vector<std::unique_ptr<Expr>> empty_expr_args;
+        emit_param_setup(sub.params, call.args, empty_expr_args,
+                         map, stmt->loc, new_stmts);
 
         // Deep-copy sub body with renaming
         deep_copy_stmts(sub.body, map, new_stmts);
@@ -1407,10 +2016,29 @@ std::string compile(const std::string& source) {
     Parser parser(tokens);
     Program prog = parser.parse_program();
 
+    // Reclassify single-arg ArrayAccess nodes that are function calls
+    reclassify_func_calls(prog.stmts, prog);
+    for (auto& [name, func] : prog.functions) {
+        reclassify_func_calls(func->body, prog);
+    }
+    for (auto& [name, sub] : prog.subroutines) {
+        reclassify_func_calls(sub->body, prog);
+    }
+
     // Validate subroutine bodies for structural constraints only
     // (no recursion, no assignment to sub name).
     for (auto& [name, sub] : prog.subroutines) {
         check_sub_body_no_recursion(sub->body, name);
+    }
+
+    // Validate function bodies (no recursion, has return assignment)
+    for (auto& [name, func] : prog.functions) {
+        check_func_body_no_recursion(func->body, name);
+        if (!has_return_assignment(func->body, name)) {
+            error_at(func->body.statements.empty()
+                     ? SourceLoc(0) : func->body.statements.front()->loc,
+                     "function '" + name + "' must assign a return value to '" + name + "'");
+        }
     }
 
     SymbolTable sym;
@@ -1435,9 +2063,11 @@ std::string compile(const std::string& source) {
         finalize_array_sizes(prog.stmts, sym);
         semantic_check(prog.stmts, sym, prog);
 
-        // Inline subroutine calls
+        // Inline function calls in expressions first, then SUB calls
         g_inline_counter = 0;
-        inlined = inline_calls(prog.stmts, prog, sym);
+        bool func_inlined = inline_func_calls(prog.stmts, prog, sym);
+        bool sub_inlined = inline_calls(prog.stmts, prog, sym);
+        inlined = func_inlined || sub_inlined;
     }
     while (inlined);
 

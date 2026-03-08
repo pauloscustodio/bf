@@ -442,5 +442,20 @@
     <None Include="..\..\..\t\examples.t">
       <Filter>Resource Files\t</Filter>
     </None>
+    <None Include="..\..\..\Makefile">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\..\README.md">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\..\TODO.md">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\..\t\bfbasic_function.t">
+      <Filter>Resource Files\t</Filter>
+    </None>
+    <None Include="..\..\..\t\bfbasic_sub.t">
+      <Filter>Resource Files\t</Filter>
+    </None>
   </ItemGroup>
 </Project>

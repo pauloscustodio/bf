@@ -93,8 +93,9 @@ Expr Expr::call(Token func_tok, std::vector<std::unique_ptr<Expr>> args,
                 const SourceLoc& loc) {
     Expr e;
     e.expr_type = ExprType::Call;
-    e.value_type = is_string_var(func_tok.text) ? ValueType::String : ValueType::Int;
     e.func = func_tok.type;
+    e.name = func_tok.text;
+    e.value_type = is_string_var(func_tok.text) ? ValueType::String : ValueType::Int;
     e.args = std::move(args);
     e.loc = loc;
     return e;

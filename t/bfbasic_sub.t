@@ -129,7 +129,7 @@ SUB hello()
 ENDSUB
 END
 capture_nok("bfbasic $test.bas -o $test.bfpp", <<END);
-Error at line 1: variable 'HELLO' conflicts with subroutine name
+Error at line 1: variable 'HELLO' conflicts with subroutine or function name
 END
 
 spew("$test.bas", <<'END');
@@ -138,7 +138,7 @@ SUB hello()
 ENDSUB
 END
 capture_nok("bfbasic $test.bas -o $test.bfpp", <<END);
-Error at line 1: variable 'HELLO' conflicts with subroutine name
+Error at line 1: variable 'HELLO' conflicts with subroutine or function name
 END
 
 spew("$test.bas", <<'END');
@@ -147,7 +147,7 @@ SUB hello()
 ENDSUB
 END
 capture_nok("bfbasic $test.bas -o $test.bfpp", <<END);
-Error at line 1: variable 'HELLO' conflicts with subroutine name
+Error at line 1: variable 'HELLO' conflicts with subroutine or function name
 END
 
 # SUB call with inlining and use of global vars

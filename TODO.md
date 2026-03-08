@@ -1,3 +1,2 @@
-- FUNCTION name(A, B, ...) \n block \n name = return \n ENDFUNCTION
 - FOR: optimizing away the direction test when step is constant
 - IF: optimize if expression is constant
