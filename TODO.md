@@ -1,2 +1,3 @@
 - FOR: optimizing away the direction test when step is constant
 - IF: optimize if expression is constant
+- INPUT A(1)

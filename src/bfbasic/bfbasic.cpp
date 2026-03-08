@@ -431,13 +431,25 @@ void collect_symbols(StmtList& stmts, SymbolTable& sym, const Program& prog) {
                              "variable '" + name + "' conflicts with subroutine or function name");
                 }
                 bool is_string = is_string_var(name);
-                SymbolType type = is_string ?
-                                  SymbolType::StringVar : SymbolType::IntVar;
 
-                sym.declare(name, type, stmt->loc);
-
-                Symbol* symbol = sym.get(name);
-                symbol->count_assignments++;
+                if (is_string) {
+                    // String variables must be declared by DIM before INPUT
+                    Symbol* symbol = sym.get(name);
+                    if (!symbol) {
+                        error_at(stmt->loc,
+                                 "string variable '" + name + "' must be declared by DIM before used");
+                    }
+                    if (symbol->type != SymbolType::StringVar) {
+                        error_at(stmt->loc,
+                                 "variable '" + name + "' is not a string variable");
+                    }
+                    symbol->count_assignments++;
+                }
+                else {
+                    sym.declare(name, SymbolType::IntVar, stmt->loc);
+                    Symbol* symbol = sym.get(name);
+                    symbol->count_assignments++;
+                }
             }
             break;
 
