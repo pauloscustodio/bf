@@ -9,56 +9,56 @@ spew("$test.bas", <<END);
 FOR
 END
 capture_nok("bfbasic $test.bas -o $test.bfpp", <<END);
-Error at line 2: Expected loop variable after FOR
+Error at line 2: expected loop variable after FOR
 END
 
 spew("$test.bas", <<END);
 FOR 1
 END
 capture_nok("bfbasic $test.bas -o $test.bfpp", <<END);
-Error at line 1: Expected loop variable after FOR
+Error at line 1: expected loop variable after FOR
 END
 
 spew("$test.bas", <<END);
 FOR V+1
 END
 capture_nok("bfbasic $test.bas -o $test.bfpp", <<END);
-Error at line 1: Expected '=' after loop variable
+Error at line 1: expected '=' after loop variable
 END
 
 spew("$test.bas", <<END);
 FOR V=
 END
 capture_nok("bfbasic $test.bas -o $test.bfpp", <<END);
-Error at line 2: Expected number, string, variable, function call, unary operator, or '('
+Error at line 2: expected number, string, variable, function call, unary operator, or '('
 END
 
 spew("$test.bas", <<END);
 FOR V=1
 END
 capture_nok("bfbasic $test.bas -o $test.bfpp", <<END);
-Error at line 2: Expected TO
+Error at line 2: expected TO
 END
 
 spew("$test.bas", <<END);
 FOR V=1 TO
 END
 capture_nok("bfbasic $test.bas -o $test.bfpp", <<END);
-Error at line 2: Expected number, string, variable, function call, unary operator, or '('
+Error at line 2: expected number, string, variable, function call, unary operator, or '('
 END
 
 spew("$test.bas", <<END);
 FOR V=1 TO STEP
 END
 capture_nok("bfbasic $test.bas -o $test.bfpp", <<END);
-Error at line 1: Expected number, string, variable, function call, unary operator, or '('
+Error at line 1: expected number, string, variable, function call, unary operator, or '('
 END
 
 spew("$test.bas", <<END);
 NEXT
 END
 capture_nok("bfbasic $test.bas -o $test.bfpp", <<END);
-Error at line 1: Expected LET, INPUT, PRINT, IF, WHILE, FOR, DIM or CALL
+Error at line 1: expected LET, INPUT, PRINT, IF, WHILE, FOR, DIM or CALL
 END
 
 spew("$test.bas", <<END);

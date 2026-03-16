@@ -33,7 +33,7 @@ ENDSUB
 CALL say_hi
 END
 capture_nok("bfbasic $test.bas -o $test.bfpp", <<END);
-Error at line 5: Expected '(' after subroutine name
+Error at line 5: expected '(' after subroutine name
 END
 
 spew("$test.bas", <<'END');
@@ -43,7 +43,7 @@ ENDSUB
 say_hi
 END
 capture_nok("bfbasic $test.bas -o $test.bfpp", <<END);
-Error at line 4: Expected LET, INPUT, PRINT, IF, WHILE, FOR, DIM or CALL
+Error at line 4: expected LET, INPUT, PRINT, IF, WHILE, FOR, DIM or CALL
 END
 
 spew("$test.bas", <<'END');

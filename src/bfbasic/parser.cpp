@@ -228,7 +228,7 @@ Stmt Parser::parse_single_statement() {
         return parse_let_without_keyword();
     }
 
-    error_here("Expected LET, INPUT, PRINT, IF, WHILE, FOR, DIM or CALL");
+    error_here("expected LET, INPUT, PRINT, IF, WHILE, FOR, DIM or CALL");
 }
 
 void Parser::parse_statement_list_on_line(
@@ -276,7 +276,7 @@ StmtList Parser::parse_statement_list_until(std::initializer_list<TokenType> ter
 }
 
 Stmt Parser::parse_let_common(const SourceLoc& loc) {
-    Token id = expect(TokenType::Identifier, "Expected variable name after LET");
+    Token id = expect(TokenType::Identifier, "expected variable name after LET");
     bool is_string = is_string_var(id.text);
 
     // LET A(i)=expr
@@ -288,11 +288,11 @@ Stmt Parser::parse_let_common(const SourceLoc& loc) {
         }
         advance();
         index = std::make_unique<Expr>(parse_expr());
-        expect(TokenType::RParen, "Expected ')'");
+        expect(TokenType::RParen, "expected ')'");
         is_array = true;
     }
 
-    expect(TokenType::Equal, "Expected '=' after variable name");
+    expect(TokenType::Equal, "expected '=' after variable name");
 
     Expr e = parse_expr();
 
@@ -321,19 +321,45 @@ Stmt Parser::parse_let_without_keyword() {
 
 Stmt Parser::parse_input() {
     Token kw = advance(); // INPUT
-    Token id = expect(TokenType::Identifier, "Expected variable name after INPUT");
+    std::vector<InputElem> elems;
+    while (true) {
+        Token id = expect(TokenType::Identifier,
+                          std::string("expected variable name after ") +
+                          (elems.empty() ? "INPUT" : "comma"));
+        bool is_string = is_string_var(id.text);
+
+        // check for INPUT A(i)
+        bool is_array = false;
+        std::unique_ptr<Expr> index;
+        if (match(TokenType::LParen)) {
+            if (is_string) {
+                error_at(id.loc,
+                         "string variable '" + id.text + "' cannot be indexed");
+            }
+            advance();
+            index = std::make_unique<Expr>(parse_expr());
+            expect(TokenType::RParen, "expected ')'");
+            is_array = true;
+        }
+
+        InputElem e;
+        e.type = is_array ? LetType::Array
+                 : is_string ? LetType::String : LetType::Normal;
+        e.var = id.text;
+        e.index = std::move(index);
+        elems.push_back(std::move(e));
+
+        if (!match(TokenType::Comma)) {
+            break;
+        }
+        advance(); // consume comma and continue
+    }
 
     Stmt s;
     s.type = StmtType::Input;
     s.loc = kw.loc;
     s.input_stmt = std::make_unique<InputStmt>();
-    s.input_stmt->vars = { id.text };
-
-    while (match(TokenType::Comma)) {
-        advance();
-        id = expect(TokenType::Identifier, "Expected variable name after ,");
-        s.input_stmt->vars.push_back(id.text);
-    }
+    s.input_stmt->elems = std::move(elems);
 
     return s;
 }
@@ -400,7 +426,7 @@ Stmt Parser::parse_if() {
     // Parse condition
     Expr condition = parse_expr();
 
-    expect(TokenType::KeywordThen, "Expected THEN");
+    expect(TokenType::KeywordThen, "expected THEN");
 
     // THEN followed by newline -> multi-line IF
     if (match(TokenType::Newline)) {
@@ -437,7 +463,7 @@ void Parser::parse_inline_stmt_list(StmtList& out) {
 
     // If we hit newline/EOF here -> THEN/ELSE with no statements -> error
     if (match(TokenType::Newline) || match(TokenType::EndOfFile)) {
-        error_here("Expected statement after THEN/ELSE");
+        error_here("expected statement after THEN/ELSE");
     }
 
     // List of statements on the same line, separated by colons
@@ -455,12 +481,12 @@ Stmt Parser::parse_multiline_if(Token kw, Expr condition) {
     // Optional ELSE
     if (match(TokenType::KeywordElse)) {
         advance(); // consume ELSE
-        expect(TokenType::Newline, "Expected newline after ELSE");
+        expect(TokenType::Newline, "expected newline after ELSE");
         if_stmt->else_block = parse_block_until({ TokenType::KeywordEndIf }, "ENDIF");
     }
 
     // ENDIF
-    expect(TokenType::KeywordEndIf, "Expected ENDIF");
+    expect(TokenType::KeywordEndIf, "expected ENDIF");
 
     Stmt s;
     s.type = StmtType::If;
@@ -503,7 +529,7 @@ StmtList Parser::parse_block_until(
             error_here("Missing " + terminator_name);
         }
         else {
-            error_here("Expected newline after statements");
+            error_here("expected newline after statements");
         }
     }
 
@@ -517,13 +543,13 @@ Stmt Parser::parse_while() {
     w->condition = parse_expr();
 
     // Require newline after condition
-    expect(TokenType::Newline, "Expected newline after WHILE condition");
+    expect(TokenType::Newline, "expected newline after WHILE condition");
 
     // Body until WEND
     w->body = parse_block_until({ TokenType::KeywordWEnd }, "WEND");
 
     // Consume WEND and its newline
-    expect(TokenType::KeywordWEnd, "Expected WEND");
+    expect(TokenType::KeywordWEnd, "expected WEND");
 
     Stmt s;
     s.type = StmtType::While;
@@ -536,8 +562,8 @@ Stmt Parser::parse_for() {
     Token kw = advance(); // FOR
 
     // Parse loop variable
-    Token for_var = expect(TokenType::Identifier, "Expected loop variable after FOR");
-    expect(TokenType::Equal, "Expected '=' after loop variable");
+    Token for_var = expect(TokenType::Identifier, "expected loop variable after FOR");
+    expect(TokenType::Equal, "expected '=' after loop variable");
 
     auto f = std::make_unique<ForStmt>();
     f->var = for_var.text;
@@ -545,7 +571,7 @@ Stmt Parser::parse_for() {
     // start-expr
     f->start_expr = parse_expr();
 
-    expect(TokenType::KeywordTo, "Expected TO");
+    expect(TokenType::KeywordTo, "expected TO");
 
     // end-expr
     f->end_expr = parse_expr();
@@ -561,13 +587,13 @@ Stmt Parser::parse_for() {
     }
 
     // newline required
-    expect(TokenType::Newline, "Expected newline after FOR header");
+    expect(TokenType::Newline, "expected newline after FOR header");
 
     // Body until NEXT
     f->body = parse_block_until({ TokenType::KeywordNext }, "NEXT");
 
     // Consume NEXT + newline
-    expect(TokenType::KeywordNext, "Expected NEXT");
+    expect(TokenType::KeywordNext, "expected NEXT");
 
     // Optional variable
     Token next_var = peek();
@@ -597,13 +623,13 @@ Stmt Parser::parse_dim() {
     while (true) {
         Token var = expect(TokenType::Identifier,
                            s.dim_stmt->elems.empty() ?
-                           "Expected array name after DIM" :
-                           "Expected array name after ','");
+                           "expected array name after DIM" :
+                           "expected array name after ','");
         expect(TokenType::LParen,
-               "Expected '(' after array name");
+               "expected '(' after array name");
         Expr size_expr = parse_expr();
         expect(TokenType::RParen,
-               "Expected ')' after size expression");
+               "expected ')' after size expression");
 
         DimElem elem;
         elem.var = var.text;
@@ -623,16 +649,16 @@ Stmt Parser::parse_sub() {
     Token kw = advance(); // SUB
 
     Token name = expect(TokenType::Identifier,
-                        "Expected subroutine name after SUB");
+                        "expected subroutine name after SUB");
 
     // Parse parameter list: (param1, param2$, ...)
     expect(TokenType::LParen,
-           "Expected '(' after subroutine name");
+           "expected '(' after subroutine name");
 
     std::vector<Param> params;
     if (!match(TokenType::RParen)) {
         Token p = expect(TokenType::Identifier,
-                         "Expected parameter name");
+                         "expected parameter name");
         ValueType type = is_string_var(p.text) ?
                          ValueType::String : ValueType::Int;
         params.push_back({ p.text, type });
@@ -640,7 +666,7 @@ Stmt Parser::parse_sub() {
         while (match(TokenType::Comma)) {
             advance(); // consume comma
             p = expect(TokenType::Identifier,
-                       "Expected parameter name after ','");
+                       "expected parameter name after ','");
             type = is_string_var(p.text) ?
                    ValueType::String : ValueType::Int;
             params.push_back({ p.text, type });
@@ -648,17 +674,17 @@ Stmt Parser::parse_sub() {
     }
 
     expect(TokenType::RParen,
-           "Expected ')' after parameter list");
+           "expected ')' after parameter list");
 
     // Require newline after SUB header
     expect(TokenType::Newline,
-           "Expected newline after SUB header");
+           "expected newline after SUB header");
 
     // Body until ENDSUB
     StmtList body = parse_block_until({ TokenType::KeywordEndSub }, "ENDSUB");
 
     expect(TokenType::KeywordEndSub,
-           "Expected ENDSUB");
+           "expected ENDSUB");
 
     Stmt s;
     s.type = StmtType::SubDecl;
@@ -675,19 +701,19 @@ Stmt Parser::parse_function() {
     Token kw = advance(); // FUNCTION
 
     Token name = expect(TokenType::Identifier,
-                        "Expected function name after FUNCTION");
+                        "expected function name after FUNCTION");
 
     ValueType return_type = is_string_var(name.text)
                             ? ValueType::String : ValueType::Int;
 
     // Parse parameter list: (param1, param2$, ...)
     expect(TokenType::LParen,
-           "Expected '(' after function name");
+           "expected '(' after function name");
 
     std::vector<Param> params;
     if (!match(TokenType::RParen)) {
         Token p = expect(TokenType::Identifier,
-                         "Expected parameter name");
+                         "expected parameter name");
         ValueType type = is_string_var(p.text) ?
                          ValueType::String : ValueType::Int;
         params.push_back({ p.text, type });
@@ -695,7 +721,7 @@ Stmt Parser::parse_function() {
         while (match(TokenType::Comma)) {
             advance(); // consume comma
             p = expect(TokenType::Identifier,
-                       "Expected parameter name after ','");
+                       "expected parameter name after ','");
             type = is_string_var(p.text) ?
                    ValueType::String : ValueType::Int;
             params.push_back({ p.text, type });
@@ -703,18 +729,18 @@ Stmt Parser::parse_function() {
     }
 
     expect(TokenType::RParen,
-           "Expected ')' after parameter list");
+           "expected ')' after parameter list");
 
     // Require newline after FUNCTION header
     expect(TokenType::Newline,
-           "Expected newline after FUNCTION header");
+           "expected newline after FUNCTION header");
 
     // Body until ENDFUNCTION
     StmtList body = parse_block_until(
     { TokenType::KeywordEndFunction }, "ENDFUNCTION");
 
     expect(TokenType::KeywordEndFunction,
-           "Expected ENDFUNCTION");
+           "expected ENDFUNCTION");
 
     Stmt s;
     s.type = StmtType::SubDecl; // reuse StmtType; func_decl pointer distinguishes
@@ -740,10 +766,10 @@ Stmt Parser::parse_call_without_keyword() {
 
 Stmt Parser::parse_call_common(const SourceLoc& loc) {
     Token name = expect(TokenType::Identifier,
-                        "Expected subroutine name after CALL");
+                        "expected subroutine name after CALL");
 
     expect(TokenType::LParen,
-           "Expected '(' after subroutine name");
+           "expected '(' after subroutine name");
 
     auto cs = std::make_unique<CallStmt>();
     cs->name = name.text;
@@ -757,7 +783,7 @@ Stmt Parser::parse_call_common(const SourceLoc& loc) {
     }
 
     expect(TokenType::RParen,
-           "Expected ')' after argument list");
+           "expected ')' after argument list");
 
     Stmt s;
     s.type = StmtType::Call;
@@ -965,7 +991,7 @@ Expr Parser::parse_primary() {
     TokenType::KeywordAsc })) {
 
         Token fn = advance();
-        expect(TokenType::LParen, "Expected '(' after function name");
+        expect(TokenType::LParen, "expected '(' after function name");
 
         std::vector<std::unique_ptr<Expr>> args;
         if (!match(TokenType::RParen)) {
@@ -976,7 +1002,7 @@ Expr Parser::parse_primary() {
             }
         }
 
-        expect(TokenType::RParen, "Expected ')' after function arguments");
+        expect(TokenType::RParen, "expected ')' after function arguments");
         return Expr::call(fn, std::move(args), fn.loc);
     }
 
@@ -998,7 +1024,7 @@ Expr Parser::parse_primary() {
                 }
             }
 
-            expect(TokenType::RParen, "Expected ')'");
+            expect(TokenType::RParen, "expected ')'");
 
             // Multiple args or string name: must be a user-defined function call.
             // Single arg with non-string name: parse as array access; the
@@ -1021,9 +1047,9 @@ Expr Parser::parse_primary() {
     if (match(TokenType::LParen)) {
         advance();
         Expr e = parse_expr();
-        expect(TokenType::RParen, "Expected ')'");
+        expect(TokenType::RParen, "expected ')'");
         return e;
     }
 
-    error_here("Expected number, string, variable, function call, unary operator, or '('");
+    error_here("expected number, string, variable, function call, unary operator, or '('");
 }

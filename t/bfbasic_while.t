@@ -9,7 +9,7 @@ spew("$test.bas", <<END);
 WHILE
 END
 capture_nok("bfbasic $test.bas -o $test.bfpp", <<END);
-Error at line 2: Expected number, string, variable, function call, unary operator, or '('
+Error at line 2: expected number, string, variable, function call, unary operator, or '('
 END
 
 spew("$test.bas", <<END);
@@ -23,7 +23,7 @@ spew("$test.bas", <<END);
 WEND
 END
 capture_nok("bfbasic $test.bas -o $test.bfpp", <<END);
-Error at line 1: Expected LET, INPUT, PRINT, IF, WHILE, FOR, DIM or CALL
+Error at line 1: expected LET, INPUT, PRINT, IF, WHILE, FOR, DIM or CALL
 END
 
 # Test WHILE - WEND

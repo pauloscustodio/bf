@@ -9,35 +9,35 @@ spew("$test.bas", <<'END');
 DIM
 END
 capture_nok("bfbasic $test.bas -o $test.bfpp", <<END);
-Error at line 2: Expected array name after DIM
+Error at line 2: expected array name after DIM
 END
 
 spew("$test.bas", <<'END');
 DIM A
 END
 capture_nok("bfbasic $test.bas -o $test.bfpp", <<END);
-Error at line 2: Expected '(' after array name
+Error at line 2: expected '(' after array name
 END
 
 spew("$test.bas", <<'END');
 DIM A(
 END
 capture_nok("bfbasic $test.bas -o $test.bfpp", <<END);
-Error at line 2: Expected number, string, variable, function call, unary operator, or '('
+Error at line 2: expected number, string, variable, function call, unary operator, or '('
 END
 
 spew("$test.bas", <<'END');
 DIM A(2
 END
 capture_nok("bfbasic $test.bas -o $test.bfpp", <<END);
-Error at line 2: Expected ')' after size expression
+Error at line 2: expected ')' after size expression
 END
 
 spew("$test.bas", <<'END');
 DIM A(2),
 END
 capture_nok("bfbasic $test.bas -o $test.bfpp", <<END);
-Error at line 2: Expected array name after ','
+Error at line 2: expected array name after ','
 END
 
 # not constant index

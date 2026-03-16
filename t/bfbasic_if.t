@@ -9,14 +9,14 @@ spew("$test.bas", <<END);
 IF
 END
 capture_nok("bfbasic $test.bas -o $test.bfpp", <<END);
-Error at line 2: Expected number, string, variable, function call, unary operator, or '('
+Error at line 2: expected number, string, variable, function call, unary operator, or '('
 END
 
 spew("$test.bas", <<END);
 IF 1
 END
 capture_nok("bfbasic $test.bas -o $test.bfpp", <<END);
-Error at line 2: Expected THEN
+Error at line 2: expected THEN
 END
 
 spew("$test.bas", <<END);

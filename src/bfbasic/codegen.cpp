@@ -125,12 +125,26 @@ void CodeGen::emit_stmt(const Stmt& s) {
 }
 
 void CodeGen::emit_input(const Stmt& s) {
-    for (auto& v : s.input_stmt->vars) {
-        if (sym.get(v)->type == SymbolType::StringVar) {
-            emit("scan_word(" + v + ")");
+    for (auto& elem : s.input_stmt->elems) {
+        switch (elem.type) {
+        case LetType::Normal:
+            emit("scan_cell16s(" + elem.var + ")");
+            break;
+        case LetType::Array: {
+            std::string index = alloc_temp16();
+            emit_expr(*elem.index, index);
+            std::string value = alloc_temp16();
+            emit("scan_cell16s(" + value + ")");
+            emit("put_array16(" + elem.var + ", " + index + ", " + value + ")");
+            free_temp16(index);
+            free_temp16(value);
+            break;
         }
-        else {
-            emit("scan_cell16s(" + v + ")");
+        case LetType::String:
+            emit("scan_word(" + elem.var + ")");
+            break;
+        default:
+            assert(0);
         }
     }
 }

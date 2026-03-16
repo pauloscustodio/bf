@@ -101,8 +101,14 @@ struct DimStmt {
     std::vector<DimElem> elems;
 };
 
+struct InputElem {
+    LetType type = LetType::Normal;
+    std::string var;
+    std::unique_ptr<Expr> index;    // for A(i)
+};
+
 struct InputStmt {
-    std::vector<std::string> vars;
+    std::vector<InputElem> elems;
 };
 
 enum class PrintElemType {

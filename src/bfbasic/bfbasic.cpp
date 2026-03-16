@@ -425,30 +425,59 @@ void collect_symbols(StmtList& stmts, SymbolTable& sym, const Program& prog) {
             break;
         }
         case StmtType::Input:
-            for (auto& name : stmt->input_stmt->vars) {
-                if (prog.subroutines.count(name) || prog.functions.count(name)) {
-                    error_at(stmt->loc,
-                             "variable '" + name + "' conflicts with subroutine or function name");
-                }
-                bool is_string = is_string_var(name);
+            for (auto& elem : stmt->input_stmt->elems) {
+                switch (elem.type) {
+                case LetType::Normal: {
+                    if (prog.subroutines.count(elem.var) ||
+                            prog.functions.count(elem.var)) {
+                        error_at(stmt->loc,
+                                 "variable '" + elem.var + "' conflicts with subroutine or function name");
+                    }
 
-                if (is_string) {
-                    // String variables must be declared by DIM before INPUT
-                    Symbol* symbol = sym.get(name);
+                    sym.declare(elem.var, SymbolType::IntVar, stmt->loc);
+
+                    Symbol* symbol = sym.get(elem.var);
+                    symbol->count_assignments++;
+                    break;
+                }
+                case LetType::Array: {
+                    // Arrays must be declared by DIM before INPUT
+                    Symbol* symbol = sym.get(elem.var);
                     if (!symbol) {
                         error_at(stmt->loc,
-                                 "string variable '" + name + "' must be declared by DIM before used");
+                                 "array '" + elem.var + "' must be declared by DIM before used");
+                    }
+                    if (symbol->type != SymbolType::IntArrayVar) {
+                        error_at(stmt->loc,
+                                 "variable '" + elem.var + "' is not an array");
+                    }
+
+                    collect_symbols_in_expr(*elem.index, sym, prog);
+                    break;
+                }
+                case LetType::String: {
+                    if (prog.subroutines.count(elem.var) ||
+                            prog.functions.count(elem.var)) {
+                        error_at(stmt->loc,
+                                 "variable '" + elem.var + "' conflicts with subroutine or function name");
+                    }
+
+                    // String variables must be declared by DIM before INPUT
+                    Symbol* symbol = sym.get(elem.var);
+                    if (!symbol) {
+                        error_at(stmt->loc,
+                                 "string variable '" + elem.var + "' must be declared by DIM before used");
                     }
                     if (symbol->type != SymbolType::StringVar) {
                         error_at(stmt->loc,
-                                 "variable '" + name + "' is not a string variable");
+                                 "variable '" + elem.var + "' is not a string variable");
                     }
+
                     symbol->count_assignments++;
+                    break;
                 }
-                else {
-                    sym.declare(name, SymbolType::IntVar, stmt->loc);
-                    Symbol* symbol = sym.get(name);
-                    symbol->count_assignments++;
+                default:
+                    assert(0);
                 }
             }
             break;
@@ -1207,10 +1236,15 @@ void check_sub_body_no_recursion(const StmtList& stmts,
             break;
 
         case StmtType::Input:
-            for (const auto& var : stmt->input_stmt->vars) {
-                if (var == sub_name) {
-                    error_at(stmt->loc,
-                             "cannot assign to subroutine name '" + sub_name + "' (subroutines return void)");
+            for (auto& elem : stmt->input_stmt->elems) {
+                if (elem.type == LetType::Normal ||
+                        elem.type == LetType::String) {
+                    if (elem.var == sub_name) {
+                        error_at(stmt->loc,
+                                 "cannot assign to subroutine name '" +
+                                 sub_name +
+                                 "' (subroutines return void)");
+                    }
                 }
             }
             break;
@@ -1423,17 +1457,23 @@ static void collect_local_vars(const StmtList& stmts,
             }
             collect_local_vars_in_expr(stmt->let_stmt->expr, locals);
             break;
+
         case StmtType::Dim:
             for (const auto& elem : stmt->dim_stmt->elems) {
                 locals.insert(elem.var);
                 collect_local_vars_in_expr(*elem.size_expr, locals);
             }
             break;
+
         case StmtType::Input:
-            for (const auto& v : stmt->input_stmt->vars) {
-                locals.insert(v);
+            for (auto& elem : stmt->input_stmt->elems) {
+                if (elem.type == LetType::Normal ||
+                        elem.type == LetType::String) {
+                    locals.insert(elem.var);
+                }
             }
             break;
+
         case StmtType::Print:
             for (const auto& item : stmt->print_stmt->elems) {
                 if (item.type == PrintElemType::Expr) {
@@ -1441,15 +1481,18 @@ static void collect_local_vars(const StmtList& stmts,
                 }
             }
             break;
+
         case StmtType::If:
             collect_local_vars_in_expr(stmt->if_stmt->condition, locals);
             collect_local_vars(stmt->if_stmt->then_block, locals);
             collect_local_vars(stmt->if_stmt->else_block, locals);
             break;
+
         case StmtType::While:
             collect_local_vars_in_expr(stmt->while_stmt->condition, locals);
             collect_local_vars(stmt->while_stmt->body, locals);
             break;
+
         case StmtType::For:
             locals.insert(stmt->for_stmt->var);
             collect_local_vars_in_expr(stmt->for_stmt->start_expr, locals);
@@ -1457,11 +1500,13 @@ static void collect_local_vars(const StmtList& stmts,
             collect_local_vars_in_expr(stmt->for_stmt->step_expr, locals);
             collect_local_vars(stmt->for_stmt->body, locals);
             break;
+
         case StmtType::Call:
             for (const auto& arg : stmt->call_stmt->args) {
                 collect_local_vars_in_expr(arg, locals);
             }
             break;
+
         default:
             break;
         }
@@ -1605,8 +1650,14 @@ static std::unique_ptr<Stmt> deep_copy_stmt(const Stmt& s,
     }
     case StmtType::Input: {
         c->input_stmt = std::make_unique<InputStmt>();
-        for (const auto& v : s.input_stmt->vars) {
-            c->input_stmt->vars.push_back(rename_var(v, map));
+        for (const auto& elem : s.input_stmt->elems) {
+            InputElem ce;
+            ce.type = elem.type;
+            ce.var = rename_var(elem.var, map);
+            if (elem.index) {
+                ce.index = deep_copy_expr_ptr(*elem.index, map);
+            }
+            c->input_stmt->elems.push_back(std::move(ce));
         }
         break;
     }
