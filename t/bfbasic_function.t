@@ -134,7 +134,7 @@ capture_nok("bfbasic $test.bas -o $test.bfpp", <<END);
 Error at line 1: variable 'HELLO' conflicts with subroutine or function name
 END
 
-# FUNCTION call with inlining and use of global vars
+# FUNCTION call with inlining, global vars not available
 spew("$test.bas", <<'END');
 FUNCTION add(a, b)
 	result = a + b
@@ -149,10 +149,12 @@ check_text_file("$test.bfpp", <<'END');
 alloc_cell16(ADD_1_A)
 alloc_cell16(ADD_1_ADD)
 alloc_cell16(ADD_1_B)
+alloc_cell16(ADD_1_G)
 alloc_cell16(ADD_1_RESULT)
 alloc_cell16(ADD_2_A)
 alloc_cell16(ADD_2_ADD)
 alloc_cell16(ADD_2_B)
+alloc_cell16(ADD_2_G)
 alloc_cell16(ADD_2_RESULT)
 alloc_cell16(G)
 set16(ADD_1_A, 1)
@@ -160,24 +162,24 @@ set16(ADD_1_B, 2)
 set16(ADD_1_RESULT, 3)
 set16(ADD_1_ADD, 3)
 alloc_cell16(_BFB1)
-copy16(G, _BFB1)
+copy16(ADD_1_G, _BFB1)
 alloc_cell16(_BFB2)
 set16(_BFB2, 3)
 add16s(_BFB1, _BFB2)
 free_cell16(_BFB2)
-move16(_BFB1, G)
+move16(_BFB1, ADD_1_G)
 free_cell16(_BFB1)
 set16(ADD_2_A, 3)
 set16(ADD_2_B, 4)
 set16(ADD_2_RESULT, 7)
 set16(ADD_2_ADD, 7)
 alloc_cell16(_BFB3)
-copy16(G, _BFB3)
+copy16(ADD_2_G, _BFB3)
 alloc_cell16(_BFB4)
 set16(_BFB4, 7)
 add16s(_BFB3, _BFB4)
 free_cell16(_BFB4)
-move16(_BFB3, G)
+move16(_BFB3, ADD_2_G)
 free_cell16(_BFB3)
 alloc_cell16(_BFB5)
 set16(_BFB5, 10)
@@ -187,7 +189,7 @@ print_cell16s(G)
 print_newline
 END
 capture_ok("bfpp $test.bfpp | bf", <<'END');
-10 10 
+10 0 
 END
 
 # function with string arguments and result

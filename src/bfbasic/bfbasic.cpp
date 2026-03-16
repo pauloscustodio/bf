@@ -1520,8 +1520,7 @@ using RenameMap = std::unordered_map<std::string, std::string>;
 static RenameMap build_rename_map(const std::string& decl_name,
                                   const std::vector<Param>& params,
                                   const std::unordered_set<std::string>& locals,
-                                  int instance,
-                                  const SymbolTable& sym) {
+                                  int instance) {
     RenameMap map;
     std::string prefix = decl_name + "_" + std::to_string(instance) + "_";
 
@@ -1535,13 +1534,10 @@ static RenameMap build_rename_map(const std::string& decl_name,
         map[decl_name] = prefix + decl_name;
     }
 
-    // Local variables (not already in symbol table = not global) get renamed
+    // All local variables get renamed to avoid collision with caller's variables
     for (const auto& var : locals) {
         if (map.count(var)) {
             continue; // already a parameter or return var
-        }
-        if (sym.get(var) != nullptr) {
-            continue; // global variable, don't rename
         }
         map[var] = prefix + var;
     }
@@ -1847,7 +1843,7 @@ static bool inline_func_calls_in_expr(Expr& e, const Program& prog,
 
                 // Build rename map
                 RenameMap map = build_rename_map(
-                                    func.name, func.params, locals, instance, sym);
+                                    func.name, func.params, locals, instance);
 
                 std::string renamed_return = rename_var(func.name, map);
 
@@ -2055,7 +2051,7 @@ static bool inline_calls(StmtList& stmts, const Program& prog,
 
         // Build rename map
         RenameMap map = build_rename_map(
-                            sub.name, sub.params, locals, instance, sym);
+                            sub.name, sub.params, locals, instance);
 
         // Emit parameter setup
         std::vector<std::unique_ptr<Expr>> empty_expr_args;
@@ -2142,7 +2138,7 @@ int main(int argc, char* argv[]) {
     std::string input_filename;
     std::string output_filename;
 
-    for (int i = 1; i < argc; ++i) {
+    for (int i =  1; i < argc; ++i) {
         std::string arg = argv[i];
         if (arg.empty()) {
             continue;
